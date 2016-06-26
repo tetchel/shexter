@@ -1,0 +1,13 @@
+#short script to 'install' shexter
+#copies shexter.py to /opt/, then the shexter executable to /usr/bin.
+#needs sudo
+
+if [ "$(id -u)" != "0" ]; then
+    echo "You must run this installer as sudo since it writes to /usr/bin and /opt/"
+    exit 1
+else
+    cp ./shexter.py /opt/
+    cp ./shexter /usr/bin
+    echo "Success!"
+fi
+

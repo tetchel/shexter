@@ -1,0 +1,3 @@
+#quick executable that goes into /usr/bin to run shexter from anywhere
+
+python /opt/shexter.py $1 $2 $3
