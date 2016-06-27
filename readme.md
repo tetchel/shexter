@@ -14,7 +14,7 @@ Then, on Linux, cd to the directory with the shexter files and run the installer
 
 No installer exists yet for Windows.
 
-#App Setup
+##App Setup
 
 You must [enable installation from unknown sources](http://www.androidcentral.com/allow-app-installs-unknown-sources) in order to be able to install the apk.
 
