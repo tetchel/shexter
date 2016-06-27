@@ -76,7 +76,7 @@ public class SmsServerService extends Service {
             }
             while(!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {
-                    Log.d(TAG, "Ready to accept");
+                    //Log.d(TAG, "Ready to accept");
                     Socket socket = serverSocket.accept();
                     //reader from socket
                     BufferedReader in_reader = new BufferedReader(
@@ -85,7 +85,7 @@ public class SmsServerService extends Service {
                     PrintStream replyStream = new PrintStream(socket.getOutputStream());
 
                     String errMsg = null;
-                    //The protocol is command\ncontact\nmessage,
+                    //The request protocol is command\ncontact\nmessage,
                     //so read the first line to get the command
                     String command = in_reader.readLine();
                     //second line for contact name
@@ -109,7 +109,7 @@ public class SmsServerService extends Service {
 
                     if(errMsg != null) {
                         //if something has gone wrong already, don't do anything else
-                        replyStream.println(errMsg);
+                        sendReply(replyStream, errMsg);
                     }
                     else if(command.equals("send")) {
                         String line;
@@ -130,39 +130,41 @@ public class SmsServerService extends Service {
                         try {
                             Boolean result = sendThread.execute(contactInfo[0], message).get();
                             if(result) {
-                                replyStream.println("Successfully sent message to " + contactInfo[1]
-                                        + ".");
+                                sendReply(replyStream, "Successfully sent message to " +
+                                        contactInfo[1] + ".");
                             }
                             else {
-                                replyStream.println("Could not send message: make sure " +
+                                sendReply(replyStream, "Could not send message: make sure " +
                                         getString(R.string.app_name) + " has SMS permission.");
                             }
                         }
                         catch(InterruptedException | ExecutionException e) {
-                            replyStream.println("Serious error in the SMS send thread; " +
+                            sendReply(replyStream, "Serious error in the SMS send thread; " +
                                     "please report this issue on GitHub.");
                         }
                     }
                     else if(command.equals("read")) {
+                        int numberToRetrieve = Integer.parseInt(in_reader.readLine());
+                        //Log.d(TAG, "" + numberToRetrieve);
+
                         String convo;
                         try {
-                            //TODO take this number as a command line arg
-                            convo = getConversation(contactInfo, 20);
+                            convo = getConversation(contactInfo, numberToRetrieve);
 
                             if(convo != null)
-                                replyStream.println(convo);
+                                sendReply(replyStream, convo);
                             else
-                                replyStream.println("Error occurred getting conversation with "
+                                sendReply(replyStream, "Error occurred getting conversation with "
                                         + contactInfo[1] + ".");
                         }
                         catch(SecurityException e) {
-                            replyStream.println("Could not retrieve messages: make sure " +
+                            sendReply(replyStream, "Could not retrieve messages: make sure " +
                                     getString(R.string.app_name) + " has SMS permission.");
                         }
                     }
                     else {
                         //should never happen
-                        replyStream.println(command + " is a not a recognized command. " +
+                        sendReply(replyStream, command + " is a not a recognized command. " +
                                 "Please report this issue on GitHub");
                     }
                 } catch (IOException e) {
@@ -172,11 +174,46 @@ public class SmsServerService extends Service {
         }
     }
 
+    /**
+     * Wrapper for printStream.println which sends a length header followed by \n before the body
+     * to make it easier for the client to properly receive all data.
+     * @param replyStream Stream to print message to.
+     * @param msg Message to send.
+     */
+    private void sendReply(PrintStream replyStream, String msg) {
+        int len = msg.length();
+
+        final int HEADER_LEN = 32;
+        String lenStr = "" + len;
+
+        //TODO implement messages with lengths longer than 32 digits in base 10 (really long...)
+        /*
+        while(lenStr.length() > HEADER_LEN) {
+            lenStr = "" + len;
+            //break it up into multiple messages
+
+        }*/
+        if(lenStr.length() < HEADER_LEN) {
+            //right-pad the header with spaces
+            lenStr = String.format("%1$-" + HEADER_LEN + "s", lenStr);
+        }
+
+        String response = lenStr + '\n' + msg;
+        replyStream.println(response);
+    }
+
+    /**
+     * Gets the conversation with a given contact.
+     * @param contactInfo Array with [0] as the contact's phone number, [1] as their name in the DB.
+     * @param numberToRetrieve How many texts to retrieve.
+     * @return Formatted list of texts with dates, timestamps, sender name.
+     * @throws SecurityException If SMS permission is not given.
+     */
     private String getConversation(String[] contactInfo, int numberToRetrieve)
             throws SecurityException {
         ContentResolver contentResolver = getContentResolver();
         final String[] projection = new String[]{"date", "body", "type"};
-        final String selection = "address=" + removeNonDigitCharacters(contactInfo[0]);
+        final String selection = "address=" + Utilities.removeNonDigitCharacters(contactInfo[0]);
         Uri uri = Uri.parse("content://sms/");
         Cursor query = contentResolver.query(uri, projection, selection, null, "date desc");
         //TODO bugs out on some numbers (allan, joseph, dad) but why these ones???
@@ -209,7 +246,8 @@ public class SmsServerService extends Service {
 
             //TODO format better, especially with texts with newlines in them and long texts
             //a left/right conversation display like real texting would be stellar!
-            messageBuilder.append('[').append(unixTimeToTime(time)).append("] ");
+            String niceTime = Utilities.unixTimeToTime(time);
+            messageBuilder.append('[').append(niceTime).append("] ");
 
             if(msgType == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_INBOX) {
                 messageBuilder.append(contactInfo[1]).append(": ").append(body);
@@ -235,7 +273,7 @@ public class SmsServerService extends Service {
         //Generate and print a new date header each time the next message is from a different day
         String lastUsedDate = null;
         for(int i = 0; i < conversations.size(); i++) {
-            String currentDate = unixTimeToRelativeDate(times.get(i));
+            String currentDate = Utilities.unixTimeToRelativeDate(times.get(i));
 
             if(lastUsedDate == null) {
                 //if Today is the first (and therefore only, there can't be texts in the future)
@@ -257,86 +295,6 @@ public class SmsServerService extends Service {
         }
 
         return resultBuilder.toString();
-    }
-
-    private static String removeNonDigitCharacters(String input) {
-        StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            if(Character.isDigit(c)) {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    //Determine how old the message is and assign a date label accordingly\
-    //avert your eyes from this horror and just trust that it works
-    private static String unixTimeToRelativeDate(long unixTime) {
-        Date inputDate = new Date(unixTime);
-
-        Calendar cal = Calendar.getInstance();
-
-        Date today = cal.getTime();
-        //subtract a day to get yesterday's date
-        cal.add(Calendar.DATE, -1);
-        Date yesterday = cal.getTime();
-        //subtract 6 more days to get days that were this week
-        cal.add(Calendar.DATE, -6);
-        Date lastWeek = cal.getTime();
-        //look only at the year field for this one, ie if it's 2016, all dates not from
-        //2016 will be display with their year.
-        //TODO have a text from last year to test this...
-        cal.set(Calendar.MONTH, 0);
-        cal.set(Calendar.DAY_OF_MONTH, 1);
-        Date startOfThisYear = cal.getTime();
-
-        if(compareDatesWithoutTime(inputDate, today) == 0) {
-            return "Today";
-        }
-        else if (compareDatesWithoutTime(inputDate, yesterday) == 0){
-            return "Yesterday";
-        }
-        else if (inputDate.after(lastWeek)) {
-            //return the day of week
-            SimpleDateFormat sdf = new SimpleDateFormat("EEEE", Locale.getDefault());
-            return sdf.format(inputDate);
-        }
-        else if(inputDate.after(startOfThisYear)) {
-            //"January 1"
-            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd", Locale.getDefault());
-            return sdf.format(inputDate);
-        }
-        else {
-            //not from this year, include the year
-            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
-            return sdf.format(inputDate);
-        }
-    }
-
-    //the java.util.Date api really sucks
-    private static int compareDatesWithoutTime(Date d1, Date d2) {
-        Calendar c1 = Calendar.getInstance();
-        Calendar c2 = Calendar.getInstance();
-        c1.setTime(d1);
-        c1.set(Calendar.MILLISECOND, 0);
-        c1.set(Calendar.SECOND, 0);
-        c1.set(Calendar.MINUTE, 0);
-        c1.set(Calendar.HOUR_OF_DAY, 0);
-        c2.setTime(d2);
-        c2.set(Calendar.MILLISECOND, 0);
-        c2.set(Calendar.SECOND, 0);
-        c2.set(Calendar.MINUTE, 0);
-        c2.set(Calendar.HOUR_OF_DAY, 0);
-        return c1.getTime().compareTo(c2.getTime());
-    }
-
-    private static String unixTimeToTime(long unixTime) {
-        Date d = new Date(unixTime);
-        DateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        df.setTimeZone(TimeZone.getDefault());
-
-        return df.format(d);
     }
 
     /**
@@ -388,13 +346,16 @@ public class SmsServerService extends Service {
         return contactInfo;
     }
 
+    /**
+     * A message and
+     */
     private class SmsSendThread extends AsyncTask<String, Void, Boolean> {
         @Override
         protected Boolean doInBackground(String... params) {
-            Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
+            //Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
 
             SmsManager sms = SmsManager.getDefault();
-            //TODO log all caught exceptions
+
             try {
                 sms.sendTextMessage(params[0], null, params[1], null, null);
             }

@@ -1,0 +1,4 @@
+lint*
+/lint*
+/logs
+/apk/app-debug*

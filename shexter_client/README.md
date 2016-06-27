@@ -1,11 +1,3 @@
-# shexter_client
+#Shexter-Client
 
-How to install:
-
-git clone https://github.com/tetchel/shexter_client
-
-cd shexter_client
-
-sudo ./shexter_installer
-
-That's it!
+Client written in Python to be invoked from the command line to send and read texts using the Shexter Android app.

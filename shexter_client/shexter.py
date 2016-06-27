@@ -1,20 +1,21 @@
 #right now the whole script runs each invocation. 
-#instead it should run in a loop or something so I can maintain network connection.
+#instead it should run in a loop or something (maybe -p --persistant flag)
 
 import sys
 import socket
 import errno
+import argparse
 
+PORT = 5678
 def connect():
-	#hardcoded for now
+	#Enter the IP address given in the Shexter app here!
 	ip_addr = "192.168.1.101"
-	port	= 5678
 
 	#print("Preparing to connect...")
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.settimeout(120)
+	sock.settimeout(60)
 	try:
-		sock.connect((ip_addr, port))
+		sock.connect((ip_addr, PORT))
 		#print("Connect succeeded!")
 	except OSError as e:
 		errorcode = e.errno
@@ -30,75 +31,121 @@ def connect():
 
 	return sock;
 
-def receiveAll() :
-	recvd = sock.recv(8192)
-	#TODO handle unicode characters better
+HEADER_LEN = 32
+BUFFSIZE = 8192
+def receive_all(sock) :
+	data = b''
+	#receive the header to determine how long the message will be
+	header = int(sock.recv(HEADER_LEN).decode())
+	recvd_len = 0
+	while recvd_len < header:
+		recvd = sock.recv(BUFFSIZE)
+		data += recvd	
+		recvd_len += len(recvd)
+	#TODO handle fancy characters better (maybe server-side)
 	#try:
-	decoded = recvd.decode('ascii', 'ignore')
+	decoded = data.decode('ascii', 'ignore')
 	#except UnicodeDecodeError as e:
 		#print("Trying UTF-8")
 		#decoded = recvd.decode('unicode_escape')
 
-	return decoded;
-
-def log(msg) :
-	f = open('shexterlog.txt', 'a')
-	f.write(msg)
-
-def displayHelp() :
-	print("Recognized commands are:\n" + 
-		"Send [contact_name]\nRead [contact_name]\nReadUnread")
-
+	return decoded
 
 # ----- Main script ----- #
 
-if len(sys.argv) < 2:
-	print("Shexter: You must specify a command")
-	quit()
-#there are other cases for not enough args
+DEFAULT_READ_COUNT = 30
 
-command = sys.argv[1].lower()
+#Arg parser
+parser = argparse.ArgumentParser(description='Send and read texts using your ' + 
+	'Android phone from the command line.')
+parser.add_argument('command', type=str,
+	help='Possible commands: Send [Contact Name], Read [Contact Name], Unread.')
+parser.add_argument('contact_name', type=str, nargs="*", 
+	help="Specify contact for SEND and READ commands.")
+parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
+	help="Specify how many messages to retrieve with the READ command.")
+parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
+	help="Keep entering new messages to SEND until cancel signal is given. " + 
+	"Useful for sending multiple texts in succession.")
 
-#contact first, last name are argv 2,3, so see exists first & last or just one name
-if len(sys.argv) > 3:
-	to_send = command + "\n" + sys.argv[2] + " " + sys.argv[3] + "\n"
-elif len(sys.argv) > 2: 
-	to_send = command + "\n" + sys.argv[2] + "\n"
+args = parser.parse_args()
+#print(args)
 
-if(command == "send"):
-	#get msg, end with double newline
-	print("Enter message (CTRL + C to cancel): ")
-	try:
-		msg_input = ""
-		while True:
-			line = input()
-			if line.strip() == "":
-				break
-			msg_input += "%s\n" % line
+command = args.command.lower()
 
-		#add the message to to_send
-		to_send = to_send + msg_input + "\n"
-		
-		log("Sending:\n" + to_send);
+#Command names
+COMMAND_SEND = "send"
+COMMAND_READ = "read"
+COMMAND_UNRE = "unread"
 
-		sock = connect()
-		sock.send(to_send.encode())
-		print(receiveAll());
-		sock.close()
+contact_name = ''
 
-	except EOFError as e:
-		print("\nCancelled.")
+if(command == COMMAND_SEND or command == COMMAND_READ):
+	#require a contact name
+	contact_name_len = len(args.contact_name)
+	if(contact_name_len == 0):
+		print("You must specify a Contact Name for Send and Read commands.")
 		quit()
+
+	for name in args.contact_name:
+		contact_name += name + ' '
+
+#remove extra whitespace
+contact_name = contact_name.strip()
+
+#Build server request
+to_send = command + '\n' + contact_name + '\n'
+
+READ_COUNT_LIMIT = 5000
+#For read commands, include the number of messages requested
+if(command == COMMAND_READ):
+	if(args.count > READ_COUNT_LIMIT):
+		print("Retrieving the maximum number of messages: " + str(READ_COUNT_LIMIT))
+	to_send += str(args.count) + '\n'
+elif(args.count != DEFAULT_READ_COUNT):
+	print("Ignoring -c flag: only valid for READ command.")
+
+if(args.multi and command != COMMAND_SEND):
+	print("Ignoring -m flag: only valid for SEND command.")
+
+# ----- Contact the server ----- #
+if(command == COMMAND_SEND):
+	first_send = True
+	#send at least one message, but keep looping if -m was given
+	while(first_send or args.multi):
+		first_send = False
+		#get msg, end with double newline
+		print("Enter message (CTRL + C to cancel): ")
+		try:
+			msg_input = ""
+			while True:
+				line = input()
+				if line.strip() == "":
+					break
+				msg_input += "%s\n" % line
+
+			#add the message to to_send
+			to_send_full = to_send + msg_input + "\n"
+
+			sock = connect()
+			sock.send(to_send_full.encode())
+
+			print(receive_all(sock))
+			sock.close()
+		#exception occurs when sigint is sent
+		except EOFError as e:
+			print("\nSend cancelled.")
+			quit()
  
-elif(command == "read"):
+elif(command == COMMAND_READ):
 	sock = connect()
 	sock.send(to_send.encode())
  
-	print(receiveAll());
+	print(receive_all(sock));
 
 	sock.close()
-elif(command == "help"):
-	displayHelp()
+elif(command == COMMAND_UNRE):
+	print("Sorry- Unread not implemented yet. Coming soon!")
 else:
-	print("Command \"{}\" not recognized :(".format(command))
-	displayHelp()
+	print("Command \"{}\" not recognized.\n".format(command))
+	parser.print_help()
