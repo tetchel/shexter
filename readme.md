@@ -12,4 +12,6 @@ You must [enable installation from unknown sources](http://www.androidcentral.co
 
 In order to start using Shexter you must edit the client .py file to use your subnet IP address, which can be found by opening the Shexter app on your phone. The IP should stay the same until you reboot your router, but if the client starts freezing or is otherwise failing check if it has changed. Obviously I will change this in the future to be more user friendly.
 
-Then, on linux, cd to the directory with the shexter files and run the installer to have Shexter accessible from anywhere. No installer exists yet for Windows.
+Then, on Linux, cd to the directory with the shexter files and run the installer to have Shexter accessible from anywhere. 
+
+No installer exists yet for Windows.
