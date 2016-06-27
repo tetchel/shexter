@@ -8,8 +8,8 @@ import argparse
 
 PORT = 5678
 def connect():
-	#Enter the IP address given in the Shexter app here!
-	ip_addr = "192.168.1.101"
+	##### ENTER YOUR IP ADDRESS FROM THE APP HERE #####
+	ip_addr = '192.168.1.101'
 
 	#print("Preparing to connect...")
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -20,11 +20,11 @@ def connect():
 	except OSError as e:
 		errorcode = e.errno
 		if errorcode == errno.ECONNREFUSED:
-			print("Connection refused: "
-				+ "Likely Shexter is not running on your phone.")
+			print('Connection refused: '
+				+ 'Likely Shexter is not running on your phone.')
 			quit()
 		elif errorcode == errno.ETIMEDOUT:
-			print("Connection timeout: Likely bad IP address.")	
+			print('Connection timeout: Likely bad IP address.')	
 			quit()
 		else:
 			raise e
@@ -59,14 +59,15 @@ DEFAULT_READ_COUNT = 30
 parser = argparse.ArgumentParser(description='Send and read texts using your ' + 
 	'Android phone from the command line.')
 parser.add_argument('command', type=str,
-	help='Possible commands: Send [Contact Name], Read [Contact Name], Unread.')
-parser.add_argument('contact_name', type=str, nargs="*", 
-	help="Specify contact for SEND and READ commands.")
+	help='Possible commands: Send [Contact Name], Read [Contact Name], Unread. ' +
+	'Not case sensitive.')
+parser.add_argument('contact_name', type=str, nargs='*', 
+	help='Specify contact for SEND and READ commands.')
 parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
-	help="Specify how many messages to retrieve with the READ command.")
+	help='Specify how many messages to retrieve with the READ command.')
 parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
-	help="Keep entering new messages to SEND until cancel signal is given. " + 
-	"Useful for sending multiple texts in succession.")
+	help='Keep entering new messages to SEND until cancel signal is given. ' + 
+	'Useful for sending multiple texts in succession.')
 
 args = parser.parse_args()
 #print(args)
@@ -84,7 +85,7 @@ if(command == COMMAND_SEND or command == COMMAND_READ):
 	#require a contact name
 	contact_name_len = len(args.contact_name)
 	if(contact_name_len == 0):
-		print("You must specify a Contact Name for Send and Read commands.")
+		print('You must specify a Contact Name for Send and Read commands.')
 		quit()
 
 	for name in args.contact_name:
@@ -100,13 +101,13 @@ READ_COUNT_LIMIT = 5000
 #For read commands, include the number of messages requested
 if(command == COMMAND_READ):
 	if(args.count > READ_COUNT_LIMIT):
-		print("Retrieving the maximum number of messages: " + str(READ_COUNT_LIMIT))
+		print('Retrieving the maximum number of messages: ' + str(READ_COUNT_LIMIT))
 	to_send += str(args.count) + '\n'
 elif(args.count != DEFAULT_READ_COUNT):
-	print("Ignoring -c flag: only valid for READ command.")
+	print('Ignoring -c flag: only valid for READ command.')
 
 if(args.multi and command != COMMAND_SEND):
-	print("Ignoring -m flag: only valid for SEND command.")
+	print('Ignoring -m flag: only valid for SEND command.')
 
 # ----- Contact the server ----- #
 if(command == COMMAND_SEND):
@@ -115,7 +116,7 @@ if(command == COMMAND_SEND):
 	while(first_send or args.multi):
 		first_send = False
 		#get msg, end with double newline
-		print("Enter message (CTRL + C to cancel): ")
+		print('Enter message (CTRL + C to cancel): ')
 		try:
 			msg_input = ""
 			while True:
@@ -134,7 +135,7 @@ if(command == COMMAND_SEND):
 			sock.close()
 		#exception occurs when sigint is sent
 		except EOFError as e:
-			print("\nSend cancelled.")
+			print('\nSend cancelled.')
 			quit()
  
 elif(command == COMMAND_READ):
@@ -145,7 +146,7 @@ elif(command == COMMAND_READ):
 
 	sock.close()
 elif(command == COMMAND_UNRE):
-	print("Sorry- Unread not implemented yet. Coming soon!")
+	print('Sorry- Unread not implemented yet. Coming soon!')
 else:
-	print("Command \"{}\" not recognized.\n".format(command))
+	print('Command \"{}\" not recognized.\n'.format(command))
 	parser.print_help()
