@@ -51,6 +51,13 @@ def receive_all(sock) :
 
 	return decoded
 
+#Override useless python 2 input for pseudo backwards compatibility
+
+try:
+	input = raw_input
+except NameError:
+	pass
+
 # ----- Main script ----- #
 
 DEFAULT_READ_COUNT = 30
@@ -116,7 +123,7 @@ if(command == COMMAND_SEND):
 	while(first_send or args.multi):
 		first_send = False
 		#get msg, end with double newline
-		print('Enter message (CTRL + C to cancel): ')
+		print('Enter message (Press Enter twice to send, CTRL + C to cancel): ')
 		try:
 			msg_input = ""
 			while True:
@@ -134,7 +141,7 @@ if(command == COMMAND_SEND):
 			print(receive_all(sock))
 			sock.close()
 		#exception occurs when sigint is sent
-		except EOFError as e:
+		except (EOFError, KeyboardInterrupt):
 			print('\nSend cancelled.')
 			quit()
  

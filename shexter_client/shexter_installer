@@ -7,11 +7,26 @@
 if [ "$(id -u)" != "0" ]; then
 	echo "You must run this installer as sudo since it writes to /usr/bin and /opt/"
 	exit 1
-else
-	if [ ! -d /opt/ ]; then
-		mkdir /opt/
-	fi
-	cp ./shexter.py /opt/
-	cp ./shexter /usr/bin
-	echo "Success!"
 fi
+
+if [ -f /opt/shexter.py ]; then
+	rm /opt/shexter.py
+fi
+if [ -f /usr/bin/shexter ]; then
+	rm /usr/bin/shexter
+fi
+
+if [ ! -d /opt/ ]; then
+	mkdir /opt/
+fi
+
+cp ./shexter.py /opt/
+cp ./shexter /usr/bin
+
+if [ -f /opt/shexter.py ] && [ -f /usr/bin/shexter ]; then
+	chmod a+x /usr/bin/shexter
+	echo "Success!"
+else
+	echo "Something went wrong."
+fi
+
