@@ -123,6 +123,10 @@ public class SmsServerService extends Service {
 
                         String message = msgBodyBuilder.toString();
                         //chop off last newline
+                        if(message.isEmpty()) {
+                            sendReply(replyStream, "Not sent: message body was empty.");
+                            continue;
+                        }
                         message = message.substring(0, message.length()-1);
 
                         SmsSendThread sendThread = new SmsSendThread();
@@ -144,6 +148,7 @@ public class SmsServerService extends Service {
                         }
                     }
                     else if(command.equals("read")) {
+                        //TODO mark all messages in this conversation as 'read' (if possible)
                         int numberToRetrieve = Integer.parseInt(in_reader.readLine());
                         //Log.d(TAG, "" + numberToRetrieve);
 
