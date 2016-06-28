@@ -47,7 +47,8 @@ def receive_all(sock) :
                 recvd_len += len(recvd)
         #TODO handle fancy characters better (maybe server-side)
         #try:
-        decoded = data.decode('ascii', 'ignore')
+        decoded = data.decode('utf-8', 'strict')
+        #decoded = data.decode('ascii', 'ignore')
         #except UnicodeDecodeError as e:
                 #print("Trying UTF-8")
                 #decoded = recvd.decode('unicode_escape')
