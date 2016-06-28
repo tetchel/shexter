@@ -76,7 +76,7 @@ parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
 parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
 	help='Keep entering new messages to SEND until cancel signal is given. ' + 
 	'Useful for sending multiple texts in succession.')
-#TODO -n flag, allowing sending/reading for numbers instead of contacts.
+#TODO -n --number flag, allowing sending/reading for numbers instead of contacts.
 
 args = parser.parse_args()
 #print(args)
