@@ -223,7 +223,7 @@ public class SmsServerService extends Service {
      * <li>Just be the normal 10-digit-only number.</li>
      * </ul>
      * In this function, build a WHERE clause
-     * for the 'selection' parameter of the query to try and cover all these bases. <br>
+     * for the 'selection' parameter of the sms query to try and cover all these bases. <br>
      * Will have to add more as they come along.
      * @param contactNumber Phone number to turn into various forms and be matched using OR. Must
      *                      already be stripped to digits by contact getting code.

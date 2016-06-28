@@ -13,7 +13,7 @@ def connect():
 
 	#print("Preparing to connect...")
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.settimeout(99999)
+	sock.settimeout(60)
 	try:
 		sock.connect((ip_addr, PORT))
 		#print("Connect succeeded!")
