@@ -9,7 +9,7 @@ import configparser
 
 config = configparser.ConfigParser()
 config.read('settings.ini')
-PORT = int(config['Settings']['Port'])
+port = int(config['Settings']['Port'])
 ip_addr = config['Settings']['SlaveIP']
 
 def connect():
@@ -17,7 +17,7 @@ def connect():
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(60)
         try:
-                sock.connect((ip_addr, PORT))
+                sock.connect((ip_addr, port))
                 #print("Connect succeeded!")
         except OSError as e:
                 errorcode = e.errno
