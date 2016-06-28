@@ -30,7 +30,7 @@ For `rxvt-unicode`, a popular terminal emulator, you can set the current line in
 
 The first font is a bitmap font in XLFD format. The other two are Xft. The order depicts the glyph priority if there is overlap.
 
-So this setting would show Terminus for ASCII, WenQuanYi Micro Hei Mono for Chinese, and the wideS-ymbola for remaining Unicode characters such as emoji.
+So this setting would show Terminus for ASCII, WenQuanYi Micro Hei Mono for Chinese, and the Symbola for remaining Unicode characters such as emoji.
 
 **To do**: fix support for Noto Emoji, which is the same font that Android uses.
 
