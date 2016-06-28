@@ -26,6 +26,14 @@ public class Utilities {
     }
 
     /**
+     * Turns 1231231234 into 123-123-1234
+     */
+    public static String hyphenatePhoneNumber(String phoneNumber) {
+        return phoneNumber.substring(0,3) + '-' + phoneNumber.substring(3, 6) + '-'
+                + phoneNumber.substring(6);
+    }
+
+    /**
      * Determine how old the message is and return a date label depending on the current date.
      * @param unixTime Unix time in milliseconds to be converted to date label.
      * @return Date label depending on how long ago the date was - eg Today, Yesterday,

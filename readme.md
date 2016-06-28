@@ -14,10 +14,12 @@ Then, on Linux, cd to the directory with the shexter files and run the installer
 
 No installer exists yet for Windows.
 
+Note that, for now, Shexter ignores MMS messages altogether. This can be a problem when communicating with iPhone users who send MMS and don't realize it.
+
 ##App Setup
 
 You must [enable installation from unknown sources](http://www.androidcentral.com/allow-app-installs-unknown-sources) in order to be able to install the apk.
 
-Requires Contacts and SMS permissions.
+Requires Contacts and SMS permissions. The app does not yet request permissions, so you must enable them yourself in Settings > Apps > Shexter > Permissions
 
-You may want to check your Security settings for your SMS message limit setting.
+You may want to check your Security settings for your SMS message limit setting, which can prevent Shexter from sending frequent messages.

@@ -49,6 +49,8 @@ public class SmsServerService extends Service {
         serverThread = new ServerThread();
         serverThread.start();
 
+        //TODO ask for permission
+
         return START_STICKY;
     }
 
@@ -73,10 +75,11 @@ public class SmsServerService extends Service {
             }
             catch(IOException e) {
                 Log.e(TAG, "Exception opening ServerSocket", e);
+                //TODO terminate the thread / ask the user to restart the app or something
             }
             while(!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {
-                    //Log.d(TAG, "Ready to accept");
+                    Log.d(TAG, "Ready to accept");
                     Socket socket = serverSocket.accept();
                     //reader from socket
                     BufferedReader in_reader = new BufferedReader(
@@ -93,7 +96,7 @@ public class SmsServerService extends Service {
                     //then get the contact's phone number from his/her name
                     String[] contactInfo = null;
                     try {
-                        contactInfo = getContactInfo(contact_name_input, SmsServerService.this);
+                        contactInfo = getContactInfo(contact_name_input);
 
                         if(contactInfo == null) {
                             //non existent contact
@@ -122,11 +125,13 @@ public class SmsServerService extends Service {
                         }
 
                         String message = msgBodyBuilder.toString();
-                        //chop off last newline
                         if(message.isEmpty()) {
+                            //this is already checked client-side, but just to be safe...
                             sendReply(replyStream, "Not sent: message body was empty.");
                             continue;
                         }
+
+                        //chop off last newline
                         message = message.substring(0, message.length()-1);
 
                         SmsSendThread sendThread = new SmsSendThread();
@@ -136,15 +141,19 @@ public class SmsServerService extends Service {
                             if(result) {
                                 sendReply(replyStream, "Successfully sent message to " +
                                         contactInfo[1] + ".");
+                                Log.d(TAG, "Successful send to " + contactInfo[1] + ", " +
+                                        contactInfo[0]);
                             }
                             else {
                                 sendReply(replyStream, "Could not send message: make sure " +
                                         getString(R.string.app_name) + " has SMS permission.");
+                                Log.w(TAG, "No SMS permission for sending.");
                             }
                         }
                         catch(InterruptedException | ExecutionException e) {
                             sendReply(replyStream, "Serious error in the SMS send thread; " +
                                     "please report this issue on GitHub.");
+                            Log.e(TAG, "Exception from sendThread", e);
                         }
                     }
                     else if(command.equals("read")) {
@@ -159,12 +168,14 @@ public class SmsServerService extends Service {
                             if(convo != null)
                                 sendReply(replyStream, convo);
                             else
-                                sendReply(replyStream, "Error occurred getting conversation with "
-                                        + contactInfo[1] + ".");
+                                sendReply(replyStream, "No messages found with " +
+                                        contactInfo[1] + ".");
+
                         }
                         catch(SecurityException e) {
                             sendReply(replyStream, "Could not retrieve messages: make sure " +
                                     getString(R.string.app_name) + " has SMS permission.");
+                            Log.w(TAG, "No SMS permission for reading.");
                         }
                     }
                     else {
@@ -191,13 +202,7 @@ public class SmsServerService extends Service {
         final int HEADER_LEN = 32;
         String lenStr = "" + len;
 
-        //TODO implement messages with lengths longer than 32 digits in base 10 (really long...)
-        /*
-        while(lenStr.length() > HEADER_LEN) {
-            lenStr = "" + len;
-            //break it up into multiple messages
-
-        }*/
+        //if msg.length() >= 10^32, the stream will get stuck. this _probably_ won't happen.
         if(lenStr.length() < HEADER_LEN) {
             //right-pad the header with spaces
             lenStr = String.format("%1$-" + HEADER_LEN + "s", lenStr);
@@ -208,28 +213,78 @@ public class SmsServerService extends Service {
     }
 
     /**
-     * Gets the conversation with a given contact.
-     * @param contactInfo Array with [0] as the contact's phone number, [1] as their name in the DB.
-     * @param numberToRetrieve How many texts to retrieve.
-     * @return Formatted list of texts with dates, timestamps, sender name.
-     * @throws SecurityException If SMS permission is not given.
+     * There are many different 'valid' forms of phone number. <br>
+     * It can:
+     * <ul>
+     * <li>Start with '+1' in addition to the regular 10 digits.</li>
+     * <li>Start with '1' in addition to the regular 10 digits.</li>
+     * <li>Start with 1 or +1 and have a space after the prefix.</li>
+     * <li>Be hyphenated or not, including with any of the above prefixes.</li>
+     * <li>Just be the normal 10-digit-only number.</li>
+     * </ul>
+     * In this function, build a WHERE clause
+     * for the 'selection' parameter of the query to try and cover all these bases. <br>
+     * Will have to add more as they come along.
+     * @param contactNumber Phone number to turn into various forms and be matched using OR. Must
+     *                      already be stripped to digits by contact getting code.
+     * @return A SQL WHERE clause (without the WHERE) which allows the phone number to match any
+     * of these forms.
      */
+    private String buildWhereClause(String contactNumber) {
+        StringBuilder whereBuilder = new StringBuilder();
+        final String addr = "address='";
+        final String OR = "' OR ";
+        //In case the 1 is already included:
+        if(contactNumber.length() != 10) {
+            //cut off the 1
+            contactNumber = contactNumber.substring(1);
+            if(contactNumber.length() != 11) {
+                Log.e(TAG, "buildWhereClause received invalid phone number: " + contactNumber);
+            }
+        }
+
+        //+1 at start
+        whereBuilder.append(addr).append("+1").append(contactNumber).append(OR);
+        //1 at start
+        whereBuilder.append(addr).append("1").append(contactNumber).append(OR);
+        //+1  at start
+        whereBuilder.append(addr).append("+1 ").append(contactNumber).append(OR);
+        //1  at start
+        whereBuilder.append(addr).append("1 ").append(contactNumber).append(OR);
+
+        //same as above, but hyphenated
+        String hyphenated = Utilities.hyphenatePhoneNumber(contactNumber);
+        whereBuilder.append(addr).append(hyphenated).append(OR);
+        whereBuilder.append(addr).append("+1").append(hyphenated).append(OR);
+        whereBuilder.append(addr).append("1").append(hyphenated).append(OR);
+        whereBuilder.append(addr).append("+1 ").append(hyphenated).append(OR);
+        whereBuilder.append(addr).append("1 ").append(hyphenated).append(OR);
+
+        //normal
+        whereBuilder.append(addr).append(contactNumber).append('\'');
+
+        return whereBuilder.toString();
+    }
+
     private String getConversation(String[] contactInfo, int numberToRetrieve)
             throws SecurityException {
         ContentResolver contentResolver = getContentResolver();
-        final String[] projection = new String[]{"date", "body", "type"};
-        final String selection = "address=" + Utilities.removeNonDigitCharacters(contactInfo[0]);
+        final String[] projection = new String[]{"date", "body", "type", "address"};
+        final String selection = buildWhereClause(contactInfo[0]);
         Uri uri = Uri.parse("content://sms/");
         Cursor query = contentResolver.query(uri, projection, selection, null, "date desc");
-        //TODO bugs out on some numbers (allan, joseph, dad) but why these ones???
+        Log.d(TAG, "Query selection is " + selection);
 
         if(query == null) {
-            Log.e(TAG, "Null Cursor trying to get conversation with " + contactInfo[1]);
+            Log.e(TAG, "Null Cursor trying to get conversation with " + contactInfo[1] + ", # " +
+                    contactInfo[0]);
             return null;
         }
         else if(query.getCount() == 0) {
-            Log.e(TAG, "No result trying to get conversation with " + contactInfo[1]);
+            Log.e(TAG, "No result trying to get conversation with " + contactInfo[1] + ", # " +
+                    contactInfo[0]);
             query.close();
+
             return null;
         }
 
@@ -242,6 +297,9 @@ public class SmsServerService extends Service {
         int index_body = query.getColumnIndex("body");
         int index_type = query.getColumnIndex("type");
 
+        Log.d(TAG, "Successful sms query for " + contactInfo[1] + ", address is " +
+                query.getString(query.getColumnIndex("address")));
+
         do {
             String body = query.getString(index_body);
             int msgType = query.getInt(index_type);
@@ -251,14 +309,14 @@ public class SmsServerService extends Service {
 
             //TODO format better, especially with texts with newlines in them and long texts
             //a left/right conversation display like real texting would be stellar!
-            String niceTime = Utilities.unixTimeToTime(time);
-            messageBuilder.append('[').append(niceTime).append("] ");
+            String niceTime = '[' +  Utilities.unixTimeToTime(time) + "] ";
+            messageBuilder.append(niceTime);
 
             if(msgType == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_INBOX) {
                 messageBuilder.append(contactInfo[1]).append(": ").append(body);
             }
             else if(msgType == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_SENT) {
-                messageBuilder.append("You: ").append(body);
+                messageBuilder.append("You").append(": ").append(body);
             }
 
             times.add(time);
@@ -308,7 +366,7 @@ public class SmsServerService extends Service {
      * and [1] is the contact's name as stored in the phone. Returns null if contact not found.
      * @throws SecurityException If Contacts permission is not given.
      */
-    private String[] getContactInfo(String name, Context context) throws SecurityException {
+    private String[] getContactInfo(String name) throws SecurityException {
         //TODO what if they have multiple phone numbers
         String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
                 " like'%" + name + "%'";
@@ -316,7 +374,7 @@ public class SmsServerService extends Service {
                 ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME};
         Cursor c;
         try {
-            c = context.getContentResolver().query(
+            c = getContentResolver().query(
                     ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                     projection, selection, null, null);
         } catch (SecurityException e) {
@@ -331,7 +389,7 @@ public class SmsServerService extends Service {
                     //maybe here could get the contact full name too and return that
                     //for a confirmation message, eg. "Sent to Contact Name"
                     //number
-                    contactInfo[0] = c.getString(0);
+                    contactInfo[0] = Utilities.removeNonDigitCharacters(c.getString(0));
                     //name as stored in contacts
                     contactInfo[1] = c.getString(1);
                 } else {
@@ -352,7 +410,7 @@ public class SmsServerService extends Service {
     }
 
     /**
-     * A message and
+     * Accepts a message and a phone number, and sends the message. Returns success.
      */
     private class SmsSendThread extends AsyncTask<String, Void, Boolean> {
         @Override

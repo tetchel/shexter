@@ -13,7 +13,7 @@ def connect():
 
 	#print("Preparing to connect...")
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.settimeout(60)
+	sock.settimeout(99999)
 	try:
 		sock.connect((ip_addr, PORT))
 		#print("Connect succeeded!")
@@ -36,6 +36,7 @@ BUFFSIZE = 8192
 def receive_all(sock) :
 	data = b''
 	#receive the header to determine how long the message will be
+	#TODO handle empty headers when server has problems
 	header = int(sock.recv(HEADER_LEN).decode())
 	recvd_len = 0
 	while recvd_len < header:
@@ -50,6 +51,13 @@ def receive_all(sock) :
 		#decoded = recvd.decode('unicode_escape')
 
 	return decoded
+
+ #Override useless python 2 input for pseudo backwards compatibility
+
+try:
+	input = raw_input
+except NameError:
+	pass
 
 # ----- Main script ----- #
 
@@ -68,6 +76,7 @@ parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
 parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
 	help='Keep entering new messages to SEND until cancel signal is given. ' + 
 	'Useful for sending multiple texts in succession.')
+#TODO -n flag, allowing sending/reading for numbers instead of contacts.
 
 args = parser.parse_args()
 #print(args)
@@ -102,6 +111,8 @@ READ_COUNT_LIMIT = 5000
 if(command == COMMAND_READ):
 	if(args.count > READ_COUNT_LIMIT):
 		print('Retrieving the maximum number of messages: ' + str(READ_COUNT_LIMIT))
+		args.count = READ_COUNT_LIMIT
+
 	to_send += str(args.count) + '\n'
 elif(args.count != DEFAULT_READ_COUNT):
 	print('Ignoring -c flag: only valid for READ command.')
@@ -116,25 +127,33 @@ if(command == COMMAND_SEND):
 	while(first_send or args.multi):
 		first_send = False
 		#get msg, end with double newline
-		print('Enter message (CTRL + C to cancel): ')
+		print('Enter message (Press Enter twice to send, CTRL + C to cancel): ')
 		try:
 			msg_input = ""
+			#allows newline at start of message, just in case you want that
+			first = True
 			while True:
 				line = input()
-				if line.strip() == "":
+				if line.strip() == "" and not first:
 					break
+				first = False
 				msg_input += "%s\n" % line
 
-			#add the message to to_send
-			to_send_full = to_send + msg_input + "\n"
+			#if not empty
+			if(len(msg_input.strip()) != 0):
+				#add the message to to_send
+				to_send_full = to_send + msg_input + "\n"
 
-			sock = connect()
-			sock.send(to_send_full.encode())
+				sock = connect()
+				sock.send(to_send_full.encode())
 
-			print(receive_all(sock))
-			sock.close()
+				print(receive_all(sock))
+				sock.close()
+			else:
+				print("Not sent: message body was empty.")
+
 		#exception occurs when sigint is sent
-		except EOFError as e:
+		except (EOFError, KeyboardInterrupt):
 			print('\nSend cancelled.')
 			quit()
  
