@@ -18,6 +18,22 @@ The Windows installer does not yet work.
 
 Note that, for now, Shexter ignores MMS messages altogether. This can be a problem when communicating with users who send MMS and don't realize it.
 
+### Fonts
+
+You are probably going to want Unicode font support in your terminal so your Unicode characters do not show as blocks.
+
+**screenshots comming soon**
+
+On Linux:
+For `rxvt-unicode`, a popular terminal emulator, you can set the current line in your `.Xresources`:
+`URxvt*font: -xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1, xft:WenQuanYi Micro Hei Mono,style=Regular, xft:Symbola`
+
+The first font is a bitmap font in XLFD format. The other two are Xft. The order depicts the glyph priority if there is overlap.
+
+So this setting would show Terminus for ASCII, WenQuanYi Micro Hei Mono for Chinese, and the wideS-ymbola for remaining Unicode characters such as emoji.
+
+**To do**: fix support for Noto Emoji, which is the same font that Android uses.
+
 ##App Setup
 
 You must [enable installation from unknown sources](http://www.androidcentral.com/allow-app-installs-unknown-sources) in order to be able to install the apk.
