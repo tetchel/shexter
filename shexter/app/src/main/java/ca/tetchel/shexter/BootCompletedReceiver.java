@@ -6,6 +6,7 @@ import android.content.Intent;
 
 /**
  * Receives an Intent when the phone finishes booting which triggers starting the SmsServerService.
+ * //TODO need a way to stop/start the service (from UI)
  */
 public class BootCompletedReceiver extends BroadcastReceiver {
     @Override

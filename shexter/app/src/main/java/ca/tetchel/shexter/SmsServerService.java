@@ -275,6 +275,8 @@ public class SmsServerService extends Service {
         Cursor query = contentResolver.query(uri, projection, selection, null, "date desc");
         Log.d(TAG, "Query selection is " + selection);
 
+        //TODO fix some of noah's messages not appearing. Need to query texts from both sender and
+        //receiver, and inspect both of their phone numbers ('address'es)
         if(query == null) {
             Log.e(TAG, "Null Cursor trying to get conversation with " + contactInfo[1] + ", # " +
                     contactInfo[0]);
@@ -386,9 +388,6 @@ public class SmsServerService extends Service {
         try {
             if (c != null) {
                 if (c.moveToFirst()) {
-                    //maybe here could get the contact full name too and return that
-                    //for a confirmation message, eg. "Sent to Contact Name"
-                    //number
                     contactInfo[0] = Utilities.removeNonDigitCharacters(c.getString(0));
                     //name as stored in contacts
                     contactInfo[1] = c.getString(1);
@@ -415,7 +414,7 @@ public class SmsServerService extends Service {
     private class SmsSendThread extends AsyncTask<String, Void, Boolean> {
         @Override
         protected Boolean doInBackground(String... params) {
-            //Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
+            Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
 
             SmsManager sms = SmsManager.getDefault();
 
@@ -423,7 +422,7 @@ public class SmsServerService extends Service {
                 sms.sendTextMessage(params[0], null, params[1], null, null);
             }
             catch(SecurityException se) {
-                Log.e(TAG, "No SMS permission when sending.");
+                Log.w(TAG, "No SMS permission when sending.");
                 return false;
             }
             catch(Exception e) {
