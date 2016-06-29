@@ -7,6 +7,11 @@ import socket
 import errno
 import argparse
 import configparser
+import appdirs
+
+##### Setting platform-specific dirs #####
+from appdirs import *
+APPNAME = 'Shexter'
 
 # Override useless python 2 input for pseudo backwards compatibility
 # TODO python 2 compatibility ?
@@ -16,8 +21,6 @@ except NameError:
     pass
 
 ##### Functions #####
-
-SETTINGS_FILE_NAME = 'shexter.ini'
 DEFAULT_PORT = 5678
 
 port = DEFAULT_PORT
@@ -110,6 +113,7 @@ def new_settings_file(settings_fullpath) :
 
     #  configure the new settings and then write it into the file
     configfile = open(settings_fullpath, 'w')
+    #configfile = open(user_config_dir(APPNAME), 'w')
     config = configparser.ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
     config.set(SETTING_SECTION_NAME, SETTING_IP, new_ip_addr)
@@ -118,8 +122,8 @@ def new_settings_file(settings_fullpath) :
     configfile.close()
 
 ##### Config Setup #####
-
-settings_fullpath = sys.path[0] + '/' + SETTINGS_FILE_NAME
+#settings_fullpath = os.path.join(user_config_dir(APPNAME), 'shexter.ini') # I may use this after finding out the location on Windows/Mac
+settings_fullpath = user_config_dir(APPNAME.lower()) + 'rc'
 
 config = configparser.ConfigParser()
 config.read(settings_fullpath)
@@ -129,10 +133,10 @@ try:
     # validate IP
     socket.inet_aton(ip_addr)
 except KeyError:
-    print('Error parsing ' + SETTINGS_FILE_NAME + '. Making a new one.')
+    print('Error parsing ' + settings_fullpath + '. Making a new one.')
     new_settings_file(settings_fullpath)
 except OSError:
-    print('Bad IP ' + ip_addr + ' found in ' + SETTINGS_FILE_NAME + '. Making a new one.')
+    print('Bad IP ' + ip_addr + ' found in ' + settings_fullpath + '. Making a new one.')
     new_settings_file(settings_fullpath)
 
 ##### Arg parser #####
