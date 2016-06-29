@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+# creates a todo list via TODO comments
+
+grep -rnE --exclude=todo.txt '[#/] ?TODO' | sed 's/  //g' | sed 's/$/&\n/' > todo.txt
+echo
+touch .commit
+exit
