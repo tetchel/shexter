@@ -10,6 +10,7 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.util.Log;
 import android.widget.Toast;
@@ -212,68 +213,14 @@ public class SmsServerService extends Service {
         replyStream.println(response);
     }
 
-    /**
-     * There are many different 'valid' forms of phone number. <br>
-     * It can:
-     * <ul>
-     * <li>Start with '+1' in addition to the regular 10 digits.</li>
-     * <li>Start with '1' in addition to the regular 10 digits.</li>
-     * <li>Start with 1 or +1 and have a space after the prefix.</li>
-     * <li>Be hyphenated or not, including with any of the above prefixes.</li>
-     * <li>Just be the normal 10-digit-only number.</li>
-     * </ul>
-     * In this function, build a WHERE clause
-     * for the 'selection' parameter of the sms query to try and cover all these bases. <br>
-     * Will have to add more as they come along.
-     * @param contactNumber Phone number to turn into various forms and be matched using OR. Must
-     *                      already be stripped to digits by contact getting code.
-     * @return A SQL WHERE clause (without the WHERE) which allows the phone number to match any
-     * of these forms.
-     */
-    private String buildWhereClause(String contactNumber) {
-        StringBuilder whereBuilder = new StringBuilder();
-        final String addr = "address='";
-        final String OR = "' OR ";
-        //In case the 1 is already included:
-        if(contactNumber.length() != 10) {
-            //cut off the 1
-            contactNumber = contactNumber.substring(1);
-            if(contactNumber.length() != 11) {
-                Log.e(TAG, "buildWhereClause received invalid phone number: " + contactNumber);
-            }
-        }
-
-        //+1 at start
-        whereBuilder.append(addr).append("+1").append(contactNumber).append(OR);
-        //1 at start
-        whereBuilder.append(addr).append("1").append(contactNumber).append(OR);
-        //+1  at start
-        whereBuilder.append(addr).append("+1 ").append(contactNumber).append(OR);
-        //1  at start
-        whereBuilder.append(addr).append("1 ").append(contactNumber).append(OR);
-
-        //same as above, but hyphenated
-        String hyphenated = Utilities.hyphenatePhoneNumber(contactNumber);
-        whereBuilder.append(addr).append(hyphenated).append(OR);
-        whereBuilder.append(addr).append("+1").append(hyphenated).append(OR);
-        whereBuilder.append(addr).append("1").append(hyphenated).append(OR);
-        whereBuilder.append(addr).append("+1 ").append(hyphenated).append(OR);
-        whereBuilder.append(addr).append("1 ").append(hyphenated).append(OR);
-
-        //normal
-        whereBuilder.append(addr).append(contactNumber).append('\'');
-
-        return whereBuilder.toString();
-    }
-
     private String getConversation(String[] contactInfo, int numberToRetrieve)
             throws SecurityException {
         ContentResolver contentResolver = getContentResolver();
         final String[] projection = new String[]{"date", "body", "type", "address"};
-        final String selection = buildWhereClause(contactInfo[0]);
+        //final String selection = buildWhereClause(contactInfo[0]);
         Uri uri = Uri.parse("content://sms/");
-        Cursor query = contentResolver.query(uri, projection, selection, null, "date desc");
-        Log.d(TAG, "Query selection is " + selection);
+        Cursor query = contentResolver.query(uri, projection, null, null, "date desc");
+        //Log.d(TAG, "Query selection is " + selection);
 
         //TODO fix some of noah's messages not appearing. Need to query texts from both sender and
         //receiver, and inspect both of their phone numbers ('address'es)
@@ -285,44 +232,70 @@ public class SmsServerService extends Service {
         else if(query.getCount() == 0) {
             Log.e(TAG, "No result trying to get conversation with " + contactInfo[1] + ", # " +
                     contactInfo[0]);
-            query.close();
 
+            query.close();
             return null;
         }
 
         int count = 0;
-        List<String> conversations = new ArrayList<>(numberToRetrieve);
+        List<String> messages = new ArrayList<>(numberToRetrieve);
         List<Long> times = new ArrayList<>(numberToRetrieve);
 
         query.moveToFirst();
         int index_date = query.getColumnIndex("date");
         int index_body = query.getColumnIndex("body");
         int index_type = query.getColumnIndex("type");
+        int index_addr = query.getColumnIndex("address");
 
         Log.d(TAG, "Successful sms query for " + contactInfo[1] + ", address is " +
                 query.getString(query.getColumnIndex("address")));
 
         do {
+            String addr = query.getString(index_addr);
+            //Skip all texts that aren't from the requested contact.
+            if(!PhoneNumberUtils.compare(addr, contactInfo[0]))
+                continue;
+
             String body = query.getString(index_body);
-            int msgType = query.getInt(index_type);
+            int type = query.getInt(index_type);
             long time = query.getLong(index_date);
 
             StringBuilder messageBuilder = new StringBuilder();
 
-            //TODO format better, especially with texts with newlines in them and long texts
             //a left/right conversation display like real texting would be stellar!
             String niceTime = '[' +  Utilities.unixTimeToTime(time) + "] ";
             messageBuilder.append(niceTime);
 
-            if(msgType == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_INBOX) {
-                messageBuilder.append(contactInfo[1]).append(": ").append(body);
-            }
-            else if(msgType == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_SENT) {
-                messageBuilder.append("You").append(": ").append(body);
+            //add sender to the message
+            String sender = "You: ";
+            if(type == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_INBOX) {
+                sender = contactInfo[1] + ": ";
             }
 
+            messageBuilder.append(sender);
+
+            final int LINE_LEN = 100;
+            //keep lines shorter than LINE_LEN chars. User could configure this, but not through the
+            //client, unless there were other settings so could implement a settings request.
+            //Could have Client Settings (.ini) and Server Settings (through app)
+            int remainingLineChars = LINE_LEN - niceTime.length() - sender.length();
+            int bodyIndex = 0;
+            while(bodyIndex < body.length()) {
+                int remaining = body.length() - bodyIndex;
+                String subBody;
+                if(remaining < remainingLineChars) {
+                    subBody = body.substring(bodyIndex);
+                }
+                else {
+                    subBody = body.substring(bodyIndex, bodyIndex + remainingLineChars) + '\n';
+                }
+                bodyIndex += subBody.length();
+                messageBuilder.append(subBody);
+            }
+            //TODO format message bodies with newlines in them better (inc. long ones)
+
             times.add(time);
-            conversations.add(messageBuilder.toString());
+            messages.add(messageBuilder.toString());
 
             count++;
         } while(query.moveToNext() && count < numberToRetrieve);
@@ -330,14 +303,14 @@ public class SmsServerService extends Service {
         query.close();
 
         //reverse the conversation messages so they can be read top-to-bottom as is natural
-        Collections.reverse(conversations);
+        Collections.reverse(messages);
         Collections.reverse(times);
 
         //combine the messages into one string to be sent to the client
         StringBuilder resultBuilder = new StringBuilder();
         //Generate and print a new date header each time the next message is from a different day
         String lastUsedDate = null;
-        for(int i = 0; i < conversations.size(); i++) {
+        for(int i = 0; i < messages.size(); i++) {
             String currentDate = Utilities.unixTimeToRelativeDate(times.get(i));
 
             if(lastUsedDate == null) {
@@ -356,7 +329,7 @@ public class SmsServerService extends Service {
                 resultBuilder.append("--- ").append(currentDate).append(" ---").append('\n');
             }
 
-            resultBuilder.append(conversations.get(i)).append('\n');
+            resultBuilder.append(messages.get(i)).append('\n');
         }
 
         return resultBuilder.toString();
@@ -414,7 +387,7 @@ public class SmsServerService extends Service {
     private class SmsSendThread extends AsyncTask<String, Void, Boolean> {
         @Override
         protected Boolean doInBackground(String... params) {
-            Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
+            Log.d(TAG, "About to send to " + params[0]);
 
             SmsManager sms = SmsManager.getDefault();
 

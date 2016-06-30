@@ -19,7 +19,7 @@ ip_addr = ''
 def connect():
     if(not ip_addr):
         print('No phone IP has been set. Delete your settings file and run the client again.')
-    print("Preparing to connect...")
+    print("Connecting...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(60)
     try:
@@ -34,8 +34,6 @@ def connect():
                     + 'or you are not on the same subnet. ' + TRY_RESTART_MSG)
             quit()
         elif errorcode == errno.ETIMEDOUT:
-            # TODO prompt for an IP address here and set it in the .ini 
-            # (reuse code from new_settings_file)
             print('Connection timeout: Likely bad IP address. ' + TRY_RESTART_MSG)
             quit()
         else:
@@ -50,7 +48,21 @@ def receive_all(sock) :
     data = b''
     # receive the header to determine how long the message will be
     # TODO handle empty headers when server has problems
-    header = int(sock.recv(HEADER_LEN).decode())
+    try:
+        recvd = sock.recv(HEADER_LEN).decode()
+        if not recvd:
+            raise ConnectionResetError
+    except ConnectionResetError:
+        print('Connection forcibly reset; this means the server crashed. Restart ' + APPNAME 
+            + ' on your phone and try again.')
+        quit()
+    except OSError as e:
+        if errorcode == errno.ETIMEDOUT:
+            print('Connection timeout: Server is frozen. Please report this bug on GitHub, and '
+                'try restarting Shexter on your phone.');
+            quit()
+
+    header = int(recvd)
     recvd_len = 0
     while recvd_len < header:
             recvd = sock.recv(BUFFSIZE)
