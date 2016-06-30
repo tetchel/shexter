@@ -12,21 +12,17 @@ shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:312://TODO fo
 
 shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:372://TODO what if they have multiple phone numbers
 
-shexter_client/shexter.py:12:# TODO python 2 compatibility ?
+shexter_client/shexter.py:37:# TODO prompt for an IP address here and set it in the .ini 
 
-shexter_client/shexter.py:43:# TODO prompt for an IP address here and set it in the .ini 
+shexter_client/shexter.py:52:# TODO handle empty headers when server has problems
 
-shexter_client/shexter.py:58:# TODO handle empty headers when server has problems
+shexter_client/shexter.py:60:# TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
 
-shexter_client/shexter.py:66:# TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
+shexter_client/shexter.py:174:# TODO -n --number flag, allowing sending/reading for numbers instead of contacts.
 
-shexter_client/shexter.py:155:# TODO -n --number flag, allowing sending/reading for numbers instead of contacts.
+shexter_client/shexter.py:224:# TODO allow backspacing of newlines.
 
-shexter_client/shexter.py:182:# TODO should remove special characters? are there limits on what can be in a contact name?
+shexter_client/shexter.py:242:# TODO Windows throws an encoding error here (not a box, an exception) if message
 
-shexter_client/shexter.py:214:# TODO allow backspacing of newlines.
-
-shexter_client/shexter.py:232:# TODO Windows throws an encoding error here (not a box, an exception) if message
-
-shexter_client/shexter.py:253:# TODO return a list of all unread messages. 
+shexter_client/shexter.py:263:# TODO return a list of all unread messages. 
 

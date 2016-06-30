@@ -7,18 +7,9 @@ import socket
 import errno
 import argparse
 import configparser
-import appdirs
-
-##### Setting platform-specific dirs #####
 from appdirs import *
-APPNAME = 'Shexter'
 
-# Override useless python 2 input for pseudo backwards compatibility
-# TODO python 2 compatibility ?
-try:
-    input = raw_input
-except NameError:
-    pass
+APPNAME = 'Shexter'
 
 ##### Functions #####
 DEFAULT_PORT = 5678
@@ -73,6 +64,7 @@ def receive_all(sock) :
 
     return decoded
 
+SETTINGS_FILE_NAME = APPNAME.lower() + '.ini'
 SETTING_SECTION_NAME = 'Settings'
 SETTING_IP = 'IP Address'
 SETTING_PORT = 'Port'
@@ -121,9 +113,32 @@ def new_settings_file(settings_fullpath) :
     config.write(configfile)
     configfile.close()
 
+def get_contact_name(args) :
+    contact_name = ''
+    for name in args.contact_name:
+        contact_name += name + ' '
+
+    contact_name = contact_name.strip()
+
+    while(not contact_name):
+        print('You must specify a Contact Name for Send and Read commands. Enter one now:')
+        try:
+            contact_name = input('Enter a new contact name (CTRL + C to give up): ').strip()
+        except (EOFError, KeyboardInterrupt):
+            #gave up
+            print()
+            quit()   
+
+    return contact_name
+
 ##### Config Setup #####
-#settings_fullpath = os.path.join(user_config_dir(APPNAME), 'shexter.ini') # I may use this after finding out the location on Windows/Mac
-settings_fullpath = user_config_dir(APPNAME.lower()) + 'rc'
+
+cfgdir = user_config_dir(APPNAME, 'tetchel')
+if not os.path.exists(cfgdir):
+    os.makedirs(cfgdir)
+
+settings_fullpath = os.path.join(cfgdir, SETTINGS_FILE_NAME) # I may use this after finding out the location on Windows/Mac
+#settings_fullpath = user_config_dir(APPNAME.lower()) + 'rc'
 
 config = configparser.ConfigParser()
 config.read(settings_fullpath)
@@ -172,19 +187,10 @@ COMMAND_UNRE = "unread"
 
 contact_name = ''
 
+# Get the contact name if required, whether or not user gave one.
+
 if(command == COMMAND_SEND or command == COMMAND_READ):
-    # require a contact name
-    contact_name_len = len(args.contact_name)
-    if(contact_name_len == 0):
-        print('You must specify a Contact Name for Send and Read commands.')
-        quit()
-
-    for name in args.contact_name:
-        contact_name += name + ' '
-
-# remove extra whitespace
-# TODO should remove special characters? are there limits on what can be in a contact name?
-contact_name = contact_name.strip()
+    contact_name = get_contact_name(args)
 
 # Build server request
 to_send = command + '\n' + contact_name + '\n'
