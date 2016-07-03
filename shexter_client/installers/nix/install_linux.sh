@@ -24,7 +24,7 @@ ln -s $OPT_DIR"shexter" /usr/bin/shexter
 if [ -f $OPT_DIR"shexter.py" ]  && [ -f $OPT_DIR"appdirs.py" ] && 
         [ -f /usr/bin/shexter ]; then
 	
-    chmod ug+x /opt/shexter/shexter
+    chmod a+x /opt/shexter/shexter
     # TODO The problem with this is that it will print success even if it failed if
     # files existed before. so should also check their last modified time.
     echo "Success!"
