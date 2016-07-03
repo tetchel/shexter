@@ -281,11 +281,13 @@ public class SmsServerService extends Service {
                 String subBody;
                 if(remaining < remainingLineChars) {
                     subBody = body.substring(bodyIndex);
+                    bodyIndex += subBody.length();
                 }
                 else {
-                    subBody = body.substring(bodyIndex, bodyIndex + remainingLineChars) + '\n';
+gi                    subBody = body.substring(bodyIndex, bodyIndex + remainingLineChars);
+                    bodyIndex += subBody.length();
+                    subBody += '\n';
                 }
-                bodyIndex += subBody.length();
                 messageBuilder.append(subBody);
             }
             //TODO format message bodies with newlines in them better (inc. long ones)

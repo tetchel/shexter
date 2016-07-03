@@ -10,7 +10,8 @@ import argparse
 import configparser
 from appdirs import user_config_dir
 
-APPNAME = 'Shexter'
+APP_NAME = 'Shexter'
+AUTHOR_NAME = 'tetchel'
 
 ##### Functions #####
 DEFAULT_PORT = 5678
@@ -52,7 +53,7 @@ def receive_all(sock) :
         if not recvd:
             raise ConnectionResetError
     except ConnectionResetError:
-        print('Connection forcibly reset; this means the server crashed. Restart ' + APPNAME 
+        print('Connection forcibly reset; this means the server crashed. Restart ' + APP_NAME 
             + ' on your phone and try again.')
         quit()
     except OSError as e:
@@ -75,7 +76,7 @@ def receive_all(sock) :
 
     return decoded
 
-SETTINGS_FILE_NAME = APPNAME.lower() + '.ini'
+SETTINGS_FILE_NAME = APP_NAME.lower() + '.ini'
 SETTING_SECTION_NAME = 'Settings'
 SETTING_IP = 'IP Address'
 SETTING_PORT = 'Port'
@@ -116,7 +117,7 @@ def new_settings_file(settings_fullpath) :
 
     #  configure the new settings and then write it into the file
     configfile = open(settings_fullpath, 'w')
-    #configfile = open(user_config_dir(APPNAME), 'w')
+    #configfile = open(user_config_dir(APP_NAME), 'w')
     config = configparser.ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
     config.set(SETTING_SECTION_NAME, SETTING_IP, new_ip_addr)
@@ -144,12 +145,12 @@ def get_contact_name(args) :
 
 ##### Config Setup #####
 
-cfgdir = user_config_dir(APPNAME, 'tetchel')
+cfgdir = user_config_dir(APP_NAME, AUTHOR_NAME)
 if not os.path.exists(cfgdir):
     os.makedirs(cfgdir)
 
 settings_fullpath = os.path.join(cfgdir, SETTINGS_FILE_NAME) # I may use this after finding out the location on Windows/Mac
-#settings_fullpath = user_config_dir(APPNAME.lower()) + 'rc'
+#settings_fullpath = user_config_dir(APP_NAME.lower()) + 'rc'
 
 config = configparser.ConfigParser()
 config.read(settings_fullpath)
