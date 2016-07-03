@@ -145,7 +145,7 @@ def get_contact_name(args) :
 
 ##### Config Setup #####
 
-cfgdir = user_config_dir(APP_NAME, AUTHOR_NAME)
+cfgdir = user_config_dir(APP_NAME.lower(), AUTHOR_NAME)
 if not os.path.exists(cfgdir):
     os.makedirs(cfgdir)
 
