@@ -2,7 +2,6 @@ package ca.tetchel.shexter;
 
 import android.app.Service;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -21,15 +20,9 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
 public class SmsServerService extends Service {
@@ -76,7 +69,10 @@ public class SmsServerService extends Service {
             }
             catch(IOException e) {
                 Log.e(TAG, "Exception opening ServerSocket", e);
-                //TODO terminate the thread / ask the user to restart the app or something
+                Toast.makeText(getApplicationContext(), "An exception occurred opening the server " +
+                        "socket; the app will not work in its current state. Please try restarting " +
+                        "the app and possibly your phone.", Toast.LENGTH_LONG).show();
+                onDestroy();
             }
             while(!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {

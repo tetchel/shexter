@@ -8,12 +8,14 @@ if [ "$(id -u)" != "0" ]; then
 	exit 1
 fi
 
-if [ -f /usr//bin/shexter ]; then
+if [ -f /usr/bin/shexter ]; then
 	echo "Removing existing symlink at /usr/bin/shexter"
 	rm /usr/bin/shexter
 fi
+# $_ should have worked but it did not
+mkdir -p /opt/shexter && cp ./shexter.py /opt/shexter && 
+        cp ./appdirs.py /opt/shexter && cp ./shexter /opt/shexter
 
-mkdir -p /opt/shexter && cp ./shexter.py "$_" && cp ./shexter "$_"
 ln -s /opt/shexter/shexter /usr/bin/shexter
 
 if [ -f /opt/shexter/shexter.py ] && [ -f /usr/bin/shexter ]; then

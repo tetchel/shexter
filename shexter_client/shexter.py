@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # right now the whole script runs each invocation. 
 # instead it should run in a loop by default, and have a flag to run in this mode -d --discrete
 
@@ -7,7 +8,7 @@ import socket
 import errno
 import argparse
 import configparser
-from appdirs import *
+from appdirs import user_config_dir
 
 APPNAME = 'Shexter'
 
@@ -17,8 +18,6 @@ DEFAULT_PORT = 5678
 port = DEFAULT_PORT
 ip_addr = ''
 def connect():
-    if(not ip_addr):
-        print('No phone IP has been set. Delete your settings file and run the client again.')
     print("Connecting...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(60)
@@ -27,8 +26,9 @@ def connect():
         print("Connect succeeded!")
     except OSError as e:
         errorcode = e.errno
-        TRY_RESTART_MSG = ('\nTry restarting the Shexter app and editing ' + SETTINGS_FILE_NAME 
-            + ' with the displayed IP.')
+        TRY_RESTART_MSG = ('\nTry restarting the Shexter app and editing ' + settings_fullpath
+            + ' with the displayed IP, and make sure your phone and computer are connected to the'
+            + ' same network.')
         if errorcode == errno.ECONNREFUSED:
             print('Connection refused: Likely Shexter is not running on your phone, '
                     + 'or you are not on the same subnet. ' + TRY_RESTART_MSG)
@@ -38,7 +38,7 @@ def connect():
             quit()
         else:
             print('Unexpected error occurred: Likely bad IP address. ' + TRY_RESTART_MSG)
-            raise e
+            print(str(e))
 
     return sock;
 
@@ -47,7 +47,6 @@ BUFFSIZE = 8192
 def receive_all(sock) :
     data = b''
     # receive the header to determine how long the message will be
-    # TODO handle empty headers when server has problems
     try:
         recvd = sock.recv(HEADER_LEN).decode()
         if not recvd:
@@ -99,7 +98,7 @@ def new_settings_file(settings_fullpath) :
     # prompt user for an IP address until they give you one.
     while(not validip):
         try:
-            new_ip_addr = input('Enter your IP Address from the Shexter app in dotted decimal '
+            new_ip_addr = input('Enter your IP Address from the Shexter app in dotted decimal ' 
                 '(eg. 192.168.1.1): ')
         except (EOFError, KeyboardInterrupt):
             # user gave up
@@ -184,6 +183,8 @@ parser.add_argument('-m', '--multi', default=False, action='store_const',const=T
         help='Keep entering new messages to SEND until cancel signal is given. ' + 
         'Useful for sending multiple texts in succession.')
 # TODO -n --number flag, allowing sending/reading for numbers instead of contacts.
+parser.add_argument('-n', '--number', default=False, action='store_const', const=True,
+        help='Specify a phone number instead of a contact name for applicable commands.')
 
 args = parser.parse_args()
 # print(args)
