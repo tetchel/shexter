@@ -26,20 +26,21 @@ def connect():
         sock.connect((ip_addr, port))
         print("Connect succeeded!")
     except OSError as e:
-        errorcode = e.errno
-        TRY_RESTART_MSG = ('\nTry restarting the Shexter app and editing ' + settings_fullpath
-            + ' with the displayed IP, and make sure your phone and computer are connected to the'
+        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + settings_fullpath
+            + '\nwith the displayed IP, and make sure your phone and computer are connected to the'
             + ' same network.')
+        errorcode = e.errno
         if errorcode == errno.ECONNREFUSED:
-            print('Connection refused: Likely Shexter is not running on your phone, '
-                    + 'or you are not on the same subnet. ' + TRY_RESTART_MSG)
+            print('Connection refused: Likely Shexter is not running on your phone.' + TRY_RESTART_MSG)
             quit()
         elif errorcode == errno.ETIMEDOUT:
-            print('Connection timeout: Likely bad IP address. ' + TRY_RESTART_MSG)
+            print('Connection timeout: Likely bad IP address.' + TRY_RESTART_MSG)
             quit()
         else:
-            print('Unexpected error occurred: Likely bad IP address. ' + TRY_RESTART_MSG)
+            print('Unexpected error occurred: ')
             print(str(e))
+            print(TRY_RESTART_MSG)
+            quit()
 
     return sock;
 
@@ -57,10 +58,11 @@ def receive_all(sock) :
             + ' on your phone and try again.')
         quit()
     except OSError as e:
-        if errorcode == errno.ETIMEDOUT:
-            print('Connection timeout: Server is frozen. Please report this bug on GitHub, and '
-                'try restarting Shexter on your phone.');
+        if e.errno == errno.ETIMEDOUT:
+            print('Connection timeout: Server is frozen. Please try restarting Shexter on your phone.');
             quit()
+        else:
+            raise
 
     header = int(recvd)
     recvd_len = 0
@@ -125,14 +127,14 @@ def new_settings_file(settings_fullpath) :
     config.write(configfile)
     configfile.close()
 
-def get_contact_name(args) :
+def get_contact_name(args, required) :
     contact_name = ''
     for name in args.contact_name:
         contact_name += name + ' '
 
     contact_name = contact_name.strip()
 
-    while(not contact_name):
+    while(not contact_name and required):
         print('You must specify a Contact Name for Send and Read commands. Enter one now:')
         try:
             contact_name = input('Enter a new contact name (CTRL + C to give up): ').strip()
@@ -149,8 +151,7 @@ cfgdir = user_config_dir(APP_NAME.lower(), AUTHOR_NAME)
 if not os.path.exists(cfgdir):
     os.makedirs(cfgdir)
 
-settings_fullpath = os.path.join(cfgdir, SETTINGS_FILE_NAME) # I may use this after finding out the location on Windows/Mac
-#settings_fullpath = user_config_dir(APP_NAME.lower()) + 'rc'
+settings_fullpath = os.path.join(cfgdir, SETTINGS_FILE_NAME)
 
 config = configparser.ConfigParser()
 config.read(settings_fullpath)
@@ -183,42 +184,56 @@ parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
 parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
         help='Keep entering new messages to SEND until cancel signal is given. ' + 
         'Useful for sending multiple texts in succession.')
-# TODO -n --number flag, allowing sending/reading for numbers instead of contacts.
-parser.add_argument('-n', '--number', default=False, action='store_const', const=True,
-        help='Specify a phone number instead of a contact name for applicable commands.')
+#parser.add_argument('-n', '--number', default=False, action='store_const', const=True,
+#        help='Specify a phone number instead of a contact name for applicable commands.')
+
+# TODO -s --settings allow user to make a new settings file from the client py. Code already exists
+# TODO -l --last for SEND, print the last (few?) messages received that convo for context. 
+# could be easily implemented as a read request for n messages.
+# Could also set a default --last value in the .ini
 
 args = parser.parse_args()
-# print(args)
 
 command = args.command.lower()
 
 ##### Validate and process args #####
 
-# Command names
+# Command constants, must match those in the server code.
 COMMAND_SEND = "send"
 COMMAND_READ = "read"
 COMMAND_UNRE = "unread"
+UNRE_CONTACT_FLAG = "-contact"
 
 contact_name = ''
 
-# Get the contact name if required, whether or not user gave one.
+# Get the contact name if required
 
 if(command == COMMAND_SEND or command == COMMAND_READ):
-    contact_name = get_contact_name(args)
+    contact_name = get_contact_name(args, True)
+else:
+    contact_name = get_contact_name(args, False)
 
 # Build server request
-to_send = command + '\n' + contact_name + '\n'
+to_send = command;
+if(command == COMMAND_UNRE):
+    # contact_name is optional for UNRE
+    if(not contact_name):
+        to_send += '\n'
+    else:
+        to_send += UNRE_CONTACT_FLAG + '\n' + contact_name + '\n'
+else:
+    to_send += '\n' + contact_name + '\n'
 
 READ_COUNT_LIMIT = 5000
 # For read commands, include the number of messages requested
-if(command == COMMAND_READ):
+if(command == COMMAND_READ or command == COMMAND_UNRE):
     if(args.count > READ_COUNT_LIMIT):
         print('Retrieving the maximum number of messages: ' + str(READ_COUNT_LIMIT))
         args.count = READ_COUNT_LIMIT
 
     to_send += str(args.count) + '\n'
 elif(args.count != DEFAULT_READ_COUNT):
-    print('Ignoring -c flag: only valid for READ command.') 
+    print('Ignoring -c flag: only valid for READ or UNREAD command.') 
 
 if(args.multi and command != COMMAND_SEND):
     print('Ignoring -m flag: only valid for SEND command.')
@@ -274,9 +289,13 @@ elif(command == COMMAND_READ):
 
     sock.close()
 elif(command == COMMAND_UNRE):
-    # TODO return a list of all unread messages. 
-    # This could be done periodically once persistant mode is implemented.
-    print('Sorry- Unread not implemented yet. Coming soon!')
+    sock = connect()
+    sock.send(to_send.encode())
+
+    print(receive_all(sock));
+
+    sock.close()
+# TODO ring command - causes phone to ring regardless of volume
 else:
     print('Command \"{}\" not recognized.\n'.format(command))
     parser.print_help()

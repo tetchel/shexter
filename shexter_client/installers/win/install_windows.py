@@ -28,6 +28,7 @@ if(response != 'y'):
 	quit()
 
 try:
+	#should change this. shouldn't delete settings every update.
 	shutil.rmtree(INSTALL_DIR)
 except FileNotFoundError:
 	pass
@@ -73,10 +74,9 @@ try:
 
 	winreg.CloseKey(pathkey)
 	print('Successfully added ' + APP_NAME + ' to PATH.')
-	#HOWEVER, this is seemingly not enough to be able to type 'python shexter.py ...' in any directory.
-	#Need some kind of shortcut or batch script which handles that part.
 except FileNotFoundError:
-	#create the key
+	#create the key (will this ever happen?)
 	print('user PATH not found, should create it.')
 
-print('Install successful. You should now be able to run shexter from anywhere')
+print('Install successful. You should now be able to run shexter from anywhere ' +
+		'after opening a new shell.')

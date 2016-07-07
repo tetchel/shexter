@@ -1,9 +1,13 @@
 package ca.tetchel.shexter;
 
+import android.provider.Telephony;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -110,5 +114,68 @@ public class Utilities {
         df.setTimeZone(TimeZone.getDefault());
 
         return df.format(d);
+    }
+
+    public static String formatSms(String sender, String otherSender, String body, long time) {
+        StringBuilder messageBuilder = new StringBuilder();
+
+        //a left/right conversation display like real texting would be stellar!
+        String niceTime = '[' +  Utilities.unixTimeToTime(time) + "] ";
+        messageBuilder.append(niceTime);
+
+        messageBuilder.append(sender);
+
+        final int LINE_LEN = 90;
+        //Indent the messages the same length as their prefix so they don't look weird
+        int firstLineIndent = niceTime.length() + sender.length();
+        int amountToIndent = niceTime.length() + Math.max(sender.length(), otherSender.length());
+        //keep lines shorter than LINE_LEN chars.
+        int remainingLineChars = LINE_LEN - amountToIndent;
+        List<String> divided = divideString(body, remainingLineChars);
+        for(int i = 0; i < divided.size(); i++) {
+            //shift the message body over for nicer-looking output
+            //(IMO. up for discussion).
+            if(i != 0) {
+                int numberOfSpacesToWrite = amountToIndent;
+                //if it starts with a space shift it over to the left
+                if(divided.get(i).startsWith(" "))
+                    numberOfSpacesToWrite--;
+                for(int j = 0; j < numberOfSpacesToWrite; j++)
+                    messageBuilder.append(' ');
+            }
+            //if it's the first line of the message and it needs more indentation, do it
+            else if(amountToIndent > firstLineIndent) {
+                int numberOfSpacesToWrite = amountToIndent - firstLineIndent;
+                for(int j = 0; j < numberOfSpacesToWrite; j++)
+                    messageBuilder.append(' ');
+            }
+            messageBuilder.append(divided.get(i));
+            //append a \n if not the last line in the message
+            if(i != divided.size() - 1)
+                messageBuilder.append('\n');
+        }
+        return messageBuilder.toString();
+    }
+
+    /**
+     * Divides a String into a List of substrings of the length subStringLength.
+     */
+    public static List<String> divideString(String input, int subStringLength) {
+        List<String> result = new ArrayList<>((input.length() / subStringLength) + 1);
+        int currentIndex = 0;
+        while(currentIndex < input.length()) {
+            int remaining = input.length() - currentIndex;
+            String subSection;
+            //is there room on the line for the rest of the message?
+            if(remaining < subStringLength) {
+                subSection = input.substring(currentIndex);
+            }
+            else {
+                subSection = input.substring(currentIndex, currentIndex + subStringLength);
+            }
+            currentIndex += subSection.length();
+            result.add(subSection);
+        }
+        return result;
     }
 }

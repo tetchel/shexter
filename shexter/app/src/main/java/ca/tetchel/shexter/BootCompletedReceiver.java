@@ -3,6 +3,11 @@ package ca.tetchel.shexter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Telephony;
+import android.telephony.SmsMessage;
+import android.util.Log;
 
 /**
  * Receives an Intent when the phone finishes booting which triggers starting the SmsServerService.
@@ -13,6 +18,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if ("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())) {
             Intent pushIntent = new Intent(context, SmsServerService.class);
+            Log.d("BootCompletedReceiver", "Starting SMSServer on boot.");
             context.startService(pushIntent);
         }
     }
