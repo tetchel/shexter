@@ -21,7 +21,7 @@ print('WARNING: This script does edit your registry, so run only if you trust me
 	'or understand what this script does!')
 
 print('Confirm install shexter into ' + INSTALL_DIR + '? y/N: ')
-response = 'y'#input().lower()
+response = input().lower()
 
 if(response != 'y'):
 	print('Sorry to hear that!')
