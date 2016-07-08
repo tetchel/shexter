@@ -1,0 +1,12 @@
+shexter.py:75:# TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
+
+shexter.py:191:# TODO -s --settings allow user to make a new settings file from the client py. Code already exists
+
+shexter.py:192:# TODO -l --last for SEND, print the last (few?) messages received that convo for context. 
+
+shexter.py:254:# TODO allow backspacing of newlines.
+
+shexter.py:272:# TODO Windows throws an encoding error here (not a box, an exception) if message
+
+shexter.py:299:# TODO ring command - causes phone to ring regardless of volume
+
