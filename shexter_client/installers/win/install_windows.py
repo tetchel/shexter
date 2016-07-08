@@ -2,12 +2,14 @@ import os
 import sys
 import shutil
 import winreg
-from appdirs import user_config_dir
 
 APP_NAME = 'Shexter'
 # client .py and dependencies are kept 2 directories above this script, so use path[0]
 FILES_DIR = sys.path[0] + '\..\..\\'
 LIB_DIR = FILES_DIR + 'lib\\'
+# Add appdirs to the PATH so that we can use that code
+sys.path.append(LIB_DIR)
+from appdirs import user_config_dir
 
 INSTALL_DIR = user_config_dir('Shexter', 'tetchel')
 BAT_NAME = APP_NAME.lower() + '.bat'
@@ -37,7 +39,7 @@ except FileNotFoundError:
 
 # Copy the files
 
-os.mkdir(INSTALL_DIR)
+os.makedirs(INSTALL_DIR)
 shutil.copy(FILES_DIR + CLIENT_NAME, INSTALL_DIR)
 # use path[0] because .bat is in the same folder as this script
 shutil.copy(sys.path[0] + '\\' + BAT_NAME, INSTALL_DIR)
