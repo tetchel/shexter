@@ -6,6 +6,7 @@ grep -rnE --exclude=todo.txt '[#/] ?TODO' | sed 's/  //g' | sed 's/$/&\n/' > tod
 
 if [ -f shexter_client.tar ]; then
 	rm shexter_client.tar
+fi
 tar -cvf shexter_client.tar shexter_client/
 gzip shexter_client.tar
 
