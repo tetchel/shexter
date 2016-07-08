@@ -7,6 +7,7 @@ if [ -e .commit ]
 then
     rm .commit
     git add todo.txt
+    git add shexter_client.tar.gz
     git commit --amend -C HEAD --no-verify
 fi
 exit

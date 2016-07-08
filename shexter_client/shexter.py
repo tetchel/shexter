@@ -34,7 +34,8 @@ def connect():
             print('Connection refused: Likely Shexter is not running on your phone.' + TRY_RESTART_MSG)
             quit()
         elif errorcode == errno.ETIMEDOUT:
-            print('Connection timeout: Likely bad IP address.' + TRY_RESTART_MSG)
+            print('Connection timeout: Likely your phone is not on the same network as your ' +
+                'computer or the IP address ' + ip_addr + ' is not correct.' + TRY_RESTART_MSG)
             quit()
         else:
             print('Unexpected error occurred: ')
