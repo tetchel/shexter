@@ -2,7 +2,7 @@
 #
 # creates a todo list via TODO comments
 
-echo "precommit"
+echo "precommit" 
 grep -rnE --exclude=todo.txt '[#/] ?TODO' | sed 's/  //g' | sed 's/$/&\n/' > todo.txt
 
 if [ -f shexter_client.tar ]; then
