@@ -114,9 +114,9 @@ def new_settings_file(settings_fullpath) :
         try:
             # validate ip
             socket.inet_aton(new_ip_addr)
-            ip_addr = new_ip_addr
             print('Setting your phone\'s IP to ' + new_ip_addr)
             validip = True
+            return new_ip_addr
         except OSError:
             print('Invalid IP Address. Try again. (CTRL + C to give up)')
 
@@ -165,10 +165,10 @@ try:
     socket.inet_aton(ip_addr)
 except KeyError:
     print('Error parsing ' + settings_fullpath + '. Making a new one.')
-    new_settings_file(settings_fullpath)
+    ip_addr = new_settings_file(settings_fullpath)
 except OSError:
     print('Bad IP ' + ip_addr + ' found in ' + settings_fullpath + '. Making a new one.')
-    new_settings_file(settings_fullpath)
+    ip_addr = new_settings_file(settings_fullpath)
 
 ##### Arg parser #####
 

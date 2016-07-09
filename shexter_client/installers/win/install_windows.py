@@ -81,4 +81,4 @@ except FileNotFoundError:
 	print('user PATH not found, should create it.')
 
 print('Install successful. You should now be able to run shexter from anywhere ' +
-		'after opening a new shell.')
+		'after restarting your terminal.')
