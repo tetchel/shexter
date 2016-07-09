@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # right now the whole script runs each invocation. 
 # instead it should run in a loop by default, and have a flag to run in this mode -d --discrete
 
@@ -8,6 +8,8 @@ import socket
 import errno
 import argparse
 import configparser
+from re import match
+from shutil import get_terminal_size
 from appdirs import user_config_dir
 
 APP_NAME = 'Shexter'
@@ -175,7 +177,7 @@ DEFAULT_READ_COUNT = 30
 parser = argparse.ArgumentParser(description='Send and read texts using your ' + 
         'Android phone from the command line.')
 parser.add_argument('command', type=str,
-        help='Possible commands: Send [Contact Name], Read [Contact Name], Unread. ' +
+        help='Possible commands: Send [Contact Name], Read [Contact Name], Unread, Contacts. ' +
         'Not case sensitive.')
 parser.add_argument('contact_name', type=str, nargs='*', 
         help='Specify contact for SEND and READ commands.')
@@ -189,9 +191,13 @@ parser.add_argument('-m', '--multi', default=False, action='store_const',const=T
 #        help='Specify a phone number instead of a contact name for applicable commands.')
 
 # TODO -s --settings allow user to make a new settings file from the client py. Code already exists
-# TODO -l --last for SEND, print the last (few?) messages received that convo for context. 
+# in new_settings_file
+
+# TODO -l --last for SEND, print the last (few?) messages received that convo for context.
 # could be easily implemented as a read request for n messages.
 # Could also set a default --last value in the .ini
+
+# TODO -m --message for specifying the message to send so user can send in one command.
 
 args = parser.parse_args()
 
@@ -203,6 +209,7 @@ command = args.command.lower()
 COMMAND_SEND = "send"
 COMMAND_READ = "read"
 COMMAND_UNRE = "unread"
+COMMAND_GETCONTACTS = "contacts"
 UNRE_CONTACT_FLAG = "-contact"
 
 contact_name = ''
@@ -232,7 +239,11 @@ if(command == COMMAND_READ or command == COMMAND_UNRE):
         print('Retrieving the maximum number of messages: ' + str(READ_COUNT_LIMIT))
         args.count = READ_COUNT_LIMIT
 
-    to_send += str(args.count) + '\n'
+    # determine tty width
+    tty_size = get_terminal_size()
+    tty_w = tty_size[0]
+
+    to_send += str(args.count) + '\n' + str(tty_w) + '\n'
 elif(args.count != DEFAULT_READ_COUNT):
     print('Ignoring -c flag: only valid for READ or UNREAD command.') 
 
@@ -268,10 +279,6 @@ if(command == COMMAND_SEND):
                 sock = connect()
                 sock.send(to_send_full.encode())
 
-
-                # TODO Windows throws an encoding error here (not a box, an exception) if message
-                # contains emoji which means the issue is caused by trying to print the emoji 
-                # to terminal
                 print(receive_all(sock))
                 sock.close()
             else:
@@ -282,14 +289,7 @@ if(command == COMMAND_SEND):
             print('\nSend cancelled.')
             quit()
  
-elif(command == COMMAND_READ):
-    sock = connect()
-    sock.send(to_send.encode())
-
-    print(receive_all(sock));
-
-    sock.close()
-elif(command == COMMAND_UNRE):
+elif(command == COMMAND_READ or command == COMMAND_UNRE or command == COMMAND_GETCONTACTS):
     sock = connect()
     sock.send(to_send.encode())
 

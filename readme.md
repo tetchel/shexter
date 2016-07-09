@@ -10,7 +10,7 @@ Send and read texts from your Android phone using your Linux or Windows command 
 
 **Dependencies:** Python 3.
 
-To install, extract the client archive, navigate to the installer for your platform, and run the installer through the command line. 
+To install, extract the client archive, navigate to the installer for your platform, and run the installer through the command line. If the install is successful, after restarting your terminal, you should be able to run 'shexter' from anywhere, and consult the help for how to use the client.
 
 On first run, you will be prompted for an IP address - make sure your phone and computer are on the same LAN and then enter the IP that appears in the Shexter app.
 
@@ -36,6 +36,6 @@ So this setting would show Terminus for ASCII, WenQuanYi Micro Hei Mono for Chin
 
 You must [enable installation from unknown sources](http://www.androidcentral.com/allow-app-installs-unknown-sources) in order to be able to install the apk.
 
-Requires Contacts and SMS permissions. The app does not yet request permissions, so you must enable them yourself in Settings > Apps > Shexter > Permissions
+Requires Internet, Contacts and SMS permissions. The app requests permissions, but this functionality has not been tested extensively so you may need to enable them yourself in Settings > Apps > Shexter > Permissions
 
 You may want to check your Security settings for your SMS message limit setting, which can prevent Shexter from sending frequent messages.

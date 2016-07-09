@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -152,6 +153,9 @@ public class MainActivity extends Activity {
         }
         else {
             Log.w(TAG, "Permission was not granted: " + requiredPermissions[requestCodeIndex]);
+            Toast.makeText(getApplicationContext(), getString(R.string.app_name) +
+                    " cannot function without " + requiredPermissions[requestCodeIndex] +
+                    " permission.", Toast.LENGTH_LONG).show();
         }
     }
 }

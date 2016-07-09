@@ -1,6 +1,7 @@
 package ca.tetchel.shexter;
 
 import android.provider.Telephony;
+import android.support.annotation.NonNull;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -15,9 +16,11 @@ import java.util.TimeZone;
  * Public static utility methods to support the bulk of the code.
  */
 public class Utilities {
+
     /**
      * Self documenting. Used to format phone numbers with +, -, spaces, etc.
      */
+    /*
     public static String removeNonDigitCharacters(String input) {
         StringBuilder sb = new StringBuilder();
         for(int i = 0; i < input.length(); i++) {
@@ -27,15 +30,16 @@ public class Utilities {
             }
         }
         return sb.toString();
-    }
+    }*/
 
     /**
      * Turns 1231231234 into 123-123-1234
      */
+    /*
     public static String hyphenatePhoneNumber(String phoneNumber) {
-        return phoneNumber.substring(0,3) + '-' + phoneNumber.substring(3, 6) + '-'
+        return phoneNumber.substring(0, 3) + '-' + phoneNumber.substring(3, 6) + '-'
                 + phoneNumber.substring(6);
-    }
+    }*/
 
     /**
      * Determine how old the message is and return a date label depending on the current date.
@@ -116,7 +120,8 @@ public class Utilities {
         return df.format(d);
     }
 
-    public static String formatSms(String sender, String otherSender, String body, long time) {
+    public static String formatSms(String sender, String otherSender, String body, long time,
+                                   int width) {
         StringBuilder messageBuilder = new StringBuilder();
 
         //a left/right conversation display like real texting would be stellar!
@@ -125,12 +130,11 @@ public class Utilities {
 
         messageBuilder.append(sender);
 
-        final int LINE_LEN = 90;
         //Indent the messages the same length as their prefix so they don't look weird
         int firstLineIndent = niceTime.length() + sender.length();
         int amountToIndent = niceTime.length() + Math.max(sender.length(), otherSender.length());
         //keep lines shorter than LINE_LEN chars.
-        int remainingLineChars = LINE_LEN - amountToIndent;
+        int remainingLineChars = width - amountToIndent;
         List<String> divided = divideString(body, remainingLineChars);
         for(int i = 0; i < divided.size(); i++) {
             //shift the message body over for nicer-looking output
@@ -150,11 +154,38 @@ public class Utilities {
                     messageBuilder.append(' ');
             }
             messageBuilder.append(divided.get(i));
-            //append a \n if not the last line in the message
-            if(i != divided.size() - 1)
-                messageBuilder.append('\n');
         }
         return messageBuilder.toString();
+    }
+
+    @NonNull
+    public static String messagesIntoOutput(List<String> messages, List<Long> dates) {
+        //combine the messages into one string to be sent to the client
+        StringBuilder resultBuilder = new StringBuilder();
+        //Generate and print a new date header each time the next message is from a different day
+        String lastUsedDate = null;
+        for(int i = 0; i < messages.size(); i++) {
+            String currentDate = Utilities.unixTimeToRelativeDate(dates.get(i));
+
+            if(lastUsedDate == null) {
+                //if Today is the first (and therefore only, there can't be texts in the future)
+                //date header, don't print it
+                if(!currentDate.equals("Today")) {
+                    //update lastUsedDate to the first
+                    lastUsedDate = currentDate;
+                    resultBuilder.append("--- ").append(currentDate).append(" ---").append('\n');
+                }
+            }
+            //else if this is not the first date header and the date header has changed,
+            //update and print the date header
+            else if(!currentDate.equals(lastUsedDate)) {
+                lastUsedDate = currentDate;
+                resultBuilder.append("--- ").append(currentDate).append(" ---").append('\n');
+            }
+
+            resultBuilder.append(messages.get(i)).append('\n');
+        }
+        return resultBuilder.toString();
     }
 
     /**
