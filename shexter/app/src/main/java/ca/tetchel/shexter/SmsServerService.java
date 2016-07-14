@@ -1,17 +1,11 @@
 package ca.tetchel.shexter;
 
 import android.app.Service;
-import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.IBinder;
-import android.provider.ContactsContract;
-import android.provider.Telephony;
-import android.support.annotation.Nullable;
-import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -23,28 +17,36 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 
 public class SmsServerService extends Service {
 
-    private final String TAG = "Shexter_SmsServer";
+    private static final String TAG = "SmsServer";
+
+    public static SmsServerService INSTANCE;
 
     private static final int PORT = 5678;
 
     private static final String COMMAND_SEND = "send",
                                 COMMAND_READ = "read",
                                 COMMAND_UNREAD = "unread",
+                                COMMAND_SETPREF = "setpref",
+                                // flag for a lone setpref request (not a read or send)
+                                COMMAND_SETPREF_LIST = COMMAND_SETPREF + "-list",
+                                // flag to send back to the client when setpref required
+                                SETPREF_REQUIRED = "NEED-SETPREF",
                                 COMMAND_CONTACTS = "contacts",
                                 UNREAD_CONTACT_FLAG = "-contact";
 
     private ServerSocket serverSocket;
     private ServerThread serverThread;
 
-    private SmsReceiver receiver;
+//    private SmsReceiver receiver;
+
+    public SmsServerService() {
+        INSTANCE = this;
+    }
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -59,7 +61,7 @@ public class SmsServerService extends Service {
         //TODO ask for permission
 
         //Register to receive new SMS intents
-        receiver = new SmsReceiver();
+//        receiver = new SmsReceiver();
 
         Log.d(TAG, getString(R.string.app_name) +" service started.");
 
@@ -95,200 +97,84 @@ public class SmsServerService extends Service {
                         "the app and possibly your phone.", Toast.LENGTH_LONG).show();
                 onDestroy();
             }
+            // Contact persists between requests, for setPref request, but could be useful
+            // for others.
             while(!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {
+                    //region SetupServer
                     Log.d(TAG, "Ready to accept");
                     Socket socket = serverSocket.accept();
                     //reader from socket
-                    BufferedReader in_reader = new BufferedReader(
+                    BufferedReader inReader = new BufferedReader(
                             new InputStreamReader(socket.getInputStream()));
                     //print back to socket
                     PrintStream replyStream = new PrintStream(socket.getOutputStream());
-
-                    String errMsg = null;
+                    //endregion
                     //The request protocol is command\ncontact\nmessage,
                     //so read the first line to get the command
-                    String command = in_reader.readLine();
+                    String command = inReader.readLine();
+                    Log.d(TAG, "Received command: " + command);
+                    //region GetContact
                     //the user has the option to retrieve unread messages for specific contact
-                    boolean unreadContactProvided =
-                            (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command);
 
-                    String[] contactInfo = null;
-                    if(COMMAND_READ.equals(command) || COMMAND_SEND.equals(command) ||
-                            unreadContactProvided) {
+                    String contactGetResult = null;
+                    String originalCommand = null;
+                    Contact contact = null;
+                    if( COMMAND_READ.equals(command) || COMMAND_SEND.equals(command) ||
+                        COMMAND_SETPREF_LIST.equals(command) || COMMAND_SETPREF.equals(command) ||
+                        (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command)) {
 
                         //second line for contact name
-                        String contact_name_input = in_reader.readLine();
-                        //then get the contact's phone number from his/her name
+                        String contactNameInput = inReader.readLine();
                         try {
-                            contactInfo = getContactInfo(contact_name_input);
+                            //then get the contact's phone numbers from his/her name
+                            contact = Utilities.getContactInfo(contactNameInput);
 
-                            if(contactInfo == null) {
+                            if(contact == null) {
                                 //non existent contact
-                                errMsg = "Couldn't find contact '" + contact_name_input +
-                                        "', please make sure the contact exists and " +
-                                        "is spelled correctly.";
+                                contactGetResult = "Couldn't find contact '" + contactNameInput +
+                                        "' with any associated phone numbers, please make sure the "
+                                        + "contact exists and is spelled correctly.";
+                            }
+                            else if(contact.count() == 0) {
+                                contactGetResult = "You have no phone number associated with " +
+                                        contact.name();
+                            }
+                            else if(contact.count() == 1 && !contact.hasPreferred()) {
+                                //will automatically pick the first/only number
+                                contact.setPreferred(null);
+                            }
+                            else if(contact.count() > 1 && !contact.hasPreferred()
+                                    && !command.equals(COMMAND_SETPREF)) {
+                                originalCommand = command;
+                                // reply to the client requesting that user pick a preferred #
+                                command = COMMAND_SETPREF_LIST;
+//                              Log.d(TAG, "Replying: " + contactGetResult);
                             }
                         }
                         catch(SecurityException e) {
-                            errMsg = "Could not retrieve contact info: make sure " +
+                            contactGetResult = "Could not retrieve contact info: make sure " +
                                     getString(R.string.app_name) + " has Contacts permission.";
                         }
                     }
-                    if(errMsg != null) {
+                    if(contactGetResult != null ||
+                            (contact == null && !COMMAND_UNREAD.equals(command))) {
                         //if something has gone wrong already, don't do anything else
-                        sendReply(replyStream, errMsg);
+                        sendReply(replyStream, contactGetResult);
                     }
-                    else if(COMMAND_SEND.equals(command)) {
-                        assert contactInfo != null;
-                        String line;
-                        StringBuilder msgBodyBuilder = new StringBuilder();
-                        //read the message body into msgBodyBuilder
-                        while((line = in_reader.readLine()) != null) {
-                            if(line.isEmpty())
-                                break;
-                            msgBodyBuilder.append(line).append('\n');
-                        }
-
-                        String messageInput = msgBodyBuilder.toString();
-                        if(messageInput.isEmpty()) {
-                            //this is already checked client-side, but just to be safe...
-                            sendReply(replyStream, "Not sent: message body was empty.");
-                            continue;
-                        }
-
-                        //chop off last newline
-                        messageInput = messageInput.substring(0, messageInput.length()-1);
-                        //Determine what encoding is required for this message.
-                        int[] calcLength = SmsMessage.calculateLength(messageInput, false);
-
-                        //now divide the message into submessages based on encoding type
-                        int each_message_len;
-                        if(calcLength[3] == SmsMessage.ENCODING_7BIT) {
-                            each_message_len = SmsMessage.MAX_USER_DATA_SEPTETS;
-                        }
-                        else if(calcLength[3] == SmsMessage.ENCODING_8BIT) {
-                            each_message_len = SmsMessage.MAX_USER_DATA_BYTES;
-                        }
-                        else if(calcLength[3] == SmsMessage.ENCODING_16BIT) {
-                            each_message_len = SmsMessage.MAX_USER_DATA_BYTES / 2;
-                        }
-                        else {
-                            //unknown encoding : error
-                            sendReply(replyStream, "Unknown encoding in message to send. If you " +
-                                    "are not sending characters that are outside UTF-16 and " +
-                                    "believe this is an error, please report this on GitHub.");
-                            each_message_len = -1;
-                        }
-
-                        List<String> messages;
-                        if(each_message_len != -1) {
-                            //TODO modify this code to use User Data Headers so that the receiver
-                            //has the messages concatenated.
-                            //https://en.wikipedia.org/wiki/Concatenated_SMS
-                            messages = Utilities.divideString(messageInput, each_message_len);
-
-                            SmsSendThread[] sendThreads = new SmsSendThread[messages.size()];
-                            for(int i = 0; i < sendThreads.length; i++) {
-                                sendThreads[i] = new SmsSendThread();
-                            }
-                            //attempt to send sms and handle errors appropriately
-                            try {
-                                Boolean result = true;
-                                for (int i = 0; i < messages.size(); i++) {
-                                    result = sendThreads[i].execute(contactInfo[0], messages.get(i))
-                                            .get();     //.get gets the Boolean result from the task
-                                    if(!result)
-                                        break;
-                                }
-                                if (result) {
-                                    String numMessageOutput =
-                                            calcLength[3] == 1 ? "message" : "messages";
-                                    sendReply(replyStream, "Successfully sent " + messages.size() +
-                                            " " + numMessageOutput + " using encoding #"
-                                            + calcLength[3] + " to " + contactInfo[1] + ".");
-                                } else {
-                                    sendReply(replyStream, "Could not send message: make sure " +
-                                            getString(R.string.app_name) + " has SMS permission.");
-                                }
-                            } catch (InterruptedException | ExecutionException e) {
-                                sendReply(replyStream, "Unexpected exception in the SMS send " +
-                                        "thread; please report this issue on GitHub.");
-                                Log.e(TAG, "Exception from sendThread", e);
-                            }
-                        }
-                    }
-                    else if(COMMAND_READ.equals(command)) {
-                        assert contactInfo != null;
-                        //TODO mark all messages in this conversation as 'read' (if possible)
-                        int numberToRetrieve = Integer.parseInt(in_reader.readLine());
-                        int outputWidth = Integer.parseInt(in_reader.readLine());
-                        //Log.d(TAG, "" + numberToRetrieve);
-
-                        String convo;
-                        try {
-                            convo = getConversation(contactInfo, numberToRetrieve, outputWidth);
-
-                            if(convo != null)
-                                sendReply(replyStream, convo);
-                            else
-                                sendReply(replyStream, "No messages found with " +
-                                        contactInfo[1] + ", " + contactInfo[0] + ".");
-
-                        }
-                        catch(SecurityException e) {
-                            sendReply(replyStream, "Could not retrieve messages: make sure " +
-                                    getString(R.string.app_name) + " has SMS permission.");
-                            Log.w(TAG, "No SMS permission for reading.");
-                        }
-                    }
-                    else if(unreadContactProvided || COMMAND_UNREAD.equals(command)) {
-                        try {
-                            int numberToRetrieve = Integer.parseInt(in_reader.readLine());
-                            //List<String> rawConvo = getUnread(null)
-                            String result;
-                            if(contactInfo != null)
-                                result = getUnread(contactInfo[0], numberToRetrieve);
-                            else
-                                result = getUnread(null, numberToRetrieve);
-
-                            if (result != null)
-                                sendReply(replyStream, result);
-                            else if (contactInfo != null)
-                                sendReply(replyStream, "No unread messages found with " +
-                                        contactInfo[0] + ".");
-                            else {
-                                sendReply(replyStream, "No unread messages.");
-                            }
-                        }
-                        catch(SecurityException e) {
-                            sendReply(replyStream, "Could not retrieve messages: make sure " +
-                                    getString(R.string.app_name) + " has SMS permission.");
-                            Log.w(TAG, "No SMS permission for reading.");
-                        }
-                    }
-                    else if(COMMAND_CONTACTS.equals(command)) {
-                        String allContacts = getAllContacts();
-                        if(allContacts != null && !allContacts.isEmpty()) {
-                            sendReply(replyStream, allContacts);
-                        }
-                        else {
-                            sendReply(replyStream, "An error occurred getting contacts, " +
-                                    "or you have no contacts!");
-                        }
-                    }
+                    //endregion
                     else {
-                        //should never happen
-                        sendReply(replyStream, "'" + command + "' is a not a recognized command. " +
-                                "Please report this issue on GitHub.");
+                        commandProcessor(command, originalCommand, contact, inReader, replyStream);
                     }
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     Log.e(TAG, "Socket error occurred.", e);
                 }
             }
         }
     }
 
+    //region SendReply
     /**
      * Wrapper for printStream.println which sends a length header followed by \n before the body
      * to make it easier for the client to properly receive all data.
@@ -310,319 +196,206 @@ public class SmsServerService extends Service {
         String response = lenStr + '\n' + msg;
         replyStream.println(response);
     }
+    //endregion
 
-    private String getConversation(String[] contactInfo, int numberToRetrieve, int outputWidth)
-            throws SecurityException {
-        assert contactInfo[1] != null;
-        ContentResolver contentResolver = getContentResolver();
-        Uri uri = Uri.parse("content://sms/");
-        final String[] projection = new String[]{"date", "body", "type", "address", "read"};
-
-        Cursor query = contentResolver.query(uri, projection, null, null, "date desc");
-        //Log.d(TAG, "Query selection is " + selection);
-
-        if(query == null) {
-            Log.e(TAG, "Null Cursor trying to get conversation with " + contactInfo[1] + ", # " +
-                    contactInfo[0]);
-            return null;
+    private void commandProcessor(String command, String originalCommand, Contact contact,
+                                  BufferedReader inReader, PrintStream replyStream)
+            throws IOException {
+        Log.d(TAG, "Original: " + originalCommand);
+        if (COMMAND_SEND.equals(command)) {
+            sendCommand(contact, inReader, replyStream);
         }
-        else if(query.getCount() == 0) {
-            Log.e(TAG, "No result trying to get conversation with " + contactInfo[1] + ", # " +
-                    contactInfo[0]);
-
-            query.close();
-            return null;
+        else if (COMMAND_READ.equals(command)) {
+            readCommand(contact, inReader, replyStream);
         }
-
-        int count = 0;
-        List<String> messages = new ArrayList<>(numberToRetrieve);
-        List<Long> dates = new ArrayList<>(numberToRetrieve);
-
-        //this will succeed because already checked query's count
-        query.moveToFirst();
-        int index_date = query.getColumnIndex("date");
-        int index_body = query.getColumnIndex("body");
-        int index_type = query.getColumnIndex("type");
-        int index_addr = query.getColumnIndex("address");
-
-//        Log.d(TAG, "Successful sms query for " + contactInfo[1] + ", address is " +
-//                query.getString(query.getColumnIndex("address")));
-
-        do {
-            String addr = query.getString(index_addr);
-            //Skip all texts that aren't from the requested contact, if one was given.
-            if(!PhoneNumberUtils.compare(addr, contactInfo[0]))
-                continue;
-
-            String body = query.getString(index_body);
-            int type = query.getInt(index_type);
-            long time = query.getLong(index_date);
-
-            //add sender to the message
-            final String YOU = "You", SENDER_SUFFIX = ": ";
-            String sender = YOU;
-            String otherSender = contactInfo[1];
-            if(type == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_INBOX) {
-                sender = contactInfo[1];
-                otherSender = YOU;
+        else if (COMMAND_UNREAD.equals(command)) {
+            unreadCommand(contact, inReader, replyStream);
+        }
+        else if (COMMAND_SETPREF_LIST.equals(command)) {
+            String list = SETPREF_REQUIRED + '\n';
+            list += contact.name() + " has " + contact.count() + " numbers: ";
+            for(int i = 0; i < contact.count(); i++) {
+                list += "\n" + (i+1) + ": " + contact.numbers().get(i);
             }
-            sender += SENDER_SUFFIX;
-            otherSender += SENDER_SUFFIX;
+            if(contact.hasPreferred()) {
+                list += "\nCurrent: " + contact.preferred();
+            }
+            sendReply(replyStream, list);
+        }
+        else if (COMMAND_SETPREF.equals(command)) {
+            int replyIndex = Integer.parseInt(inReader.readLine());
+            Log.d(TAG, "Setting " + contact.name() + " pref to " + replyIndex);
+            contact.setPreferred(replyIndex);
 
-            String message = Utilities.formatSms(sender, otherSender, body, time, outputWidth);
-
-            //date formatting is done below so store the time for that
-            dates.add(time);
-            messages.add(message);
-
-            count++;
-        } while(query.moveToNext() && count < numberToRetrieve);
-
-        query.close();
-
-        if(messages.isEmpty())
-            return null;
-
-        //reverse the conversation messages so they can be read top-to-bottom as is natural
-        Collections.reverse(messages);
-        Collections.reverse(dates);
-
-        return Utilities.messagesIntoOutput(messages, dates);
+            if(COMMAND_SEND.equals(originalCommand))
+                sendCommand(contact, inReader, replyStream);
+            else if(COMMAND_READ.equals(originalCommand))
+                readCommand(contact, inReader, replyStream);
+            else if(COMMAND_UNREAD.equals(originalCommand))
+                unreadCommand(contact, inReader, replyStream);
+            else
+                sendReply(replyStream, "Changed " + contact.name() + "'s preferred number to: " +
+                        contact.preferred());
+        }
+        else if (COMMAND_CONTACTS.equals(command)) {
+            String allContacts = Utilities.getAllContacts();
+            if (allContacts != null && !allContacts.isEmpty()) {
+                sendReply(replyStream, allContacts);
+            }
+            else {
+                sendReply(replyStream, "An error occurred getting contacts, " +
+                        "or you have no contacts!");
+            }
+        }
+        else {
+            //should never happen
+            sendReply(replyStream, "'" + command + "' is a not a recognized command. " +
+                    "Please report this issue on GitHub.");
+        }
     }
 
-    //will return List<String> when it is confirmed to work.
-    private String getUnread(@Nullable String phoneNumber, int numberToRetrieve) {
-        Log.d(TAG, "Getting unread");
-        Uri uri = Uri.parse("content://sms/inbox");
-
-        Cursor query = getContentResolver().query(uri, null, null, null, null);
-
-        if(query == null) {
-            Log.e(TAG, "Null Cursor trying to get unread.");
-            return null;
-        }
-        else if(query.getCount() == 0) {
-            Log.e(TAG, "No result trying to get unread.");
-
-            query.close();
-            return null;
+    private void sendCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
+            throws IOException {
+        //region Send Command
+        String line;
+        StringBuilder msgBodyBuilder = new StringBuilder();
+        //read the message body into msgBodyBuilder
+        while ((line = inReader.readLine()) != null) {
+            if (line.isEmpty())
+                break;
+            msgBodyBuilder.append(line).append('\n');
         }
 
-//        List<String> messages = new ArrayList<>();
-//        List<Long> dates = new ArrayList<>();
+        String messageInput = msgBodyBuilder.toString();
+        if (messageInput.isEmpty()) {
+            //this is already checked client-side, but just to be safe...
+            sendReply(replyStream, "Not sent: message body was empty.");
+            return;
+        }
 
-        //this will succeed because already checked query's count
-        query.moveToFirst();
+        //chop off last newline
+        messageInput = messageInput.substring(0, messageInput.length() - 1);
+        //Determine what encoding is required for this message.
+        int[] calcLength = SmsMessage.calculateLength(messageInput, false);
 
-        int count = 0;
-        //DEBUG ONLY
-        int seen_count = 0;
-        int read_count = 0;
-        int seen_and_read_count = 0;
-        int index_date = query.getColumnIndex("date");
-        int index_body = query.getColumnIndex("body");
-        int index_read = query.getColumnIndex("read");
-        int index_seen = query.getColumnIndex("seen");
-        int index_addr = query.getColumnIndex("address");
-        do {
-            String addr = query.getString(index_addr);
-            if(phoneNumber != null && !PhoneNumberUtils.compare(addr, phoneNumber))
-                continue;
+        //now divide the message into submessages based on encoding type
+        int each_message_len;
+        if (calcLength[3] == SmsMessage.ENCODING_7BIT) {
+            each_message_len = SmsMessage.MAX_USER_DATA_SEPTETS;
+        }
+        else if (calcLength[3] == SmsMessage.ENCODING_8BIT) {
+            each_message_len = SmsMessage.MAX_USER_DATA_BYTES;
+        }
+        else if (calcLength[3] == SmsMessage.ENCODING_16BIT) {
+            each_message_len = SmsMessage.MAX_USER_DATA_BYTES / 2;
+        }
+        else {
+            //unknown encoding : error
+            sendReply(replyStream, "Unknown encoding in message to send. If you " +
+                    "are not sending characters that are outside UTF-16 and " +
+                    "believe this is an error, please report this on GitHub.");
+            each_message_len = -1;
+        }
 
-            String body = query.getString(index_body);
-            int spaceIndex = body.indexOf(' ');
-            if(spaceIndex != -1)
-                body = body.substring(0, spaceIndex);
-            int read = query.getInt(index_read);
-            int seen = query.getInt(index_seen);
-            long time = query.getLong(index_date);
+        List<String> messages;
+        if (each_message_len != -1) {
+            //TODO modify this code to use User Data Headers so that the receiver
+            //has the messages concatenated.
+            //https://en.wikipedia.org/wiki/Concatenated_SMS
+            messages = Utilities.divideString(messageInput, each_message_len);
 
-            if(read == 1) {
-                if(seen == 1) {
-                    seen_and_read_count++;
+            SmsSendThread[] sendThreads = new SmsSendThread[messages.size()];
+            for (int i = 0; i < sendThreads.length; i++) {
+                sendThreads[i] = new SmsSendThread();
+            }
+            //attempt to send sms and handle errors appropriately
+            try {
+                Boolean result = true;
+                for (int i = 0; i < messages.size(); i++) {
+                    //.get gets the Boolean result from the task
+                    result = sendThreads[i].execute(
+                            contact.preferred(), messages.get(i)).get();
+                    if (!result) break;     //error
+                }
+                if (result) {
+                    String numMessageOutput =
+                            calcLength[3] == 1 ? "message" : "messages";
+                    sendReply(replyStream, "Successfully sent " + messages.size() +
+                            " " + numMessageOutput + " using encoding #"
+                            + calcLength[3] + " to " + contact.name() + ".");
                 }
                 else {
-                    read_count++;
+                    sendReply(replyStream, "Could not send message: make sure " +
+                            getString(R.string.app_name) + " has SMS permission.");
                 }
             }
-            else if(seen == 1) {
-                seen_count++;
+            catch (InterruptedException | ExecutionException e) {
+                sendReply(replyStream, "Unexpected exception in the SMS send " +
+                        "thread; please report this issue on GitHub.");
+                Log.e(TAG, "Exception from sendThread", e);
             }
-
-            //type 1 is received, type 2 is sent
-            Log.d(TAG, String.format("Seen: %d Read: %d Date: %s Addr: %s Body: %s",
-                    seen, read, Utilities.unixTimeToTime(time), addr, body));
-
-            count++;
-        } while(query.moveToNext() && count < numberToRetrieve);
-
-        if(phoneNumber == null) { phoneNumber = "anyone"; }
-        return String.format(Locale.getDefault(), "Read %d received messages from %s. %d were seen and " +
-                "read, %d were read but not seen, %d were seen but not read.",
-                count, phoneNumber, seen_and_read_count, read_count, seen_count);
+        }
+        //endregion
     }
 
-    /**
-     * Accepts contact name (case insensitive), returns:
-     * @return String[2] where [0] is the contact's phone number,
-     * and [1] is the contact's name as stored in the phone. Returns null if contact not found.
-     * @throws SecurityException If Contacts permission is not given.
-     */
-    private String[] getContactInfo(String name) throws SecurityException {
-        //TODO what if they have multiple phone numbers - return a bigger array with the extras?
-        String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
-                " like'%" + name + "%'";
-        String[] projection = new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME};
-        final int numberIndex = 0, nameIndex = 1;
-        Cursor query;
+    private void readCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
+            throws IOException {
+        assert contact != null;
+        Log.d(TAG, "Reading from " + contact.preferred());
+        int numberToRetrieve = Integer.parseInt(inReader.readLine());
+        int outputWidth = Integer.parseInt(inReader.readLine());
+
+        String convo;
         try {
-            query = getContentResolver().query(
-                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    projection, selection, null, null);
+            convo = Utilities.getConversation(contact, numberToRetrieve,
+                    outputWidth);
+
+            if (convo != null) {
+                sendReply(replyStream, convo);
+                Log.d(TAG, "Responded with convo with " + contact.name());
+            }
+            else {
+                sendReply(replyStream, "No messages found with " +
+                        contact.name() + ", " + contact.preferred() + ".");
+            }
+
         }
         catch (SecurityException e) {
-            Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
-            throw(e);
+            sendReply(replyStream, "Could not retrieve messages: make sure " +
+                    getString(R.string.app_name) + " has SMS permission.");
+            Log.w(TAG, "No SMS permission for reading.");
         }
-        String[] contactInfo = {null, null};
-        try {
-            if (query != null) {
-                if (query.moveToFirst()) {
-                    contactInfo[0] = query.getString(numberIndex); //Utilities.removeNonDigitCharacters(query.getString(numberIndex));
-                    //name as stored in contacts
-                    contactInfo[1] = query.getString(nameIndex);
-//                    Log.d(TAG, "Found first contact: " + contactInfo[1]);
-                } else {
-                    Log.w(TAG, "No result for getting phone number of " + name);
-                    return null;
-                }
-                while(query.moveToNext()) {
-//                    Log.d(TAG, "Found another contact similar to " + name + ": " +
-//                            c.getString(nameIndex));
-                    //The above code selects 'mom old' over 'mom'. This is to fix that issue -
-                    //it guarantees that if you enter the exact correct name you will get the
-                    //contact every time.
-                    if(query.getString(nameIndex).equalsIgnoreCase(name)) {
-                        contactInfo[0] = query.getString(numberIndex);
-                        //name as stored in contacts
-                        contactInfo[1] = query.getString(nameIndex);
-                    }
-                }
-            }
-            else {
-                Log.e(TAG, "Received nonexistent contact " + name);
-                return null;
-            }
-        }
-        finally {
-            if(query != null)
-                query.close();
-        }
-        return contactInfo;
     }
 
-    private String getAllContacts() throws SecurityException {
-        String[] projection = new String[]{
-                ContactsContract.Contacts._ID,
-                ContactsContract.Contacts.HAS_PHONE_NUMBER};
-
-        Cursor query;
+    private void unreadCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
+            throws IOException {
         try {
-            query = getContentResolver().query(ContactsContract.Contacts.CONTENT_URI,
-                    projection, null, null,
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" ASC");
+            int numberToRetrieve = Integer.parseInt(inReader.readLine());
+            //List<String> rawConvo = getUnread(null)
+            String result;
+            if (contact != null)
+                result = Utilities.getUnread(contact.preferred(), numberToRetrieve);
+            else
+                result = Utilities.getUnread(null, numberToRetrieve);
+
+            if (result != null)
+                sendReply(replyStream, result);
+            else if (contact != null)
+                sendReply(replyStream, "No unread messages found with " +
+                        contact.name() + ".");
+            else {
+                sendReply(replyStream, "No unread messages.");
+            }
         }
         catch (SecurityException e) {
-            Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
-            throw(e);
+            sendReply(replyStream, "Could not retrieve messages: make sure " +
+                    getString(R.string.app_name) + " has SMS permission.");
+            Log.w(TAG, "No SMS permission for reading.");
         }
-
-        StringBuilder contactsBuilder = new StringBuilder();
-        try {
-            if (query != null) {
-                if(query.moveToFirst()) {
-                    int hasNumberIndex = query.getColumnIndex(
-                            ContactsContract.Contacts.HAS_PHONE_NUMBER);
-                    int idIndex = query.getColumnIndex(ContactsContract.Contacts._ID);
-                    do {
-                        long id = query.getLong(idIndex);
-                        if (query.getInt(hasNumberIndex) > 0) {
-                            List<String> numbers = getNumbersForContact(id);
-                            for(String s : numbers)
-                                contactsBuilder.append(s).append('\n');
-                        }
-
-                    } while (query.moveToNext());
-                }
-                else {
-                    Log.w(TAG, "Empty cursor when getting all contacts!");
-                    return null;
-                }
-            }
-            else {
-                Log.e(TAG, "Null cursor when getting all contacts!");
-                return null;
-            }
-        }
-        finally {
-            if(query != null)
-                query.close();
-        }
-        return contactsBuilder.toString();
-    }
-
-    private List<String> getNumbersForContact(long contactId) {
-        Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
-
-        Cursor numbersQuery = getContentResolver().query(uri, null,
-                ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = ?",
-                new String[] { ""+contactId }, null);
-
-        List<String> contacts = new ArrayList<>();
-        if (numbersQuery == null) {
-            Log.w(TAG, "Null result getting numbers for " + contactId);
-            return contacts;
-        }
-        try {
-            if (!numbersQuery.moveToFirst()) {
-                Log.d(TAG, "No numbers for " + contactId);
-            }
-            else {
-                int nameCol = numbersQuery.getColumnIndex(
-                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
-                int numberCol = numbersQuery.getColumnIndex(
-                        ContactsContract.CommonDataKinds.Phone.NUMBER);
-                int typeCol = numbersQuery.getColumnIndex(
-                        ContactsContract.CommonDataKinds.Phone.TYPE);
-
-                String name = numbersQuery.getString(nameCol);
-                //TODO formatting (line up colons or smtg) and normalize numbers
-                String result = name + ":";
-                do {
-                    String number = numbersQuery.getString(numberCol);
-                    //normalize the numbers
-//                    if (Build.VERSION.SDK_INT >= 21)
-//                        number = PhoneNumberUtils
-//                                .formatNumber(number, Locale.getDefault().getISO3Country());
-//                    else
-//                        number = PhoneNumberUtils.formatNumber(number);
-                    int typeInt = numbersQuery.getInt(typeCol);
-                    String type = ContactsContract.CommonDataKinds.Phone
-                            .getTypeLabel(getResources(), typeInt, "").toString();
-                    result += " " + type + " : " + number;
-                } while (numbersQuery.moveToNext());
-                contacts.add(result);
-                numbersQuery.close();
-            }
-        }
-        finally {
-            numbersQuery.close();
-        }
-        return contacts;
     }
 }
 
+//region SmsSendThread
 /**
  * Accepts a message and a phone number, and sends the message. Returns success.
  */
@@ -648,4 +421,70 @@ class SmsSendThread extends AsyncTask<String, Void, Boolean> {
         }
         return true;
     }
+}
+//endregion
+
+class Contact {
+    private static final String TAG = "Contact";
+
+    private String name;
+    // numbers includes the type, as returned from getNumberForContact
+    private List<String> numbers;
+
+    public Contact(String name, List<String> numbers) {
+        this.name = name;
+        this.numbers = numbers;
+    }
+
+    public void setPreferred(String number) {
+        boolean contains = false;
+        for(String n : numbers) {
+            if(numbers.size() == 1 || n.contains(number)) {
+                contains = true;
+                number = n;
+            }
+        }
+        if(!contains) {
+            // should not happen
+            Log.e(TAG, "Invalid number " + number + " passed to setPreferred!!");
+            return;
+        }
+        Log.d(TAG, "Setting " + name + "'s new preferred to " + number);
+        Context c = SmsServerService.INSTANCE.getApplicationContext();
+        SharedPreferences sp = c.getSharedPreferences(c.getString(R.string.preferred_contacts_file),
+                Context.MODE_PRIVATE);
+        SharedPreferences.Editor edit = sp.edit();
+        edit.putString(c.getString(R.string.preferred_contacts_prefix) + name, number);
+        Log.d(TAG, "Finished setting " + name + " pref to " + number);
+        edit.commit();
+    }
+
+    // there must be a better way to do this
+    public void setPreferred(int index) {
+        Log.d(TAG, "Setting " + name() + "'s preferred to " + numbers().get(index));
+        setPreferred(numbers.get(index));
+    }
+
+    private String checkPrefs() {
+        Context c = SmsServerService.INSTANCE.getApplicationContext();
+        SharedPreferences prefs = c.getSharedPreferences(
+                c.getString(R.string.preferred_contacts_file),
+                Context.MODE_PRIVATE);
+        String result = prefs
+                .getString(c.getString(R.string.preferred_contacts_prefix) + name, null);
+
+//        Log.d(TAG, name + "'s preferred number is: " + result);
+        return result;
+    }
+
+    public boolean hasPreferred() { return checkPrefs() != null; }
+
+    public String preferred() {
+        return checkPrefs();
+    }
+
+    public String name() { return name; }
+    public List<String> numbers() { return numbers; }
+//    public String number(int i) { return numbers.get(i); }
+    public int count() { return numbers.size(); }
 }

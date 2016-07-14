@@ -26,11 +26,12 @@ import java.util.List;
 
 public class MainActivity extends Activity {
 
-    private final String TAG = "Shexter_Main";
+    private final String TAG = "Main";
 
+    // each permission has to have a unique 'code' to ID whether user accepted it or not
     private static final int[] permissionCodes = { 1234, 1235, 1236, 1237, 1238 };
 
-    //order must match the order of permissionCodes
+    // order must match the order of permissionCodes
     private static final String[] requiredPermissions = {
             android.Manifest.permission.INTERNET,
             android.Manifest.permission.READ_CONTACTS,

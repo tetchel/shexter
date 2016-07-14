@@ -1,12 +1,20 @@
 package ca.tetchel.shexter;
 
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.telephony.PhoneNumberUtils;
+import android.util.Log;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +24,10 @@ import java.util.TimeZone;
  * Public static utility methods to support the bulk of the code.
  */
 public class Utilities {
+
+    private static final String TAG = "Shexter_Utilities";
+
+    ////////// String/Date Utilities //////////
 
     /**
      * Self documenting. Used to format phone numbers with +, -, spaces, etc.
@@ -208,5 +220,335 @@ public class Utilities {
             result.add(subSection);
         }
         return result;
+    }
+
+    ////////// Database Querying methods //////////
+
+    static String getConversation(Contact contact, int numberToRetrieve, int outputWidth)
+            throws SecurityException {
+        if(BuildConfig.DEBUG && !(contact != null && contact.count() != 0))
+            throw new RuntimeException("Invalid data passed to getConversation: contact is null? " +
+                    (contact != null));
+
+        ContentResolver contentResolver = SmsServerService.INSTANCE.getContentResolver();
+        Uri uri = Uri.parse("content://sms/");
+        final String[] projection = new String[]{"date", "body", "type", "address", "read"};
+
+        Cursor query = contentResolver.query(uri, projection, null, null, "date desc");
+        //Log.d(TAG, "Query selection is " + selection);
+
+        if(query == null) {
+            Log.e(TAG, "Null Cursor trying to get conversation with " + contact.name() + ", # " +
+                    contact.preferred());
+            return null;
+        }
+        else if(query.getCount() == 0) {
+            Log.e(TAG, "No result trying to get conversation with " + contact.name() + ", # " +
+                    contact.preferred());
+
+            query.close();
+            return null;
+        }
+
+        int count = 0;
+        List<String> messages = new ArrayList<>(numberToRetrieve);
+        List<Long> dates = new ArrayList<>(numberToRetrieve);
+
+        //this will succeed because already checked query's count
+        query.moveToFirst();
+        int dateCol = query.getColumnIndex("date");
+        int bodyCol = query.getColumnIndex("body");
+        int typeCol = query.getColumnIndex("type");
+        int addrCol = query.getColumnIndex("address");
+
+//        Log.d(TAG, "Successful sms query for " + contactInfo[1] + ", address is " +
+//                query.getString(query.getColumnIndex("address")));
+
+        String preferred = contact.preferred();
+        do {
+            String addr = query.getString(addrCol);
+            //Skip all texts that aren't from the requested contact, if one was given.
+            if(!PhoneNumberUtils.compare(addr, preferred))
+                continue;
+
+            String body = query.getString(bodyCol);
+            int type = query.getInt(typeCol);
+            long time = query.getLong(dateCol);
+
+            //add sender to the message
+            final String YOU = "You", SENDER_SUFFIX = ": ";
+            String sender = YOU;
+            String otherSender = contact.name();
+            if(type == Telephony.TextBasedSmsColumns.MESSAGE_TYPE_INBOX) {
+                sender = contact.name();
+                otherSender = YOU;
+            }
+            sender += SENDER_SUFFIX;
+            otherSender += SENDER_SUFFIX;
+
+            String message = Utilities.formatSms(sender, otherSender, body, time, outputWidth);
+
+            //date formatting is done below so store the time for that
+            dates.add(time);
+            messages.add(message);
+
+            count++;
+        } while(query.moveToNext() && count < numberToRetrieve);
+
+        query.close();
+
+        if(messages.isEmpty())
+            return null;
+
+        //reverse the conversation messages so they can be read top-to-bottom as is natural
+        Collections.reverse(messages);
+        Collections.reverse(dates);
+
+        return Utilities.messagesIntoOutput(messages, dates);
+    }
+
+    //will return List<String> when it is confirmed to work.
+    //TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
+    static String getUnread(@Nullable String phoneNumber, int numberToRetrieve) {
+        Log.d(TAG, "Getting unread");
+        Uri uri = Uri.parse("content://sms/inbox");
+
+        Cursor query = SmsServerService.INSTANCE.getContentResolver()
+                .query(uri, null, null, null, null);
+
+        if(query == null) {
+            Log.e(TAG, "Null Cursor trying to get unread.");
+            return null;
+        }
+        else if(query.getCount() == 0) {
+            Log.e(TAG, "No result trying to get unread.");
+
+            query.close();
+            return null;
+        }
+
+//        List<String> messages = new ArrayList<>();
+//        List<Long> dates = new ArrayList<>();
+
+        //this will succeed because already checked query's count
+        query.moveToFirst();
+
+        int count = 0;
+        //DEBUG ONLY
+        int seen_count = 0;
+        int read_count = 0;
+        int seen_and_read_count = 0;
+        int index_date = query.getColumnIndex("date");
+        int index_body = query.getColumnIndex("body");
+        int index_read = query.getColumnIndex("read");
+        int index_seen = query.getColumnIndex("seen");
+        int index_addr = query.getColumnIndex("address");
+        do {
+            String addr = query.getString(index_addr);
+            if(phoneNumber != null && !PhoneNumberUtils.compare(addr, phoneNumber))
+                continue;
+
+            String body = query.getString(index_body);
+            int spaceIndex = body.indexOf(' ');
+            if(spaceIndex != -1)
+                body = body.substring(0, spaceIndex);
+            int read = query.getInt(index_read);
+            int seen = query.getInt(index_seen);
+            long time = query.getLong(index_date);
+
+            if(read == 1) {
+                if(seen == 1) {
+                    seen_and_read_count++;
+                }
+                else {
+                    read_count++;
+                }
+            }
+            else if(seen == 1) {
+                seen_count++;
+            }
+
+            //type 1 is received, type 2 is sent
+            Log.d(TAG, String.format("Seen: %d Read: %d Date: %s Addr: %s Body: %s",
+                    seen, read, Utilities.unixTimeToTime(time), addr, body));
+
+            count++;
+        } while(query.moveToNext() && count < numberToRetrieve);
+
+        if(phoneNumber == null) { phoneNumber = "anyone"; }
+        return String.format(Locale.getDefault(), "Read %d received messages from %s. %d were seen and " +
+                        "read, %d were read but not seen, %d were seen but not read.",
+                count, phoneNumber, seen_and_read_count, read_count, seen_count);
+    }
+
+    /**
+     * Accepts contact name (case insensitive), returns:
+     * @return Contact data object with the contact's name and numbers.
+     */
+    static Contact getContactInfo(String name) throws SecurityException {
+        String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
+                " like'%" + name + "%'";
+        String[] projection = new String[] {
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ContactsContract.Contacts._ID,};
+        Cursor query;
+        try {
+            query = SmsServerService.INSTANCE.getContentResolver().query(
+                    ContactsContract.Contacts.CONTENT_URI,
+                    projection, selection, null, null);
+        }
+        catch (SecurityException e) {
+            Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
+            throw(e);
+        }
+        Contact result = null;
+        try {
+            if (query != null) {
+                int nameCol = query.getColumnIndex(
+                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                int idCol = query.getColumnIndex(ContactsContract.Contacts._ID );
+                if (query.moveToFirst()) {
+                    List<String> numbers = getNumbersForContact(query.getLong(idCol));
+                    result = new Contact(query.getString(nameCol), numbers);
+                } else {
+                    Log.w(TAG, "No result for getting phone number of " + name);
+                    return null;
+                }
+                while(query.moveToNext()) {
+//                    Log.d(TAG, "Found another contact similar to " + name + ": " +
+//                            c.getString(nameIndex));
+                    //The above code selects 'mom old' over 'mom'. This is to fix that issue -
+                    //it guarantees that if you enter the exact correct name you will get the
+                    //contact every time.
+                    if(result.numbers().isEmpty() ||
+                            query.getString(nameCol).equalsIgnoreCase(name)) {
+                        List<String> numbers = getNumbersForContact(query.getLong(idCol));
+                        //make sure the contact has numbers associated with them, otherwise
+                        //this is a waste. this is to stop from selecting email contacts etc
+                        if(!numbers.isEmpty())
+                            result = new Contact(query.getString(nameCol), numbers);
+                    }
+                }
+            }
+            else {
+                Log.e(TAG, "Received nonexistent contact " + name);
+                return null;
+            }
+        }
+        finally {
+            if(query != null)
+                query.close();
+        }
+        return result;
+    }
+
+    static String getAllContacts() throws SecurityException {
+        // could be expanded to start with an input / match a regex
+        String[] projection = new String[]{
+                ContactsContract.Contacts._ID,
+                ContactsContract.Contacts.HAS_PHONE_NUMBER,
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
+
+        Cursor query;
+        try {
+            query = SmsServerService.INSTANCE.getContentResolver().query(
+                    ContactsContract.Contacts.CONTENT_URI, projection, null, null,
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" ASC");
+        }
+        catch (SecurityException e) {
+            Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
+            throw(e);
+        }
+
+        StringBuilder contactsBuilder = new StringBuilder();
+        try {
+            if (query != null) {
+                if(query.moveToFirst()) {
+                    int hasNumberIndex = query.getColumnIndex(
+                            ContactsContract.Contacts.HAS_PHONE_NUMBER);
+                    int nameIndex = query.getColumnIndex(
+                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
+                    int idIndex = query.getColumnIndex(ContactsContract.Contacts._ID);
+                    do {
+                        long id = query.getLong(idIndex);
+                        String name = query.getString(nameIndex);
+                        if (query.getInt(hasNumberIndex) > 0) {
+                            List<String> numbers = getNumbersForContact(id);
+                            for(String s : numbers) {
+                                contactsBuilder.append(name).append(": ").append(s).append('\n');
+//                                Log.d(TAG, "id: " + id + " number: " + s);
+                            }
+                        }
+
+                    } while (query.moveToNext());
+                }
+                else {
+                    Log.w(TAG, "Empty cursor when getting all contacts!");
+                    return null;
+                }
+            }
+            else {
+                Log.e(TAG, "Null cursor when getting all contacts!");
+                return null;
+            }
+        }
+        finally {
+            if(query != null)
+                query.close();
+        }
+        return contactsBuilder.toString();
+    }
+
+    /**
+     * Gets all the numbers for a given contact.
+     * @param contactId ContactsContact.Contacts._ID of the contact to get numbers for.
+     * @return List of numbers, each in the form $type: $number
+     */
+    static List<String> getNumbersForContact(long contactId) {
+        Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
+        String[] projection = { ContactsContract.CommonDataKinds.Phone.NUMBER,
+                                ContactsContract.CommonDataKinds.Phone.TYPE };
+
+        Cursor numbersQuery = SmsServerService.INSTANCE.getContentResolver().query(uri, projection,
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = ?",
+                new String[] { ""+contactId }, null);
+
+        List<String> numbers = new ArrayList<>();
+        if (numbersQuery == null) {
+            Log.w(TAG, "Null result getting numbers for " + contactId);
+            return numbers;
+        }
+        try {
+            if (!numbersQuery.moveToFirst()) {
+                Log.d(TAG, "No numbers for contact #" + contactId);
+            }
+            else {
+                int numberCol = numbersQuery.getColumnIndex(
+                        ContactsContract.CommonDataKinds.Phone.NUMBER);
+                int typeCol = numbersQuery.getColumnIndex(
+                        ContactsContract.CommonDataKinds.Phone.TYPE);
+
+                //TODO formatting (line up colons or smtg) and normalize numbers
+                do {
+                    String number = numbersQuery.getString(numberCol);
+                    //normalize the numbers
+//                    if (Build.VERSION.SDK_INT >= 21)
+//                        number = PhoneNumberUtils
+//                                .formatNumber(number, Locale.getDefault().getISO3Country());
+//                    else
+//                        number = PhoneNumberUtils.formatNumber(number);
+                    int typeInt = numbersQuery.getInt(typeCol);
+                    String type = ContactsContract.CommonDataKinds.Phone
+                            .getTypeLabel(SmsServerService.INSTANCE.getResources(), typeInt, "")
+                                    .toString();
+                    numbers.add(type + ": " + number);
+                } while (numbersQuery.moveToNext());
+                numbersQuery.close();
+            }
+        }
+        finally {
+            numbersQuery.close();
+        }
+        return numbers;
     }
 }

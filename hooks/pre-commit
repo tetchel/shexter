@@ -2,12 +2,15 @@
 #
 # creates a todo list via TODO comments
 
+#supposed to remove extra spaces at end of lines
+#TODO convert all hard tabs to 4 spaces
+sed -i 's/[[:space:]]*$//' *
+
 grep -rnE --exclude=todo.txt '[#/] ?TODO' | sed 's/  //g' | sed 's/$/&\n/' > todo.txt
 
 # bundle the client into an archive for easy download
 tar -cf shexter_client.tar --exclude-vcs-ignores shexter_client/
 gzip -f shexter_client.tar
 
-echo
 touch .commit
 exit

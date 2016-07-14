@@ -21,6 +21,7 @@ public class SmsReceiver extends BroadcastReceiver {
     private List<SmsMessage> messages = new ArrayList<>();
 
     @Override
+    @SuppressWarnings("deprecated")
     public void onReceive(Context context, Intent intent) {
         SmsMessage[] msgs = null;
 
@@ -46,6 +47,7 @@ public class SmsReceiver extends BroadcastReceiver {
         }
     }
 
+    @SuppressWarnings("unused")
     public List<SmsMessage> getAllSms() {
         //convert to string / otherwise better format and put the common (shared with Service)
         //in Utils

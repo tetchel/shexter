@@ -10,7 +10,7 @@ Send and read texts from your Android phone using your Linux or Windows command 
 
 **Dependencies:** Python 3.
 
-To install, extract the client archive, navigate to the installer for your platform, and run the installer through the command line. If the install is successful, after restarting your terminal, you should be able to run 'shexter' from anywhere, and consult the help for how to use the client.
+To install, extract the client archive, navigate to the installer for your platform, and run the installer (using `python installer_windows.py` or `sudo ./install_linux.sh`) through the command line. If the install is successful, after restarting your terminal, you should be able to run 'shexter' from anywhere, and consult the help for how to use the client.
 
 On first run, you will be prompted for an IP address - make sure your phone and computer are on the same LAN and then enter the IP that appears in the Shexter app.
 
