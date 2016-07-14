@@ -25,7 +25,7 @@ import java.util.TimeZone;
  */
 public class Utilities {
 
-    private static final String TAG = "Shexter_Utilities";
+    private static final String TAG = "Utilities";
 
     ////////// String/Date Utilities //////////
 
@@ -224,13 +224,13 @@ public class Utilities {
 
     ////////// Database Querying methods //////////
 
-    static String getConversation(Contact contact, int numberToRetrieve, int outputWidth)
+    public static String getConversation(Contact contact, int numberToRetrieve, int outputWidth)
             throws SecurityException {
         if(BuildConfig.DEBUG && !(contact != null && contact.count() != 0))
             throw new RuntimeException("Invalid data passed to getConversation: contact is null? " +
                     (contact != null));
 
-        ContentResolver contentResolver = SmsServerService.INSTANCE.getContentResolver();
+        ContentResolver contentResolver = SmsServerService.instance().getContentResolver();
         Uri uri = Uri.parse("content://sms/");
         final String[] projection = new String[]{"date", "body", "type", "address", "read"};
 
@@ -309,11 +309,11 @@ public class Utilities {
 
     //will return List<String> when it is confirmed to work.
     //TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
-    static String getUnread(@Nullable String phoneNumber, int numberToRetrieve) {
+    public static String getUnread(@Nullable String phoneNumber, int numberToRetrieve) {
         Log.d(TAG, "Getting unread");
         Uri uri = Uri.parse("content://sms/inbox");
 
-        Cursor query = SmsServerService.INSTANCE.getContentResolver()
+        Cursor query = SmsServerService.instance().getContentResolver()
                 .query(uri, null, null, null, null);
 
         if(query == null) {
@@ -385,7 +385,7 @@ public class Utilities {
      * Accepts contact name (case insensitive), returns:
      * @return Contact data object with the contact's name and numbers.
      */
-    static Contact getContactInfo(String name) throws SecurityException {
+    public static Contact getContactInfo(String name) throws SecurityException {
         String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
                 " like'%" + name + "%'";
         String[] projection = new String[] {
@@ -393,7 +393,7 @@ public class Utilities {
                 ContactsContract.Contacts._ID,};
         Cursor query;
         try {
-            query = SmsServerService.INSTANCE.getContentResolver().query(
+            query = SmsServerService.instance().getContentResolver().query(
                     ContactsContract.Contacts.CONTENT_URI,
                     projection, selection, null, null);
         }
@@ -442,7 +442,12 @@ public class Utilities {
         return result;
     }
 
-    static String getAllContacts() throws SecurityException {
+    /**
+     * Gets all contacts the user has stored and returns a list of them with all their numbers.
+     * @return A formatted string
+     * @throws SecurityException
+     */
+    public static String getAllContacts() throws SecurityException {
         // could be expanded to start with an input / match a regex
         String[] projection = new String[]{
                 ContactsContract.Contacts._ID,
@@ -451,7 +456,7 @@ public class Utilities {
 
         Cursor query;
         try {
-            query = SmsServerService.INSTANCE.getContentResolver().query(
+            query = SmsServerService.instance().getContentResolver().query(
                     ContactsContract.Contacts.CONTENT_URI, projection, null, null,
                     ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" ASC");
         }
@@ -476,7 +481,6 @@ public class Utilities {
                             List<String> numbers = getNumbersForContact(id);
                             for(String s : numbers) {
                                 contactsBuilder.append(name).append(": ").append(s).append('\n');
-//                                Log.d(TAG, "id: " + id + " number: " + s);
                             }
                         }
 
@@ -504,12 +508,12 @@ public class Utilities {
      * @param contactId ContactsContact.Contacts._ID of the contact to get numbers for.
      * @return List of numbers, each in the form $type: $number
      */
-    static List<String> getNumbersForContact(long contactId) {
+    public static List<String> getNumbersForContact(long contactId) {
         Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
         String[] projection = { ContactsContract.CommonDataKinds.Phone.NUMBER,
                                 ContactsContract.CommonDataKinds.Phone.TYPE };
 
-        Cursor numbersQuery = SmsServerService.INSTANCE.getContentResolver().query(uri, projection,
+        Cursor numbersQuery = SmsServerService.instance().getContentResolver().query(uri, projection,
                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = ?",
                 new String[] { ""+contactId }, null);
 
@@ -539,7 +543,7 @@ public class Utilities {
 //                        number = PhoneNumberUtils.formatNumber(number);
                     int typeInt = numbersQuery.getInt(typeCol);
                     String type = ContactsContract.CommonDataKinds.Phone
-                            .getTypeLabel(SmsServerService.INSTANCE.getResources(), typeInt, "")
+                            .getTypeLabel(SmsServerService.instance().getResources(), typeInt, "")
                                     .toString();
                     numbers.add(type + ": " + number);
                 } while (numbersQuery.moveToNext());

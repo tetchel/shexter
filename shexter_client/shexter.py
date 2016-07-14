@@ -256,7 +256,8 @@ parser.add_argument('-m', '--multi', default=False, action='store_const',const=T
         help='Keep entering new messages to SEND until cancel signal is given. ' + 
         'Useful for sending multiple texts in succession.')
 parser.add_argument('-s', '--send', default=None, type=str,
-        help='Allows sending messages as a one-liner. Put your message after the flag.')
+        help='Allows sending messages as a one-liner. Put your message after the flag. ' +
+        'Must be in quotes for now.')
 #parser.add_argument('-n', '--number', default=False, action='store_const', const=True,
 #        help='Specify a phone number instead of a contact name for applicable commands.')
 
@@ -266,8 +267,6 @@ parser.add_argument('-s', '--send', default=None, type=str,
 # TODO -l --last for SEND, print the last (few?) messages received that convo for context.
 # could be easily implemented as a read request for n messages.
 # Could also set a default --last value in the .ini
-
-# TODO -s --send for specifying the message to send so user can send in one command.
 
 args = parser.parse_args()
 
@@ -323,8 +322,11 @@ if(command == COMMAND_READ or command == COMMAND_UNRE or command == COMMAND_SETP
 elif(args.count != DEFAULT_READ_COUNT):
     print('Ignoring -c flag: only valid for READ or UNREAD command.') 
 
-if(args.multi and command != COMMAND_SEND):
-    print('Ignoring -m flag: only valid for SEND command.')
+if(command != COMMAND_SEND):    
+    if(args.multi):
+        print('Ignoring -m flag: only valid for SEND command.')
+    if(args.send is not None):
+        print('Ignoring -s flag: only valid for SEND command.')
 
 ##### Contact the server #####
 

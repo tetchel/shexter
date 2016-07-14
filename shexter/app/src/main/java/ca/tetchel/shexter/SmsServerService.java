@@ -24,7 +24,8 @@ public class SmsServerService extends Service {
 
     private static final String TAG = "SmsServer";
 
-    public static SmsServerService INSTANCE;
+    // Singleton instance to be called to get access to the Application Context from static code
+    private static SmsServerService INSTANCE;
 
     private static final int PORT = 5678;
 
@@ -44,8 +45,14 @@ public class SmsServerService extends Service {
 
 //    private SmsReceiver receiver;
 
-    public SmsServerService() {
-        INSTANCE = this;
+    /**
+     * Access the singleton instance of this class for
+     * @return The singleton instance.
+     */
+    public static SmsServerService instance() {
+        if(INSTANCE == null)
+            INSTANCE = new SmsServerService();
+        return INSTANCE;
     }
 
     @Override
@@ -57,8 +64,6 @@ public class SmsServerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         serverThread = new ServerThread();
         serverThread.start();
-
-        //TODO ask for permission
 
         //Register to receive new SMS intents
 //        receiver = new SmsReceiver();
@@ -92,9 +97,9 @@ public class SmsServerService extends Service {
             }
             catch(IOException e) {
                 Log.e(TAG, "Exception opening ServerSocket", e);
-                Toast.makeText(getApplicationContext(), "An exception occurred opening the server " +
-                        "socket; the app will not work in its current state. Please try restarting " +
-                        "the app and possibly your phone.", Toast.LENGTH_LONG).show();
+                Toast.makeText(getApplicationContext(), "An exception occurred opening the server "
+                        + "socket; the app will not work in its current state. Please try "
+                        + "restarting the app and possibly your phone.", Toast.LENGTH_LONG).show();
                 onDestroy();
             }
             // Contact persists between requests, for setPref request, but could be useful
@@ -110,16 +115,15 @@ public class SmsServerService extends Service {
                     //print back to socket
                     PrintStream replyStream = new PrintStream(socket.getOutputStream());
                     //endregion
-                    //The request protocol is command\ncontact\nmessage,
+                    //The request protocol is command\ncontact\n command-specific-data
                     //so read the first line to get the command
                     String command = inReader.readLine();
                     Log.d(TAG, "Received command: " + command);
                     //region GetContact
-                    //the user has the option to retrieve unread messages for specific contact
-
                     String contactGetResult = null;
                     String originalCommand = null;
                     Contact contact = null;
+                    // Determine if the command requires a contact.
                     if( COMMAND_READ.equals(command) || COMMAND_SEND.equals(command) ||
                         COMMAND_SETPREF_LIST.equals(command) || COMMAND_SETPREF.equals(command) ||
                         (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command)) {
@@ -142,7 +146,7 @@ public class SmsServerService extends Service {
                             }
                             else if(contact.count() == 1 && !contact.hasPreferred()) {
                                 //will automatically pick the first/only number
-                                contact.setPreferred(null);
+                                contact.setPreferred(0);
                             }
                             else if(contact.count() > 1 && !contact.hasPreferred()
                                     && !command.equals(COMMAND_SETPREF)) {
@@ -201,7 +205,6 @@ public class SmsServerService extends Service {
     private void commandProcessor(String command, String originalCommand, Contact contact,
                                   BufferedReader inReader, PrintStream replyStream)
             throws IOException {
-        Log.d(TAG, "Original: " + originalCommand);
         if (COMMAND_SEND.equals(command)) {
             sendCommand(contact, inReader, replyStream);
         }
@@ -212,6 +215,7 @@ public class SmsServerService extends Service {
             unreadCommand(contact, inReader, replyStream);
         }
         else if (COMMAND_SETPREF_LIST.equals(command)) {
+            // respond to client with list of numbers to select from.
             String list = SETPREF_REQUIRED + '\n';
             list += contact.name() + " has " + contact.count() + " numbers: ";
             for(int i = 0; i < contact.count(); i++) {
@@ -223,6 +227,7 @@ public class SmsServerService extends Service {
             sendReply(replyStream, list);
         }
         else if (COMMAND_SETPREF.equals(command)) {
+            // receive the index to set the new preferred number to.
             int replyIndex = Integer.parseInt(inReader.readLine());
             Log.d(TAG, "Setting " + contact.name() + " pref to " + replyIndex);
             contact.setPreferred(replyIndex);
@@ -238,6 +243,7 @@ public class SmsServerService extends Service {
                         contact.preferred());
         }
         else if (COMMAND_CONTACTS.equals(command)) {
+            //TODO should accept tty width
             String allContacts = Utilities.getAllContacts();
             if (allContacts != null && !allContacts.isEmpty()) {
                 sendReply(replyStream, allContacts);
@@ -424,6 +430,10 @@ class SmsSendThread extends AsyncTask<String, Void, Boolean> {
 }
 //endregion
 
+/**
+ * Data type class to hold info about a contact, and access preferred contact data when it's
+ * required.
+ */
 class Contact {
     private static final String TAG = "Contact";
 
@@ -436,6 +446,10 @@ class Contact {
         this.numbers = numbers;
     }
 
+    /**
+     * Set the preferred number to the given one.
+     * @param number Number to set the contact's preferred number to.
+     */
     public void setPreferred(String number) {
         boolean contains = false;
         for(String n : numbers) {
@@ -449,42 +463,43 @@ class Contact {
             Log.e(TAG, "Invalid number " + number + " passed to setPreferred!!");
             return;
         }
-        Log.d(TAG, "Setting " + name + "'s new preferred to " + number);
-        Context c = SmsServerService.INSTANCE.getApplicationContext();
+        Context c = SmsServerService.instance().getApplicationContext();
         SharedPreferences sp = c.getSharedPreferences(c.getString(R.string.preferred_contacts_file),
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = sp.edit();
         edit.putString(c.getString(R.string.preferred_contacts_prefix) + name, number);
         Log.d(TAG, "Finished setting " + name + " pref to " + number);
-        edit.commit();
+        edit.apply();
     }
 
-    // there must be a better way to do this
+    /**
+     * Used to set preferred using an index instead of a string number. Intended to be used when
+     * getting setpref (NOT list) request from user.
+     * @param index Which index in numbers to set the new preferred to.
+     */
     public void setPreferred(int index) {
         Log.d(TAG, "Setting " + name() + "'s preferred to " + numbers().get(index));
         setPreferred(numbers.get(index));
     }
 
+    /**
+     * Check the Shared Preferences for a preferred number.
+     * ***** Could also check if the number is still in the phone book, and if not,
+     * require a setpref request.
+     * @return The preferred number if it is in the preferences, null otherwise.
+     */
     private String checkPrefs() {
-        Context c = SmsServerService.INSTANCE.getApplicationContext();
+        Context c = SmsServerService.instance().getApplicationContext();
         SharedPreferences prefs = c.getSharedPreferences(
                 c.getString(R.string.preferred_contacts_file),
                 Context.MODE_PRIVATE);
-        String result = prefs
-                .getString(c.getString(R.string.preferred_contacts_prefix) + name, null);
-
-//        Log.d(TAG, name + "'s preferred number is: " + result);
-        return result;
+        return prefs.getString(c.getString(R.string.preferred_contacts_prefix) + name, null);
     }
 
+    // Getters //
     public boolean hasPreferred() { return checkPrefs() != null; }
-
-    public String preferred() {
-        return checkPrefs();
-    }
-
+    public String preferred() { return checkPrefs(); }
     public String name() { return name; }
     public List<String> numbers() { return numbers; }
-//    public String number(int i) { return numbers.get(i); }
     public int count() { return numbers.size(); }
 }

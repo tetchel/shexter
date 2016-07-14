@@ -4,23 +4,21 @@ hooks/pre-commit:6:#TODO convert all hard tabs to 4 spaces
 
 shexter/app/src/main/java/ca/tetchel/shexter/BootCompletedReceiver.java:10: * //TODO need a way to stop/start the service (from UI)
 
-shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:61://TODO ask for permission
+shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:246://TODO should accept tty width
 
-shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:302://TODO modify this code to use User Data Headers so that the receiver
+shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:308://TODO modify this code to use User Data Headers so that the receiver
 
 shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:311://TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
 
-shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:531://TODO formatting (line up colons or smtg) and normalize numbers
+shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:535://TODO formatting (line up colons or smtg) and normalize numbers
 
 shexter_client/shexter.py:77:# TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
 
 shexter_client/shexter.py:164:# TODO allow backspacing of newlines.
 
-shexter_client/shexter.py:263:# TODO settings command allow user to make a new settings file from the client py. Code already exists
+shexter_client/shexter.py:264:# TODO settings command allow user to make a new settings file from the client py. Code already exists
 
-shexter_client/shexter.py:266:# TODO -l --last for SEND, print the last (few?) messages received that convo for context.
+shexter_client/shexter.py:267:# TODO -l --last for SEND, print the last (few?) messages received that convo for context.
 
-shexter_client/shexter.py:270:# TODO -s --send for specifying the message to send so user can send in one command.
-
-shexter_client/shexter.py:288:# TODO ring command - causes phone to ring regardless of volume
+shexter_client/shexter.py:287:# TODO ring command - causes phone to ring regardless of volume
 
