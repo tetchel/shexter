@@ -190,13 +190,13 @@ def handle_setpref_response(response) :
     preferred = int(preferred) - 1
     return preferred
 
-def contact_server(to_send, expectSetPrefPossible=True) :    
+def contact_server(to_send) :    
     sock = connect()
     sock.send(to_send.encode())
     response = receive_all(sock)
     sock.close()
 
-    if(expectSetPrefPossible and response.startswith(SETPREF_NEEDED)):
+    if(response.startswith(SETPREF_NEEDED)):
         selected = handle_setpref_response(response)
         to_send = COMMAND_SETPREF + '\n' + contact_name + '\n' + str(selected) + ('\n' + 
                 str(args.count) + '\n' + str(tty_w) + '\n')
@@ -258,8 +258,8 @@ parser.add_argument('-m', '--multi', default=False, action='store_const',const=T
 parser.add_argument('-s', '--send', default=None, type=str,
         help='Allows sending messages as a one-liner. Put your message after the flag. ' +
         'Must be in quotes for now.')
-#parser.add_argument('-n', '--number', default=False, action='store_const', const=True,
-#        help='Specify a phone number instead of a contact name for applicable commands.')
+parser.add_argument('-n', '--number', default=None, type=str,
+        help='Specify a phone number instead of a contact name for applicable commands.')
 
 # TODO settings command allow user to make a new settings file from the client py. Code already exists
 # in new_settings_file
@@ -284,13 +284,13 @@ COMMAND_READ = "read"
 COMMAND_UNRE = "unread"
 COMMAND_GETCONTACTS = "contacts"
 UNRE_CONTACT_FLAG = "-contact"
+NUMBER_FLAG = "-number"
 # TODO ring command - causes phone to ring regardless of volume
 
 contact_name = ''
 
 # Get the contact name if required
-
-if(command == COMMAND_SEND or command == COMMAND_READ or command == COMMAND_SETPREF_LIST):
+if(args.number is None and (command == COMMAND_SEND or command == COMMAND_READ or command == COMMAND_SETPREF_LIST)):
     contact_name = get_contact_name(args, True)
 else:
     contact_name = get_contact_name(args, False)
@@ -303,6 +303,8 @@ if(command == COMMAND_UNRE):
         to_send += '\n'
     else:
         to_send += UNRE_CONTACT_FLAG + '\n' + contact_name + '\n'
+elif(args.number is not None):
+    to_send += '\n' + NUMBER_FLAG + '\n' + args.number + '\n'
 else:
     to_send += '\n' + contact_name + '\n'
 
@@ -345,17 +347,19 @@ if(command == COMMAND_SEND):
         # see if user input message
         if(msg is None):            
             print("\nSend cancelled.")
+            break
         elif(len(msg.strip()) == 0):            
             print("Not sent: message body was empty.")
         else:
             # add the message to to_send
-            to_send += msg + '\n'
-            contact_server(to_send, True)
+            to_send_full = to_send + msg + '\n'
+            contact_server(to_send_full)
+            msg = ''
 
 elif(command == COMMAND_READ or command == COMMAND_SETPREF_LIST):
-    contact_server(to_send, True)
+    contact_server(to_send)
 elif(command == COMMAND_GETCONTACTS):
-    contact_server(to_send, False)
+    contact_server(to_send)
 else:
     print('Command \"{}\" not recognized.\n'.format(command))
     parser.print_help()

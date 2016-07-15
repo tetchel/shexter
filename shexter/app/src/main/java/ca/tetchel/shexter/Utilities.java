@@ -401,6 +401,7 @@ public class Utilities {
             Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
             throw(e);
         }
+
         Contact result = null;
         try {
             if (query != null) {

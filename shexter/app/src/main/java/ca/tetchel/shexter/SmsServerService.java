@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -38,7 +39,9 @@ public class SmsServerService extends Service {
                                 // flag to send back to the client when setpref required
                                 SETPREF_REQUIRED = "NEED-SETPREF",
                                 COMMAND_CONTACTS = "contacts",
-                                UNREAD_CONTACT_FLAG = "-contact";
+                                UNREAD_CONTACT_FLAG = "-contact",
+                                NUMBER_FLAG = "-number";
+
 
     private ServerSocket serverSocket;
     private ServerThread serverThread;
@@ -46,12 +49,10 @@ public class SmsServerService extends Service {
 //    private SmsReceiver receiver;
 
     /**
-     * Access the singleton instance of this class for
+     * Access the singleton instance of this class for getting the context.
      * @return The singleton instance.
      */
     public static SmsServerService instance() {
-        if(INSTANCE == null)
-            INSTANCE = new SmsServerService();
         return INSTANCE;
     }
 
@@ -64,6 +65,7 @@ public class SmsServerService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         serverThread = new ServerThread();
         serverThread.start();
+        INSTANCE = this;
 
         //Register to receive new SMS intents
 //        receiver = new SmsReceiver();
@@ -131,8 +133,16 @@ public class SmsServerService extends Service {
                         //second line for contact name
                         String contactNameInput = inReader.readLine();
                         try {
-                            //then get the contact's phone numbers from his/her name
-                            contact = Utilities.getContactInfo(contactNameInput);
+                            if(contactNameInput.equals(NUMBER_FLAG)) {
+                                // if number flag was given, don't retrieve contact, build one
+                                // with the number
+                                String number = inReader.readLine();
+                                contact = new Contact(number, Collections.singletonList(number));
+                            }
+                            else {
+                                // then get the contact's phone numbers from his/her name
+                                contact = Utilities.getContactInfo(contactNameInput);
+                            }
 
                             if(contact == null) {
                                 //non existent contact
