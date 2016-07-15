@@ -104,8 +104,8 @@ public class SmsServerService extends Service {
                         + "restarting the app and possibly your phone.", Toast.LENGTH_LONG).show();
                 onDestroy();
             }
-            // Contact persists between requests, for setPref request, but could be useful
-            // for others.
+            // used to track previous command when setpref is used.
+            String originalCommand = null;
             while(!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {
                     //region SetupServer
@@ -123,7 +123,6 @@ public class SmsServerService extends Service {
                     Log.d(TAG, "Received command: " + command);
                     //region GetContact
                     String contactGetResult = null;
-                    String originalCommand = null;
                     Contact contact = null;
                     // Determine if the command requires a contact.
                     if( COMMAND_READ.equals(command) || COMMAND_SEND.equals(command) ||

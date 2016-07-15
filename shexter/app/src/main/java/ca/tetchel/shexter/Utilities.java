@@ -526,6 +526,7 @@ public class Utilities {
         try {
             if (!numbersQuery.moveToFirst()) {
                 Log.d(TAG, "No numbers for contact #" + contactId);
+                // will return empty list
             }
             else {
                 int numberCol = numbersQuery.getColumnIndex(

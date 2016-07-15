@@ -4,13 +4,13 @@ hooks/pre-commit:6:#TODO convert all hard tabs to 4 spaces
 
 shexter/app/src/main/java/ca/tetchel/shexter/BootCompletedReceiver.java:10: * //TODO need a way to stop/start the service (from UI)
 
-shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:256://TODO should accept tty width
+shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:255://TODO should accept tty width
 
-shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:318://TODO modify this code to use User Data Headers so that the receiver
+shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:317://TODO modify this code to use User Data Headers so that the receiver
 
 shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:311://TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
 
-shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:536://TODO formatting (line up colons or smtg) and normalize numbers
+shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:537://TODO formatting (line up colons or smtg) and normalize numbers
 
 shexter_client/shexter.py:77:# TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
 
