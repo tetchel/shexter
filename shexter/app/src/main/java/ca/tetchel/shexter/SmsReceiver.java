@@ -3,8 +3,11 @@ package ca.tetchel.shexter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -18,7 +21,9 @@ import java.util.List;
  */
 public class SmsReceiver extends BroadcastReceiver {
 
-    private List<SmsMessage> messages = new ArrayList<>();
+    private static final String TAG = "SmsReceiver";
+
+    private static List<SmsMessage> messages = new ArrayList<>();
 
     @Override
     @SuppressWarnings("deprecated")
@@ -42,15 +47,46 @@ public class SmsReceiver extends BroadcastReceiver {
             messages.addAll(Arrays.asList(msgs));
 
         if (msgs != null && msgs.length > -1) {
-            Log.i("SmsReceiver", "Received from: " +
+            Log.i(TAG, "Received from: " +
                     msgs[0].getOriginatingAddress());
         }
+//        Log.d(TAG, messages.size() + " messages are unread");
     }
 
-    @SuppressWarnings("unused")
-    public List<SmsMessage> getAllSms() {
-        //convert to string / otherwise better format and put the common (shared with Service)
-        //in Utils
-        return messages;
+    public String getAllSms(int width) {
+        List<String> formattedMessages = new ArrayList<>(messages.size());
+        List<Long> dates = new ArrayList<>(messages.size());
+
+        for(SmsMessage sms : messages) {
+            String sender = sms.getOriginatingAddress();
+            Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                    Uri.encode(sender));
+            Cursor c = SmsServerService.instance().getContentResolver()
+                    .query(lookupUri, new String[]{ ContactsContract.Data.DISPLAY_NAME },
+                            null, null, null);
+
+            if(c != null) {
+                try {
+                    if(c.moveToFirst()) {
+                        String displayName = c.getString(0);
+                        if(!displayName.isEmpty())
+                            sender = displayName + ": ";
+                    }
+                }
+                catch (Exception e) {
+                    Log.e(TAG, "Exception occurred getting contact name for sms.", e);
+                }
+                finally{
+                    c.close();
+                }
+            }
+
+            long timestamp = sms.getTimestampMillis();
+            formattedMessages.add(Utilities.formatSms(sender, "", sms.getMessageBody(),
+                    timestamp, width));
+            dates.add(timestamp);
+        }
+        messages.clear();
+        return Utilities.messagesIntoOutput(formattedMessages, dates);
     }
 }

@@ -46,7 +46,7 @@ public class SmsServerService extends Service {
     private ServerSocket serverSocket;
     private ServerThread serverThread;
 
-//    private SmsReceiver receiver;
+    private SmsReceiver receiver;
 
     /**
      * Access the singleton instance of this class for getting the context.
@@ -68,7 +68,7 @@ public class SmsServerService extends Service {
         INSTANCE = this;
 
         //Register to receive new SMS intents
-//        receiver = new SmsReceiver();
+        receiver = new SmsReceiver();
 
         Log.d(TAG, getString(R.string.app_name) +" service started.");
 
@@ -221,7 +221,7 @@ public class SmsServerService extends Service {
             readCommand(contact, inReader, replyStream);
         }
         else if (COMMAND_UNREAD.equals(command)) {
-            unreadCommand(contact, inReader, replyStream);
+            unreadCommand(inReader, replyStream);
         }
         else if (COMMAND_SETPREF_LIST.equals(command)) {
             // respond to client with list of numbers to select from.
@@ -246,7 +246,7 @@ public class SmsServerService extends Service {
             else if(COMMAND_READ.equals(originalCommand))
                 readCommand(contact, inReader, replyStream);
             else if(COMMAND_UNREAD.equals(originalCommand))
-                unreadCommand(contact, inReader, replyStream);
+                unreadCommand(inReader, replyStream);
             else
                 sendReply(replyStream, "Changed " + contact.name() + "'s preferred number to: " +
                         contact.preferred());
@@ -271,7 +271,6 @@ public class SmsServerService extends Service {
 
     private void sendCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
             throws IOException {
-        //region Send Command
         String line;
         StringBuilder msgBodyBuilder = new StringBuilder();
         //read the message body into msgBodyBuilder
@@ -350,7 +349,6 @@ public class SmsServerService extends Service {
                 Log.e(TAG, "Exception from sendThread", e);
             }
         }
-        //endregion
     }
 
     private void readCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
@@ -382,22 +380,19 @@ public class SmsServerService extends Service {
         }
     }
 
-    private void unreadCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
+    private void unreadCommand(BufferedReader inReader, PrintStream replyStream)
             throws IOException {
+        int outputWidth = Integer.parseInt(inReader.readLine());
         try {
-            int numberToRetrieve = Integer.parseInt(inReader.readLine());
-            //List<String> rawConvo = getUnread(null)
-            String result;
-            if (contact != null)
-                result = Utilities.getUnread(contact.preferred(), numberToRetrieve);
-            else
-                result = Utilities.getUnread(null, numberToRetrieve);
+            String unread = receiver.getAllSms(outputWidth);
 
-            if (result != null)
-                sendReply(replyStream, result);
-            else if (contact != null)
-                sendReply(replyStream, "No unread messages found with " +
-                        contact.name() + ".");
+            if (unread != null && !unread.isEmpty()) {
+                unread = "Unread Messages:\n" + unread;
+                sendReply(replyStream, unread);
+            }
+//            else if (contact != null)
+//                sendReply(replyStream, "No unread messages found with " +
+//                        contact.name() + ".");
             else {
                 sendReply(replyStream, "No unread messages.");
             }

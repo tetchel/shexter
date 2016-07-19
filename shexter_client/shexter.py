@@ -205,12 +205,19 @@ def contact_server(to_send) :
         sock.send(to_send.encode())
         response = receive_all(sock);
 
+    return response
+
+COMMAND_UNRE = "unread"
+# Should call this every 5 seconds or so
+def check_for_unread(tty_w) :
+    to_send = COMMAND_UNRE + '\n' + str(tty_w) + '\n'
+    response = contact_server(to_send)
+
     print(response)
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ #
-
 
 ##### Config Setup #####
 
@@ -245,7 +252,7 @@ DEFAULT_READ_COUNT = 30
 parser = argparse.ArgumentParser(description='Send and read texts using your ' + 
         'Android phone from the command line.')
 parser.add_argument('command', type=str,
-        help='Possible commands: Send [Contact Name], Read [Contact Name], Unread, Contacts, ' + 
+        help='Possible commands: Send [Contact Name], Read [Contact Name], Contacts, ' + 
         'SetPref. Not case sensitive.')
 parser.add_argument('contact_name', type=str, nargs='*', 
         help='Specify contact for SEND and READ commands.')
@@ -272,6 +279,10 @@ args = parser.parse_args()
 
 command = args.command.lower()
 
+# determine tty width
+tty_size = get_terminal_size()
+tty_w = tty_size[0]
+
 # If the user is doing a regular setpref (not one from read/send), they must start with a list
 if(command == COMMAND_SETPREF):
     command = COMMAND_SETPREF_LIST
@@ -281,7 +292,6 @@ if(command == COMMAND_SETPREF):
 # Command constants, must match those in the server code.
 COMMAND_SEND = "send"
 COMMAND_READ = "read"
-COMMAND_UNRE = "unread"
 COMMAND_GETCONTACTS = "contacts"
 UNRE_CONTACT_FLAG = "-contact"
 NUMBER_FLAG = "-number"
@@ -297,32 +307,28 @@ else:
 
 # Build server request
 to_send = command;
-if(command == COMMAND_UNRE):
+#if(command == COMMAND_UNRE):
     # contact_name is optional for UNRE
-    if(not contact_name):
-        to_send += '\n'
-    else:
-        to_send += UNRE_CONTACT_FLAG + '\n' + contact_name + '\n'
-elif(args.number is not None):
+#    if(not contact_name):
+#        to_send += '\n'
+#    else:
+#        to_send += UNRE_CONTACT_FLAG + '\n' + contact_name + '\n'
+if(args.number is not None):
     to_send += '\n' + NUMBER_FLAG + '\n' + args.number + '\n'
 else:
     to_send += '\n' + contact_name + '\n'
 
 READ_COUNT_LIMIT = 5000
 # For read commands, include the number of messages requested
-if(command == COMMAND_READ or command == COMMAND_UNRE or command == COMMAND_SETPREF_LIST):
+if(command == COMMAND_READ or command == COMMAND_SETPREF_LIST):
     if(args.count > READ_COUNT_LIMIT and command):
         print('Retrieving the maximum number of messages: ' + str(READ_COUNT_LIMIT))
         args.count = READ_COUNT_LIMIT
 
-    # determine tty width
-    tty_size = get_terminal_size()
-    tty_w = tty_size[0]
-
     to_send += str(args.count) + '\n' + str(tty_w) + '\n'
 
 elif(args.count != DEFAULT_READ_COUNT):
-    print('Ignoring -c flag: only valid for READ or UNREAD command.') 
+    print('Ignoring -c flag: only valid for READ command.') 
 
 if(command != COMMAND_SEND):    
     if(args.multi):
@@ -353,13 +359,15 @@ if(command == COMMAND_SEND):
         else:
             # add the message to to_send
             to_send_full = to_send + msg + '\n'
-            contact_server(to_send_full)
+            response = contact_server(to_send_full)
+            print(response)
             msg = ''
 
-elif(command == COMMAND_READ or command == COMMAND_SETPREF_LIST):
-    contact_server(to_send)
-elif(command == COMMAND_GETCONTACTS):
-    contact_server(to_send)
+elif(command == COMMAND_READ or command == COMMAND_SETPREF_LIST or command == COMMAND_GETCONTACTS):
+    response = contact_server(to_send)
+    print(response)
+elif(command == COMMAND_UNRE):
+    check_for_unread(tty_w)
 else:
     print('Command \"{}\" not recognized.\n'.format(command))
     parser.print_help()

@@ -5,8 +5,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.telephony.PhoneNumberUtils;
 import android.util.Log;
 
@@ -28,30 +26,6 @@ public class Utilities {
     private static final String TAG = "Utilities";
 
     ////////// String/Date Utilities //////////
-
-    /**
-     * Self documenting. Used to format phone numbers with +, -, spaces, etc.
-     */
-    /*
-    public static String removeNonDigitCharacters(String input) {
-        StringBuilder sb = new StringBuilder();
-        for(int i = 0; i < input.length(); i++) {
-            char c = input.charAt(i);
-            if(Character.isDigit(c)) {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }*/
-
-    /**
-     * Turns 1231231234 into 123-123-1234
-     */
-    /*
-    public static String hyphenatePhoneNumber(String phoneNumber) {
-        return phoneNumber.substring(0, 3) + '-' + phoneNumber.substring(3, 6) + '-'
-                + phoneNumber.substring(6);
-    }*/
 
     /**
      * Determine how old the message is and return a date label depending on the current date.
@@ -170,7 +144,6 @@ public class Utilities {
         return messageBuilder.toString();
     }
 
-    @NonNull
     public static String messagesIntoOutput(List<String> messages, List<Long> dates) {
         //combine the messages into one string to be sent to the client
         StringBuilder resultBuilder = new StringBuilder();
@@ -307,6 +280,7 @@ public class Utilities {
         return Utilities.messagesIntoOutput(messages, dates);
     }
 
+    /*
     //will return List<String> when it is confirmed to work.
     //TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
     public static String getUnread(@Nullable String phoneNumber, int numberToRetrieve) {
@@ -380,6 +354,7 @@ public class Utilities {
                         "read, %d were read but not seen, %d were seen but not read.",
                 count, phoneNumber, seen_and_read_count, read_count, seen_count);
     }
+    */
 
     /**
      * Accepts contact name (case insensitive), returns:
