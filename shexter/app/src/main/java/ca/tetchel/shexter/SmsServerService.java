@@ -151,8 +151,7 @@ public class SmsServerService extends Service {
                             }
                             else if(contact.count() == 0) {
                                 contactGetResult = "You have no phone number associated with " +
-                                        contact.name() + ". If you are sure you should, " +
-                                        "try more specific contact name.";
+                                        contact.name() + ".";
                             }
                             else if(contact.count() == 1 && !contact.hasPreferred()) {
                                 //will automatically pick the first/only number

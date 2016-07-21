@@ -15,6 +15,7 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -25,6 +26,8 @@ public class SmsReceiver extends BroadcastReceiver {
     private static final String TAG = "SmsReceiver";
 
     private static List<SmsMessage> messages = new ArrayList<>();
+
+//    private static final Object messagesLock = new Object();
 
     @Override
     @SuppressWarnings("deprecated")
@@ -61,9 +64,10 @@ public class SmsReceiver extends BroadcastReceiver {
      * @param number Number for which to remove unread messages.
      */
     public void removeMessagesFromNumber(String number) {
-        for(SmsMessage sms : messages) {
+        for(Iterator<SmsMessage> it = messages.iterator(); it.hasNext();) {
+            SmsMessage sms = it.next();
             if(PhoneNumberUtils.compare(sms.getOriginatingAddress(), number)) {
-                messages.remove(sms);
+                it.remove();
             }
         }
     }
