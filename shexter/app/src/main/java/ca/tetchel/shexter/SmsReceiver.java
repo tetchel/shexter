@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
+import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
@@ -46,11 +47,25 @@ public class SmsReceiver extends BroadcastReceiver {
         if(msgs != null)
             messages.addAll(Arrays.asList(msgs));
 
+        /*
         if (msgs != null && msgs.length > -1) {
             Log.i(TAG, "Received from: " +
                     msgs[0].getOriginatingAddress());
         }
+        */
 //        Log.d(TAG, messages.size() + " messages are unread");
+    }
+
+    /**
+     * Call this after a read command to clear the unread messages for that conversation.
+     * @param number Number for which to remove unread messages.
+     */
+    public void removeMessagesFromNumber(String number) {
+        for(SmsMessage sms : messages) {
+            if(PhoneNumberUtils.compare(sms.getOriginatingAddress(), number)) {
+                messages.remove(sms);
+            }
+        }
     }
 
     public String getAllSms(int width) {

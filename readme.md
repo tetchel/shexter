@@ -16,7 +16,7 @@ On first run, you will be prompted for an IP address - make sure your phone and 
 
 Note that, for now, Shexter ignores MMS messages altogether. This can be a problem when communicating with users who send MMS and don't realize it.
 
-### Fonts
+### Fonts (Optional)
 
 You are probably going to want Unicode font support in your terminal so your Unicode characters do not show as blocks.
 

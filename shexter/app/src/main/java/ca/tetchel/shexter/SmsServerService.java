@@ -151,7 +151,8 @@ public class SmsServerService extends Service {
                             }
                             else if(contact.count() == 0) {
                                 contactGetResult = "You have no phone number associated with " +
-                                        contact.name();
+                                        contact.name() + ". If you are sure you should, " +
+                                        "try more specific contact name.";
                             }
                             else if(contact.count() == 1 && !contact.hasPreferred()) {
                                 //will automatically pick the first/only number
@@ -170,8 +171,7 @@ public class SmsServerService extends Service {
                                     getString(R.string.app_name) + " has Contacts permission.";
                         }
                     }
-                    if(contactGetResult != null ||
-                            (contact == null && !COMMAND_UNREAD.equals(command))) {
+                    if(contactGetResult != null) {
                         //if something has gone wrong already, don't do anything else
                         sendReply(replyStream, contactGetResult);
                     }
@@ -353,7 +353,6 @@ public class SmsServerService extends Service {
 
     private void readCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
             throws IOException {
-        assert contact != null;
         Log.d(TAG, "Reading from " + contact.preferred());
         int numberToRetrieve = Integer.parseInt(inReader.readLine());
         int outputWidth = Integer.parseInt(inReader.readLine());
@@ -365,6 +364,7 @@ public class SmsServerService extends Service {
 
             if (convo != null) {
                 sendReply(replyStream, convo);
+                receiver.removeMessagesFromNumber(contact.preferred());
                 Log.d(TAG, "Responded with convo with " + contact.name());
             }
             else {
