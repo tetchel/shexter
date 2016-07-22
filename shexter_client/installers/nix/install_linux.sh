@@ -16,8 +16,10 @@ fi
 OPT_DIR='/opt/shexter/'
 
 # $_ should have worked but it did not
-mkdir -p $OPT_DIR && cp ../../shexter.py $OPT_DIR && 
-       cp ../../lib/appdirs.py $OPT_DIR && cp ./shexter $OPT_DIR
+mkdir -p $OPT_DIR && 
+        cp ../../shexter.py $OPT_DIR && 
+        cp ../../lib/appdirs.py $OPT_DIR && cp ./shexter $OPT_DIR &&
+        cp ../../shexter_persistant.py $OPT_DIR
 
 ln -s $OPT_DIR"shexter" /usr/bin/shexter
 
@@ -30,7 +32,9 @@ if [ -f $OPT_DIR"shexter.py" ]  && [ -f $OPT_DIR"appdirs.py" ] &&
         [ -f /usr/bin/shexter ] && [ `expr $NOW - $FDATE1` -lt 5 ] &&
         [ `expr $NOW - $FDATE2` -lt 5 ] ; then
 	
-    chmod a+x /opt/shexter/shexter
+    chmod a+rx /opt/shexter/shexter
+    chmod a+rx /opt/shexter/shexter.py
+    chmod a+rx /opt/shexter/shexter_persistant.py
 
     echo "Success!"
 else

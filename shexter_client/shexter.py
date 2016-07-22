@@ -7,7 +7,7 @@ import errno
 import argparse
 import configparser
 from shutil import get_terminal_size
-from lib.appdirs import user_config_dir
+from appdirs import user_config_dir
 
 APP_NAME = 'Shexter'
 AUTHOR_NAME = 'tetchel'
@@ -112,13 +112,6 @@ def get_argparser():
     parser.add_argument('-n', '--number', default=None, type=str,
             help='Specify a phone number instead of a contact name for applicable commands.')
 
-    # TODO settings command allow user to make a new settings file from the client py. Code already exists
-    # in new_settings_file
-
-    # TODO -l --last for SEND, print the last (few?) messages received that convo for context.
-    # could be easily implemented as a read request for n messages.
-    # Could also set a default --last value in the .ini
-
     return parser
 
 ##### Networking #####
@@ -135,17 +128,15 @@ def connect(feedback=True):
         if(feedback):
             print("Connect succeeded!\n")
     except OSError as e:
-        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + settings_fullpath
-            + '\nwith the displayed IP, and make sure your phone and computer are connected to the'
+        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + SETTINGS_FILE_NAME
+            + 'with the displayed IP, and make sure your phone and computer are connected to the'
             + ' same network.')
         errorcode = e.errno
         if errorcode == errno.ECONNREFUSED:
             print('Connection refused: Likely Shexter is not running on your phone.' + TRY_RESTART_MSG)
-            quit()
         elif errorcode == errno.ETIMEDOUT:
             print('Connection timeout: Likely your phone is not on the same network as your ' +
                 'computer or the IP address ' + ip_addr + ' is not correct.' + TRY_RESTART_MSG)
-            quit()
         else:
             print('Unexpected error occurred: ')
             print(str(e))
@@ -375,7 +366,7 @@ def do_command(command, to_send, args):
     elif(command == "help" or command == "h"):
         return False
     else:        
-        print('Command \"{}\" not recognized.\nType \"help\"" to see a list of commands.'
+        print('Command \"{}\" not recognized.\nType "help" to see a list of commands.'
             .format(command))
     return True
 
