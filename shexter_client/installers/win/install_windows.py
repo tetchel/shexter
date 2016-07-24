@@ -14,6 +14,7 @@ from appdirs import user_config_dir
 INSTALL_DIR = user_config_dir('Shexter', 'tetchel')
 BAT_NAME = APP_NAME.lower() + '.bat'
 CLIENT_NAME = APP_NAME.lower() + '.py'
+PERSIST_NAME = APP_NAME.lower() + '_persistant.py'
 DEPENDENCIES = [ 'appdirs.py' ]		# Add new dependencies to the list and the lib directory
 
 # add lib_dir to each dependency so installer can find
@@ -41,6 +42,7 @@ except FileNotFoundError:
 
 os.makedirs(INSTALL_DIR)
 shutil.copy(FILES_DIR + CLIENT_NAME, INSTALL_DIR)
+shutil.copy(FILES_DIR + PERSIST_NAME, INSTALL_DIR)
 # use path[0] because .bat is in the same folder as this script
 shutil.copy(sys.path[0] + '\\' + BAT_NAME, INSTALL_DIR)
 for dep in DEPENDENCIES:
@@ -50,6 +52,7 @@ for dep in DEPENDENCIES:
 
 client_fullpath = INSTALL_DIR + '\\' + CLIENT_NAME
 bat_fullpath = INSTALL_DIR + '\\' + BAT_NAME
+persist_fullpath = INSTALL_DIR + '\\' + PERSIST_NAME
 
 if os.path.isfile(client_fullpath):
 	print('Copying client script successful.')
@@ -57,11 +60,19 @@ else:
 	print(client_fullpath + ' was not found. Something went wrong :(')
 	quit()
 
+
+if os.path.isfile(persist_fullpath):
+	print('Copying persistant script successful.')
+else:
+	print(persist_fullpath + ' was not found. Something went wrong :(')
+	quit()
+
 if os.path.isfile(bat_fullpath):
-	print('Copying client .bat successful.')
+	print('Copying .bat successful.')
 else:
 	print(bat_fullpath + ' was not found. Something went wrong :(')
 	quit()	
+
 
 # Edit PATH so you can easily shext from any directory!
 

@@ -14,7 +14,7 @@ def poll_unread() :
 #unthread.daemon = True
 
 #unthread.join(5)
-
+print('Enter your commands below, or "help" to see a list of commands.')
 while True:
 	command = ''
 	try:

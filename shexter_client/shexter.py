@@ -129,14 +129,16 @@ def connect(feedback=True):
             print("Connect succeeded!\n")
     except OSError as e:
         TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + SETTINGS_FILE_NAME
-            + 'with the displayed IP, and make sure your phone and computer are connected to the'
+            + ' with the displayed IP, and make sure your phone and computer are connected to the'
             + ' same network.')
         errorcode = e.errno
         if errorcode == errno.ECONNREFUSED:
             print('Connection refused: Likely Shexter is not running on your phone.' + TRY_RESTART_MSG)
+            return None
         elif errorcode == errno.ETIMEDOUT:
             print('Connection timeout: Likely your phone is not on the same network as your ' +
                 'computer or the IP address ' + ip_addr + ' is not correct.' + TRY_RESTART_MSG)
+            return None
         else:
             print('Unexpected error occurred: ')
             print(str(e))
@@ -221,7 +223,7 @@ def get_contact_name(args, required) :
         except (EOFError, KeyboardInterrupt):
             #gave up
             print()
-            quit()   
+            return None
 
     return contact_name
 
@@ -263,6 +265,8 @@ def build_request(args) :
             command == COMMAND_SETPREF_LIST)):
 
         contact_name = get_contact_name(args, True)
+        if contact_name is None:
+            return None
     else:
         contact_name = get_contact_name(args, False)
 
@@ -321,6 +325,8 @@ def handle_setpref_response(response) :
 # Helper for sending requests to the server
 def contact_server(to_send, feedback=True) : 
     sock = connect(feedback)
+    if sock is None:
+        return ''
     sock.send(to_send.encode())
     response = receive_all(sock)
     sock.close()
@@ -387,6 +393,9 @@ def main(args_list) :
     args = parser.parse_args(args_list)
 
     command, request = build_request(args)
+    if(command is None or request is None):
+        quit()
+
     result = do_command(command, request, args)
     if(not result):        
         parser.print_help()
