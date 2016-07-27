@@ -7,7 +7,6 @@
 .DS_Store
 /build
 /captures
-app/build/outputs/apk/app*
 app/build/generated
 app/build/intermediates/
 app/build/outputs/l*
