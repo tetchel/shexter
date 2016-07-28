@@ -3,4 +3,6 @@
     <string name="action_settings">Settings</string>
     <string name="preferred_contacts_file">preferred_contacts.ini</string>
     <string name="preferred_contacts_prefix">contact-prefers-</string>
+    <string name="no_permissions">Required permissions are not granted!</string>
+    <string name="grant">Grant</string>
 </resources>

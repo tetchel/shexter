@@ -315,8 +315,9 @@ def handle_setpref_response(response) :
         preferred = input('Select a number: ')
     preferred = int(preferred) - 1
 
+    contact_name = response.split(' has', 1)[0]
     to_send = (COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n' + 
-                str(args.count) + '\n' + get_tty_w() + '\n')
+                str(DEFAULT_READ_COUNT) + '\n' + get_tty_w() + '\n')
 
     sock = connect()
     sock.send(to_send.encode())

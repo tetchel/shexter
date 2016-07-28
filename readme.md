@@ -4,7 +4,7 @@ Send and read texts from your Android phone using your Linux or Windows command 
 
 [Get command-line client here](https://github.com/tetchel/Shexter/raw/master/shexter_client.tar.gz)
 
-[Get apk here](https://github.com/tetchel/Shexter/raw/master/shexter/app/build/outputs/apk/shexter.apk)
+[Get apk here](https://github.com/tetchel/Shexter/raw/master/shexter/app/app-release.apk)
 
 ##Client Setup
 
