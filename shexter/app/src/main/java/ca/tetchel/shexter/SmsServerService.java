@@ -332,7 +332,7 @@ public class SmsServerService extends Service {
                 sendReply(replyStream, "No messages found with " +
                         contact.name() + ", " + contact.preferred() + ".");
             }
-
+    
         }
         catch (SecurityException e) {
             sendReply(replyStream, "Could not retrieve messages: make sure " +
