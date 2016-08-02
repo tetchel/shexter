@@ -52,10 +52,6 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        TextView ipAddrTV = (TextView) findViewById(R.id.ipAddressTV);
-        ipAddrTV.setText(getIpAddress());
-
-//        needToUpdatePermissions = true;
         checkAndGetPermissions();
 
         Intent serverIntent = new Intent(this, SmsServerService.class);
@@ -69,6 +65,7 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         needToUpdatePermissions = true;
+        updateIpAddress();
     }
 
     @Override
@@ -100,6 +97,10 @@ public class MainActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void updateIpAddress() {
+        ((TextView) findViewById(R.id.ipAddressTV)).setText(getIpAddress());
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {

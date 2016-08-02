@@ -6,8 +6,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.telephony.SmsManager;
-import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -17,9 +17,9 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 public class SmsServerService extends Service {
 
@@ -111,6 +111,12 @@ public class SmsServerService extends Service {
                     //region SetupServer
                     Log.d(TAG, "Ready to accept");
                     Socket socket = serverSocket.accept();
+                    // make sure phone stays awake
+                    PowerManager.WakeLock wakeLock = ((PowerManager) getSystemService(POWER_SERVICE))
+                            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+                                    getString(R.string.app_name));
+                    wakeLock.acquire();
+
                     //reader from socket
                     BufferedReader inReader = new BufferedReader(
                             new InputStreamReader(socket.getInputStream()));
@@ -178,6 +184,7 @@ public class SmsServerService extends Service {
                     else {
                         commandProcessor(command, originalCommand, contact, inReader, replyStream);
                     }
+                    wakeLock.release();
                 }
                 catch (IOException e) {
                     Log.e(TAG, "Socket error occurred.", e);
@@ -288,65 +295,22 @@ public class SmsServerService extends Service {
 
         //chop off last newline
         messageInput = messageInput.substring(0, messageInput.length() - 1);
-        //Determine what encoding is required for this message.
-        int[] calcLength = SmsMessage.calculateLength(messageInput, false);
+        try {
+            Integer numberSent = (new SmsSendThread().execute(contact.preferred(), messageInput))
+                                        .get();
 
-        //now divide the message into submessages based on encoding type
-        int each_message_len;
-        if (calcLength[3] == SmsMessage.ENCODING_7BIT) {
-            each_message_len = SmsMessage.MAX_USER_DATA_SEPTETS;
+            sendReply(replyStream, "Successfully sent " + numberSent + " messages to " +
+                    contact.name() + ".");
         }
-        else if (calcLength[3] == SmsMessage.ENCODING_8BIT) {
-            each_message_len = SmsMessage.MAX_USER_DATA_BYTES;
+        catch(SecurityException e) {
+            sendReply(replyStream, "No SMS permission! Open the " + getString(R.string.app_name) +
+                    " app and give SMS permission.");
         }
-        else if (calcLength[3] == SmsMessage.ENCODING_16BIT) {
-            each_message_len = SmsMessage.MAX_USER_DATA_BYTES / 2;
-        }
-        else {
-            //unknown encoding : error
-            sendReply(replyStream, "Unknown encoding in message to send. If you " +
-                    "are not sending characters that are outside UTF-16 and " +
-                    "believe this is an error, please report this on GitHub.");
-            each_message_len = -1;
-        }
-
-        List<String> messages;
-        if (each_message_len != -1) {
-            //TODO modify this code to use User Data Headers so that the receiver
-            //has the messages concatenated.
-            //https://en.wikipedia.org/wiki/Concatenated_SMS
-            messages = Utilities.divideString(messageInput, each_message_len);
-
-            SmsSendThread[] sendThreads = new SmsSendThread[messages.size()];
-            for (int i = 0; i < sendThreads.length; i++) {
-                sendThreads[i] = new SmsSendThread();
-            }
-            //attempt to send sms and handle errors appropriately
-            try {
-                Boolean result = true;
-                for (int i = 0; i < messages.size(); i++) {
-                    //.get gets the Boolean result from the task
-                    result = sendThreads[i].execute(
-                            contact.preferred(), messages.get(i)).get();
-                    if (!result) break;     //error
-                }
-                if (result) {
-                    String numMessageOutput =
-                            calcLength[3] == 1 ? "message" : "messages";
-                    sendReply(replyStream, "Successfully sent " + messages.size() +
-                            " " + numMessageOutput + " using encoding #"
-                            + calcLength[3] + " to " + contact.name() + ".");
-                }
-                else {
-                    sendReply(replyStream, "Could not send message: make sure " +
-                            getString(R.string.app_name) + " has SMS permission.");
-                }
-            }
-            catch (InterruptedException | ExecutionException e) {
-                sendReply(replyStream, "Unexpected exception in the SMS send " +
-                        "thread; please report this issue on GitHub.");
-                Log.e(TAG, "Exception from sendThread", e);
-            }
+        catch (Exception e) {
+            // I think pokemon exception handling is OK here
+            sendReply(replyStream, "Unexpected exception in the SMS send " +
+                    "thread; please report this issue on GitHub.");
+            Log.e(TAG, "Exception from sendThread", e);
         }
     }
 
@@ -404,34 +368,31 @@ public class SmsServerService extends Service {
     }
 }
 
-//region SmsSendThread
 /**
  * Accepts a message and a phone number, and sends the message. Returns success.
  */
-class SmsSendThread extends AsyncTask<String, Void, Boolean> {
-    private static final String TAG = "SmsSendThread";
+class SmsSendThread extends AsyncTask<String, Void, Integer> {
+//    private static final String TAG = "SmsSendThread";
 
     @Override
-    protected Boolean doInBackground(String... params) {
+    protected Integer doInBackground(String... params) {
         //Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
+        int numberSent;
 
-        SmsManager sms = SmsManager.getDefault();
+        SmsManager smsm = SmsManager.getDefault();
+        ArrayList<String> divided = smsm.divideMessage(params[1]);
+        // could wait for the message to _actually_ be sent using PendingIntents
+        if(divided.size() > 1) {
+            smsm.sendMultipartTextMessage(params[0], null, divided, null, null);
+        }
+        else {
+            smsm.sendTextMessage(params[0], null, params[1], null, null);
+        }
+        numberSent = divided.size();
 
-        try {
-            sms.sendTextMessage(params[0], null, params[1], null, null);
-        }
-        catch(SecurityException se) {
-            Log.w(TAG, "No SMS permission when sending.");
-            return false;
-        }
-        catch(Exception e) {
-            Log.e(TAG, "Exception occurred sending SMS", e);
-            return false;
-        }
-        return true;
+        return numberSent;
     }
 }
-//endregion
 
 /**
  * Data type class to hold info about a contact, and access preferred contact data when it's
