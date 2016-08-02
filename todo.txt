@@ -4,7 +4,7 @@ hooks/pre-commit:6:#TODO convert all hard tabs to 4 spaces
 
 shexter/app/src/main/java/ca/tetchel/shexter/BootCompletedReceiver.java:10: * //TODO need a way to stop/start the service (from UI)
 
-shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:261://TODO should accept tty width
+shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:259://TODO should accept tty width
 
 shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:285://TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
 

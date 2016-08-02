@@ -145,7 +145,7 @@ public class SmsServerService extends Service {
                                 contact = new Contact(number, Collections.singletonList(number));
                             }
                             else {
-                                // then get the contact's phone numbers from his/her name
+                                // get the contact's info from name
                                 contact = Utilities.getContactInfo(contactNameInput);
                             }
 
@@ -193,7 +193,6 @@ public class SmsServerService extends Service {
         }
     }
 
-    //region SendReply
     /**
      * Wrapper for printStream.println which sends a length header followed by \n before the body
      * to make it easier for the client to properly receive all data.
@@ -215,7 +214,6 @@ public class SmsServerService extends Service {
         String response = lenStr + '\n' + msg;
         replyStream.println(response);
     }
-    //endregion
 
     private void commandProcessor(String command, String originalCommand, Contact contact,
                                   BufferedReader inReader, PrintStream replyStream)
@@ -300,7 +298,7 @@ public class SmsServerService extends Service {
                                         .get();
 
             sendReply(replyStream, "Successfully sent " + numberSent + " messages to " +
-                    contact.name() + ".");
+                    contact.name() + ", " + contact.preferred() + ".");
         }
         catch(SecurityException e) {
             sendReply(replyStream, "No SMS permission! Open the " + getString(R.string.app_name) +
@@ -377,8 +375,6 @@ class SmsSendThread extends AsyncTask<String, Void, Integer> {
     @Override
     protected Integer doInBackground(String... params) {
         //Log.d(TAG, "About to send " + params[1] + " to " + params[0]);
-        int numberSent;
-
         SmsManager smsm = SmsManager.getDefault();
         ArrayList<String> divided = smsm.divideMessage(params[1]);
         // could wait for the message to _actually_ be sent using PendingIntents
@@ -388,9 +384,8 @@ class SmsSendThread extends AsyncTask<String, Void, Integer> {
         else {
             smsm.sendTextMessage(params[0], null, params[1], null, null);
         }
-        numberSent = divided.size();
 
-        return numberSent;
+        return divided.size();
     }
 }
 
