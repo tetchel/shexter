@@ -1,14 +1,16 @@
 shexter_client/shexter_persistant.py:33:	# TODO screws up send -s for more than one word. need to set nargs='+'
 
-shexter_client/shexter_tui.py:76:# TODO get recent convo data slapped into here
+shexter_client/shexter_tui.py:82:# TODO get recent convo data slapped into here
 
-shexter_client/shexter_tui.py:93:#TODO auto width of "="; maybe a max width and a min number of ='s on the left side (like 2 or 4?)
+shexter_client/shexter_tui.py:99:#TODO auto width of "="; maybe a max width and a min number of ='s on the left side (like 2 or 4?)
 
-shexter_client/shexter_tui.py:99:# TODO get convo date slapped into here
+shexter_client/shexter_tui.py:105:# TODO get convo date slapped into here
 
-shexter_client/shexter_tui.py:100:# TODO put end of convo at bottom of screen (not maybe return a value to allow this from this function, for the refresh)
+shexter_client/shexter_tui.py:106:# TODO put end of convo at bottom of screen (not maybe return a value to allow this from this function, for the refresh)
 
-shexter_client/shexter_tui.py:120:# TODO pad should grow as message is typed (*cough* noutrefesh doupdate *cough*)
+shexter_client/shexter_tui.py:109:convo = ScrollyPad(max_y()-recents_height-msg_height-1,max_x(), recents_height+2,0, max_y()-msg_height-1,max_x()) #TODO replace height with 1000 or something and set current_line appropriately
+
+shexter_client/shexter_tui.py:125:# TODO pad should grow as message is typed (*cough* noutrefesh doupdate *cough*)
 
 shexter_client/shexter.py:177:# TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
 
