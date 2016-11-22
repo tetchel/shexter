@@ -7,14 +7,15 @@ import android.util.Log;
 
 /**
  * Receives an Intent when the phone finishes booting which triggers starting the SmsServerService.
- * //TODO need a way to stop/start the service (from UI)
+ * TODO need a way to stop/start the service (from UI)
  */
 public class BootCompletedReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
+        Log.d("BootReceiver", "Received an intent: " + intent.getAction());
         if ("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())) {
             Intent pushIntent = new Intent(context, SmsServerService.class);
-            Log.d("BootCompletedReceiver", "Starting SMSServer on boot.");
+            Log.d("BootReceiver", "Starting SMSServer on boot.");
             context.startService(pushIntent);
         }
     }

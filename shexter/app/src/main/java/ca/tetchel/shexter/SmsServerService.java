@@ -20,6 +20,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class SmsServerService extends Service {
 
@@ -297,8 +298,20 @@ public class SmsServerService extends Service {
             Integer numberSent = (new SmsSendThread().execute(contact.preferred(), messageInput))
                                         .get();
 
-            sendReply(replyStream, "Successfully sent " + numberSent + " messages to " +
+            sendReply(replyStream, "Successfully sent " + numberSent + " message" +
+                    (numberSent != 1 ? "s" : "") + " to " +
                     contact.name() + ", " + contact.preferred() + ".");
+
+            String preferred = "";
+            if(!contact.name().equals(contact.preferred())) {
+                // Don't display the preferred twice in the -n case.
+                preferred = ", " + contact.preferred();
+            }
+
+            String reply = String.format(Locale.getDefault(), "Successfully sent %d message%s to %s%s.",
+                    numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
+
+            sendReply(replyStream, reply);
         }
         catch(SecurityException e) {
             sendReply(replyStream, "No SMS permission! Open the " + getString(R.string.app_name) +
