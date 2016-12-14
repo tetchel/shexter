@@ -1,16 +1,16 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 #short script to 'install' shexter
 #copies shexter.py to /opt/, then symlinks the shexter executable to /usr/bin.
 
 if [ "$(id -u)" != "0" ]; then
-	echo "You must run this installer with root permissions for access to /opt/ and /usr/bin/"
-	exit 1
+    echo "You must run this installer with root permissions for access to /opt/ and /usr/bin/"
+    exit 1
 fi
 
 if [ -f /usr/bin/shexter ]; then
-	echo "Removing existing symlink at /usr/bin/shexter"
-	rm /usr/bin/shexter
+    echo "Removing existing symlink at /usr/bin/shexter"
+    rm /usr/bin/shexter
 fi
 
 OPT_DIR='/opt/shexter/'
@@ -31,12 +31,13 @@ FDATE2=`date -r $OPT_DIR"appdirs.py" +"%Y%m%d%H%M%S"`
 if [ -f $OPT_DIR"shexter.py" ]  && [ -f $OPT_DIR"appdirs.py" ] && 
         [ -f /usr/bin/shexter ] && [ `expr $NOW - $FDATE1` -lt 5 ] &&
         [ `expr $NOW - $FDATE2` -lt 5 ] ; then
-	
-    chmod a+rx /opt/shexter/shexter
-    chmod a+rx /opt/shexter/shexter.py
-    chmod a+rx /opt/shexter/shexter_persistant.py
+
+    chmod -R a+rx /opt/shexter    
+    #chmod a+rx /opt/shexter/shexter
+    #chmod a+rx /opt/shexter/shexter.py
+    #chmod a+rx /opt/shexter/shexter_persistant.py
 
     echo "Success!"
 else
-	echo "Something went wrong."
+    echo "Something went wrong."
 fi

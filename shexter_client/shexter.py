@@ -17,6 +17,8 @@ SETTING_SECTION_NAME = 'Settings'
 SETTING_IP = 'IP Address'
 SETTING_PORT = 'Port'
 
+settings_fullpath_global=SETTINGS_FILE_NAME
+
 #  Deletes the settings file and creates a new one, requiring an IP address from the user.
 def new_settings_file(settings_fullpath) :
     # remove settings if it exists
@@ -86,6 +88,10 @@ def configure() :
         print('Bad IP ' + ip_addr + ' found in ' + settings_fullpath + '. Making a new one.')
         ip_addr = new_settings_file(settings_fullpath)
 
+    # Save the config file location so it can be output in case of connect failure
+    global settings_fullpath_global
+    settings_fullpath_global=settings_fullpath
+
     return ip_addr
 
 ##### Arguments and Settings #####
@@ -128,7 +134,7 @@ def connect(feedback=True):
         if(feedback):
             print("Connect succeeded!\n")
     except OSError as e:
-        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + SETTINGS_FILE_NAME
+        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + settings_fullpath_global
             + ' with the displayed IP, and make sure your phone and computer are connected to the'
             + ' same network.')
         errorcode = e.errno
