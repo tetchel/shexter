@@ -292,7 +292,7 @@ def build_request(args) :
 
         to_send += str(args.count) + '\n' + get_tty_w() + '\n'
 
-    if(command == COMMAND_UNRE or command == COMMAND_SETPREF_LIST):
+    if(command == COMMAND_UNRE or command == COMMAND_SETPREF_LIST or command == COMMAND_READ):
         to_send += get_tty_w() + '\n'
 
     elif(args.count != DEFAULT_READ_COUNT):
