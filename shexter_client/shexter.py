@@ -28,16 +28,16 @@ def new_settings_file(settings_fullpath) :
             if(old_settings):
                 print('Your old settings:\n' + old_settings)
         os.remove(settings_fullpath)
-    except OSError as e:        
+    except OSError as e:
         # above will throw exception if settings didn't exist, which is fine
         pass
 
-    new_ip_addr = ''    
+    new_ip_addr = ''
     validip = False
     # prompt user for an IP address until they give you one.
     while(not validip):
         try:
-            new_ip_addr = input('Enter your IP Address from the Shexter app in dotted decimal ' 
+            new_ip_addr = input('Enter your IP Address from the Shexter app in dotted decimal '
                 '(eg. 192.168.1.1): ')
         except (EOFError, KeyboardInterrupt):
             # user gave up
@@ -58,18 +58,20 @@ def new_settings_file(settings_fullpath) :
     config = configparser.ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
     config.set(SETTING_SECTION_NAME, SETTING_IP, new_ip_addr)
-    config.set(SETTING_SECTION_NAME, SETTING_PORT, str(DEFAULT_PORT))
+    #config.set(SETTING_SECTION_NAME, SETTING_PORT, str(DEFAULT_PORT))
     config.write(configfile)
     configfile.close()
     return new_ip_addr
 
+# Try and load existing config file. Create a new config file if needed.
 def configure() :
     cfgdir = user_config_dir(APP_NAME.lower(), AUTHOR_NAME)
     if not os.path.exists(cfgdir):
         try:
             os.makedirs(cfgdir)
         except PermissionError:
-            # means user has directory open in another program, therefore it exists, so that's ok
+            # either user has directory open, or doesn't have w/x permission (on own config dir?)
+            print('Could not access ' + cfgdir + ', please check the directory\'s permissions.')
             pass
 
     settings_fullpath = os.path.join(cfgdir, SETTINGS_FILE_NAME)
@@ -77,7 +79,6 @@ def configure() :
     config = configparser.ConfigParser()
     config.read(settings_fullpath)
     try:
-        # port = int(config[SETTING_SECTION_NAME[SETTING_PORT])     # server only uses 5678 for now.
         ip_addr = config[SETTING_SECTION_NAME][SETTING_IP]
         # validate IP
         socket.inet_aton(ip_addr)
@@ -96,21 +97,22 @@ def configure() :
 
 ##### Arguments and Settings #####
 
-DEFAULT_READ_COUNT = 30
-def get_argparser(): 
+DEFAULT_READ_COUNT = 20
+# Build help/usage, and the parser to determine options
+def get_argparser():
     #description='Send and read texts using your ' + 'Android phone from the command line.'
 
     parser = argparse.ArgumentParser(prog='', usage='command [contact_name] [options]')
     parser.add_argument('command', type=str,
-            help='Possible commands: Send [Contact Name], Read [Contact Name], Contacts, ' + 
+            help='Possible commands: Send [Contact Name], Read [Contact Name], Contacts, ' +
             'SetPref. Not case sensitive.')
-    parser.add_argument('contact_name', type=str, nargs='*', 
+    parser.add_argument('contact_name', type=str, nargs='*',
             help='Specify contact for SEND and READ commands.')
     parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
-            help='Specify how many messages to retrieve with the READ command.' + 
+            help='Specify how many messages to retrieve with the READ command.' +
             str(DEFAULT_READ_COUNT) + ' by default.')
     parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
-            help='Keep entering new messages to SEND until cancel signal is given. ' + 
+            help='Keep entering new messages to SEND until cancel signal is given. ' +
             'Useful for sending multiple texts in succession.')
     parser.add_argument('-s', '--send', default=None, type=str,
             help='Allows sending messages as a one-liner. Put your message after the flag. ' +
@@ -124,7 +126,8 @@ def get_argparser():
 DEFAULT_PORT = 5678
 
 port = DEFAULT_PORT
-def connect(feedback=True):
+# Connect to the phone using the config's IP, and return the socket
+def connect(feedback):
     if(feedback):
         print("Connecting...")
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -155,6 +158,8 @@ def connect(feedback=True):
 
 HEADER_LEN = 32
 BUFFSIZE = 8192
+# Read all bytes from the given socket, and return the decoded string
+# Need to look into this further to support non-ascii
 def receive_all(sock) :
     data = b''
     # receive the header to determine how long the message will be
@@ -163,12 +168,12 @@ def receive_all(sock) :
         if not recvd:
             raise ConnectionResetError
     except ConnectionResetError:
-        print('Connection forcibly reset; this means the server crashed. Restart ' + APP_NAME 
+        print('Connection forcibly reset; this means the server crashed. Restart ' + APP_NAME
             + ' on your phone and try again.')
         quit()
     except OSError as e:
         if e.errno == errno.ETIMEDOUT:
-            print('Connection timeout: Server is frozen. Please try restarting Shexter on your phone.');
+            print('Connection timeout: Server is frozen. Please try restarting ' + APP_NAME + ' on your phone.');
             quit()
         else:
             raise
@@ -177,7 +182,7 @@ def receive_all(sock) :
     recvd_len = 0
     while recvd_len < header:
             recvd = sock.recv(BUFFSIZE)
-            data += recvd   
+            data += recvd
             recvd_len += len(recvd)
 
     # TODO get this working on Windows. Sorry Allan but it breaks Windows read completely
@@ -216,13 +221,14 @@ COMMAND_SETPREF_LIST = COMMAND_SETPREF + "-list"
 # Used for SEND, READ, and SETPREF commands.
 def get_contact_name(args, required) :
     contact_name = ''
+    # build the contact name (can span multiple words)
     for name in args.contact_name:
         contact_name += name + ' '
 
     contact_name = contact_name.strip()
 
     while(not contact_name and required):
-        print('You must specify a Contact Name for Send and Read and SetPref commands. ' + 
+        print('You must specify a Contact Name for Send and Read and SetPref commands. ' +
             'Enter one now:')
         try:
             contact_name = input('Enter a new contact name (CTRL + C to give up): ').strip()
@@ -233,8 +239,8 @@ def get_contact_name(args, required) :
 
     return contact_name
 
-# Used for SEND command.
-def get_message() : 
+# Used for SEND command. Get user to input the message to send.
+def get_message() :
     print('Enter message (Press Enter twice to send, CTRL + C to cancel): ')
     try:
         msg_input = ""
@@ -249,30 +255,31 @@ def get_message() :
             msg_input += "%s\n" % line
 
         return msg_input
-    # exception occurs when sigint is sent
+    # exception occurs when sigint is sent, aka user cancelled
     except (EOFError, KeyboardInterrupt):
         return None
 
 ##### REQUEST CODE #####
 
-# From list of arguments, build the request to send.
-# Get any additional info from the user (contact name)
+# From list of command-line args, build the request to send.
+# Get any missing info from the user (contact name)
 def build_request(args) :
     command = args.command.lower()
 
     # If the user is doing a regular setpref (not one from read/send), they must start with a list
+    # to determine which numbers can be chosen from.
     if(command == COMMAND_SETPREF):
         command = COMMAND_SETPREF_LIST
 
     contact_name = ''
 
-    # Get the contact name if required
-    if(args.number is None and (command == COMMAND_SEND or command == COMMAND_READ or 
+    # Get the contact name if required, from the args or from the user if not provided.
+    if(args.number is None and (command == COMMAND_SEND or command == COMMAND_READ or
             command == COMMAND_SETPREF_LIST)):
 
         contact_name = get_contact_name(args, True)
         if contact_name is None:
-            return None
+            return None, None
     else:
         contact_name = get_contact_name(args, False)
 
@@ -296,9 +303,9 @@ def build_request(args) :
         to_send += get_tty_w() + '\n'
 
     elif(args.count != DEFAULT_READ_COUNT):
-        print('Ignoring -c flag: only valid for READ command.') 
+        print('Ignoring -c flag: only valid for READ command.')
 
-    if(command != COMMAND_SEND):    
+    if(command != COMMAND_SEND):
         if(args.multi):
             print('Ignoring -m flag: only valid for SEND command.')
         if(args.send is not None):
@@ -316,13 +323,15 @@ def handle_setpref_response(response) :
     print(response)
 
     preferred = input('Select a number from the above, 1 to ' + str(numberOfNumbers) + ': ')
+
     while(not preferred.isdigit or int(preferred) > numberOfNumbers or int(preferred) < 1):
         print('Not a valid selection: must be integer between 1 and ' + str(numberOfNumbers))
         preferred = input('Select a number: ')
+    
     preferred = int(preferred) - 1
 
     contact_name = response.split(' has', 1)[0]
-    to_send = (COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n' + 
+    to_send = (COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n' +
                 str(DEFAULT_READ_COUNT) + '\n' + get_tty_w() + '\n')
 
     sock = connect()
@@ -330,7 +339,7 @@ def handle_setpref_response(response) :
     return receive_all(sock);
 
 # Helper for sending requests to the server
-def contact_server(to_send, feedback=True) : 
+def contact_server(to_send, feedback=False) :
     sock = connect(feedback)
     if sock is None:
         return ''
@@ -344,6 +353,7 @@ def contact_server(to_send, feedback=True) :
     return response
 
 # Perform all necessary operations for the given command.
+# This means getting the send message if needed, contacting the server, printing the response if needed. 
 # Returns False if command is not valid, True otherwise.
 def do_command(command, to_send, args):
     if(command == COMMAND_SEND):
@@ -359,10 +369,10 @@ def do_command(command, to_send, args):
             if(msg == ''):
                 msg = get_message()
             # see if user input message
-            if(msg is None):            
+            if(msg is None):
                 print("\nSend cancelled.")
                 break
-            elif(len(msg.strip()) == 0):            
+            elif(len(msg.strip()) == 0):
                 print("Not sent: message body was empty.")
             else:
                 # add the message to to_send
@@ -378,16 +388,17 @@ def do_command(command, to_send, args):
         check_for_unread()
     elif(command == "help" or command == "h"):
         return False
-    else:        
+    else:
         print('Command \"{}\" not recognized.\nType "help" to see a list of commands.'
             .format(command))
     return True
 
 NO_UNRE_RESPONSE = 'No unread messages.'
-# Should call this every 5 seconds or so
+# Should call this every 5 seconds or so for -p mode
 def check_for_unread() :
     to_send = COMMAND_UNRE + '\n' + get_tty_w() + '\n'
     response = contact_server(to_send, False)
+    # normal behaviour is to print unread, but -p mode requires returning the unread instead
     if not isPersist:
         print(response)
     elif(response != NO_UNRE_RESPONSE):
@@ -395,6 +406,7 @@ def check_for_unread() :
     else:
         return ''
 
+# Main function to be called from -p mode. Pass the arguments directly to be parsed here.
 def main(args_list) :
     parser = get_argparser()
     args = parser.parse_args(args_list)
@@ -404,10 +416,9 @@ def main(args_list) :
         quit()
 
     result = do_command(command, request, args)
-    if(not result):        
+    if(not result):
         parser.print_help()
 
-# this will change.
 ip_addr = configure()
 # for calling shexter directly
 if(sys.argv[0] == __file__):
