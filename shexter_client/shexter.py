@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
 import socket
 import errno
 import argparse
-import configparser
 from shutil import get_terminal_size
-from appdirs import user_config_dir
+from configparser import ConfigParser
+from lib.appdirs import user_config_dir
 
 APP_NAME = 'Shexter'
 AUTHOR_NAME = 'tetchel'
@@ -18,6 +18,12 @@ SETTING_IP = 'IP Address'
 SETTING_PORT = 'Port'
 
 settings_fullpath_global=SETTINGS_FILE_NAME
+
+global tty_width
+def set_tty_width(width):
+   global tty_width 
+   tty_width = str(width) 
+set_tty_width(get_terminal_size()[0])
 
 #  Deletes the settings file and creates a new one, requiring an IP address from the user.
 def new_settings_file(settings_fullpath) :
@@ -55,7 +61,7 @@ def new_settings_file(settings_fullpath) :
     #  configure the new settings and then write it into the file
     configfile = open(settings_fullpath, 'w')
     #configfile = open(user_config_dir(APP_NAME), 'w')
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
     config.set(SETTING_SECTION_NAME, SETTING_IP, new_ip_addr)
     #config.set(SETTING_SECTION_NAME, SETTING_PORT, str(DEFAULT_PORT))
@@ -76,7 +82,7 @@ def configure() :
 
     settings_fullpath = os.path.join(cfgdir, SETTINGS_FILE_NAME)
 
-    config = configparser.ConfigParser()
+    config = ConfigParser()
     config.read(settings_fullpath)
     try:
         ip_addr = config[SETTING_SECTION_NAME][SETTING_IP]
@@ -127,15 +133,11 @@ DEFAULT_PORT = 5678
 
 port = DEFAULT_PORT
 # Connect to the phone using the config's IP, and return the socket
-def connect(feedback):
-    if(feedback):
-        print("Connecting...")
+def connect():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(60)
     try:
         sock.connect((ip_addr, port))
-        if(feedback):
-            print("Connect succeeded!\n")
     except OSError as e:
         TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + settings_fullpath_global
             + ' with the displayed IP, and make sure your phone and computer are connected to the'
@@ -193,12 +195,6 @@ def receive_all(sock) :
     decoded = decoded[1:]
 
     return decoded
-
-# determine tty width for READ and UNREAD commands.
-def get_tty_w() :
-    tty_size = get_terminal_size()
-    tty_w = tty_size[0]
-    return str(tty_w)
 
 ##### Processing input and building request #####
 
@@ -265,6 +261,7 @@ def get_message() :
 # Get any missing info from the user (contact name)
 def build_request(args) :
     command = args.command.lower()
+    logprint(str(args))
 
     # If the user is doing a regular setpref (not one from read/send), they must start with a list
     # to determine which numbers can be chosen from.
@@ -297,10 +294,10 @@ def build_request(args) :
             print('Retrieving the maximum number of messages: ' + str(READ_COUNT_LIMIT))
             args.count = READ_COUNT_LIMIT
 
-        to_send += str(args.count) + '\n' + get_tty_w() + '\n'
+        to_send += str(args.count) + '\n'
 
     if(command == COMMAND_UNRE or command == COMMAND_SETPREF_LIST or command == COMMAND_READ):
-        to_send += get_tty_w() + '\n'
+        to_send += tty_width + '\n'
 
     elif(args.count != DEFAULT_READ_COUNT):
         print('Ignoring -c flag: only valid for READ command.')
@@ -314,6 +311,9 @@ def build_request(args) :
     return command, to_send
 
 # If the specified contact has multiple numbers, handle the response by picking a number.
+# response is the server's response containing the possible phone numbers
+# Returns the server's response after selecting a preference, which should be the output
+# of the command that was trying to be run.
 def handle_setpref_response(response) :
     response = response[len(SETPREF_NEEDED)+1:]
     numberOfNumbers = len(response.split('\n')) - 1
@@ -332,15 +332,20 @@ def handle_setpref_response(response) :
 
     contact_name = response.split(' has', 1)[0]
     to_send = (COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n' +
-                str(DEFAULT_READ_COUNT) + '\n' + get_tty_w() + '\n')
+                str(DEFAULT_READ_COUNT) + '\n' + tty_width + '\n')
 
     sock = connect()
     sock.send(to_send.encode())
     return receive_all(sock);
 
 # Helper for sending requests to the server
-def contact_server(to_send, feedback=False) :
-    sock = connect(feedback)
+def contact_server(to_send) :
+    # TODO remove this mock
+    if(to_send.startswith('read')):
+        with open('mock.txt', 'r') as mock:
+            return mock.read()
+
+    sock = connect()
     if sock is None:
         return ''
     sock.send(to_send.encode())
@@ -353,9 +358,10 @@ def contact_server(to_send, feedback=False) :
     return response
 
 # Perform all necessary operations for the given command.
-# This means getting the send message if needed, contacting the server, printing the response if needed. 
-# Returns False if command is not valid, True otherwise.
+# This means getting the send message if needed, contacting the server, printing the response if needed.
+# Returns the response from the phone.
 def do_command(command, to_send, args):
+    output = ''
     if(command == COMMAND_SEND):
         msg = ''
         if(args.send is not None):
@@ -370,60 +376,68 @@ def do_command(command, to_send, args):
                 msg = get_message()
             # see if user input message
             if(msg is None):
-                print("\nSend cancelled.")
+                output= 'Send cancelled.'
                 break
             elif(len(msg.strip()) == 0):
-                print("Not sent: message body was empty.")
+                output='Not sent: message body was empty.'
             else:
                 # add the message to to_send
                 to_send_full = to_send + msg + '\n'
                 response = contact_server(to_send_full)
-                print(response)
+                output=response
                 msg = ''
 
     elif(command == COMMAND_READ or command == COMMAND_SETPREF_LIST or command == COMMAND_GETCONTACTS):
         response = contact_server(to_send)
-        print(response)
+        output=response
     elif(command == COMMAND_UNRE):
-        check_for_unread()
+        output=check_for_unread()
     elif(command == "help" or command == "h"):
-        return False
+        return ''
     else:
         print('Command \"{}\" not recognized.\nType "help" to see a list of commands.'
             .format(command))
-    return True
+
+    return output
 
 NO_UNRE_RESPONSE = 'No unread messages.'
 # Should call this every 5 seconds or so for -p mode
 def check_for_unread() :
-    to_send = COMMAND_UNRE + '\n' + get_tty_w() + '\n'
+    to_send = COMMAND_UNRE + '\n' + tty_width + '\n'
     response = contact_server(to_send, False)
-    # normal behaviour is to print unread, but -p mode requires returning the unread instead
-    if not isPersist:
-        print(response)
-    elif(response != NO_UNRE_RESPONSE):
+    if(response != NO_UNRE_RESPONSE):
         return response
     else:
         return ''
 
 # Main function to be called from -p mode. Pass the arguments directly to be parsed here.
-def main(args_list) :
+def main(output, args_list) :
+    logprint('main: ' + str(args_list))
     parser = get_argparser()
     args = parser.parse_args(args_list)
 
     command, request = build_request(args)
+    logprint('cmd: ' + command + ' request: ' + request)
     if(command is None or request is None):
         quit()
 
     result = do_command(command, request, args)
-    if(not result):
-        parser.print_help()
 
+    if(output):
+        if(result):
+            print(result)
+        else:
+            parser.print_help()
+
+    return result;
+
+#TODO remove this trash
+from datetime import datetime
+def logprint(strng):
+    with open('.shexternc.log', 'a') as logfile:
+        print('[' + str(datetime.now()) + '] ' + strng, file=logfile)
 ip_addr = configure()
+
 # for calling shexter directly
 if(sys.argv[0] == __file__):
-    global isPersist
-    isPersist = False
-    main(sys.argv[1:])
-else:
-    isPersist = True
+    main(True, sys.argv[1:])
