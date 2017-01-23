@@ -14,23 +14,18 @@ if [ -f /usr/bin/shexter ]; then
 fi
 
 OPT_DIR='/opt/shexter/'
+LIB_DIR="${OPT_DIR}lib/"
 
 # $_ should have worked but it did not
-mkdir -p $OPT_DIR && 
+mkdir -p $LIB_DIR && 
         cp ../../shexter.py $OPT_DIR && 
-        cp ../../lib/appdirs.py $OPT_DIR && cp ./shexter $OPT_DIR &&
+        cp ../../lib/appdirs.py $LIB_DIR && cp ./shexter $OPT_DIR &&
         cp ../../shexter_persistant.py $OPT_DIR
 
 ln -s $OPT_DIR"shexter" /usr/bin/shexter
 
-# get dates of files to see if they were updated
-NOW=`date +"%Y%m%d%H%M%S"`
-FDATE1=`date -r $OPT_DIR"shexter.py" +"%Y%m%d%H%M%S"`
-FDATE2=`date -r $OPT_DIR"appdirs.py" +"%Y%m%d%H%M%S"`
-
-if [ -f $OPT_DIR"shexter.py" ]  && [ -f $OPT_DIR"appdirs.py" ] && 
-        [ -f /usr/bin/shexter ] && [ `expr $NOW - $FDATE1` -lt 5 ] &&
-        [ `expr $NOW - $FDATE2` -lt 5 ] ; then
+if [ -f $OPT_DIR"shexter.py" ]  && [ -f $LIB_DIR"appdirs.py" ] && 
+        [ -f /usr/bin/shexter ]; then
 
     chmod -R a+rx /opt/shexter    
     #chmod a+rx /opt/shexter/shexter

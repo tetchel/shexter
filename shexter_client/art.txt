@@ -1,0 +1,35 @@
+
+
+Person 1 | Person 2 | Person 3 
+                                                    <-- How to cache these messages?
+                                                        - Perhaps read command should support
+                                                        - getting messages after a certain point,
+                                                        - then can load 50 (or something) at a time
+[Person1]: Hahahahhaahahahahahhahahahahahahaha
+           hahahahahahahahahahah
+[You]:     Yeah
+[Person1]: Hahahahhaahahahahahhahahahahahahaha
+[You]:     Yeah
+           hahahahahahahahahahah
+[Person1]: Hahahahhaahahahahahhahahahahahahaha      <-- Sent and received texts should be diff color
+[You]:     Yeah
+           hahahahahahahahahahah
+[You]:     Yeah
+
+==============================================
+Here is where I am writing my message of cours
+e it will wrap like this
+but newlines are still allowed
+
+
+Somewhat modular - normal and input modes
+ENTER or I to enter message input mode and ESC to stop (saves current input)
+
+UP and DOWN to scroll
+SHIFT+ENTER to send if possible
+dd to clear current input (all of it, not just a line)
+gt or CTRL+TAB to tab to the right
+gT or CTRL+S+TAB to tab to the left
+CTRL+N (or e ?) to open a new tab - need to get contact name input after - could be in the same field as send, but clearly labelled
+END or GG to return to bottom of conversation (newest msgs)
+
