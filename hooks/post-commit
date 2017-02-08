@@ -1,5 +1,0 @@
-#!/usr/bin/env sh
-
-if [ -e .commit ]; then
-    git archive -o shexter_client.zip HEAD:shexter_client
-fi

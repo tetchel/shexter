@@ -201,7 +201,7 @@ public class Utilities {
             throws SecurityException {
         if(BuildConfig.DEBUG && !(contact != null && contact.count() != 0))
             throw new RuntimeException("Invalid data passed to getConversation: contact is null? " +
-                    (contact != null));
+                    (contact == null));
 
         ContentResolver contentResolver = SmsServerService.instance().getContentResolver();
         Uri uri = Uri.parse("content://sms/");
