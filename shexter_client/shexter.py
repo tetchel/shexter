@@ -135,7 +135,7 @@ port = DEFAULT_PORT
 # Connect to the phone using the config's IP, and return the socket
 def connect():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(60)
+    sock.settimeout(15)
     try:
         sock.connect((ip_addr, port))
     except OSError as e:
@@ -155,6 +155,9 @@ def connect():
             print(str(e))
             print(TRY_RESTART_MSG)
             quit()
+    except (EOFError, KeyboardInterrupt):
+        print('Connect cancelled')
+        return None
 
     return sock;
 
@@ -341,9 +344,15 @@ def handle_setpref_response(response) :
 # Helper for sending requests to the server
 def contact_server(to_send) :
     # TODO remove this mock
+<<<<<<< HEAD
     if(to_send.startswith('read')):
         with open('mock.txt', 'r') as mock:
             return mock.read()
+=======
+    #if(to_send.startswith('read')):
+    #    with open('mock.txt', 'r') as mock:
+    #        return mock.read()
+>>>>>>> 39882736c0a01ab9fc39f4ce8af113db5dae2c2b
 
     sock = connect()
     if sock is None:
