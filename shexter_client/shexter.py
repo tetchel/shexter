@@ -7,7 +7,6 @@ import errno
 import argparse
 from shutil import get_terminal_size
 from configparser import ConfigParser
-from lib.appdirs import user_config_dir
 
 APP_NAME = 'Shexter'
 AUTHOR_NAME = 'tetchel'
@@ -69,9 +68,40 @@ def new_settings_file(settings_fullpath) :
     configfile.close()
     return new_ip_addr
 
+def get_config_dir() :
+    # platform-dependent: Check an environment variable for user config directory
+    platf = sys.platform
+    # This env var is used for anything not windows or osx - 
+    # ie, linux, cygwin, as a backup in case there's an error or user is using something strange.
+    env_var = 'XDG_CONFIG_HOME'
+    home_dir = os.getenv("HOME")
+    if home_dir:
+        default_path = home_dir + '/.config'
+    else:
+        default_path = ''
+
+    if platf.startswith('win'):
+        env_var = 'LOCALAPPDATA'
+        #TODO default for windows?
+    else:
+        if not (platf.startswith('linux') or platf.startswith('cyg')):
+            print('"' + platf + '" is not a recognized platform. If you can, set the environment variable '
+                    + env_var + '. If you can\'t, use a supported platform.')
+
+    if platf.startswith('darwin'):
+        # os x does not have a corresponding env var
+        print('macos is not supported at this time')
+    
+    config_path = os.getenv(env_var, default_path)
+    if not config_path:
+        print('Unable to get config directory. Please set the environment variable ' + env_var + '.')
+
+    config_path = os.path.join(config_path, APP_NAME.lower())
+    return config_path
+
 # Try and load existing config file. Create a new config file if needed.
 def configure() :
-    cfgdir = user_config_dir(APP_NAME.lower(), AUTHOR_NAME)
+    cfgdir = get_config_dir()
     if not os.path.exists(cfgdir):
         try:
             os.makedirs(cfgdir)
@@ -110,19 +140,19 @@ def get_argparser():
 
     parser = argparse.ArgumentParser(prog='', usage='command [contact_name] [options]')
     parser.add_argument('command', type=str,
-            help='Possible commands: Send [Contact Name], Read [Contact Name], Contacts, ' +
+            help='Possible commands:\nSend ContactName\nRead ContactName\nUnread\nContacts\n' +
             'SetPref. Not case sensitive.')
     parser.add_argument('contact_name', type=str, nargs='*',
             help='Specify contact for SEND and READ commands.')
     parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
-            help='Specify how many messages to retrieve with the READ command.' +
+            help='Specify how many messages to retrieve with the READ command. ' +
             str(DEFAULT_READ_COUNT) + ' by default.')
     parser.add_argument('-m', '--multi', default=False, action='store_const',const=True,
             help='Keep entering new messages to SEND until cancel signal is given. ' +
             'Useful for sending multiple texts in succession.')
     parser.add_argument('-s', '--send', default=None, type=str,
             help='Allows sending messages as a one-liner. Put your message after the flag. ' +
-            'Must be in quotes for now.')
+            'Must be in quotes')
     parser.add_argument('-n', '--number', default=None, type=str,
             help='Specify a phone number instead of a contact name for applicable commands.')
 
@@ -264,7 +294,6 @@ def get_message() :
 # Get any missing info from the user (contact name)
 def build_request(args) :
     command = args.command.lower()
-    logprint(str(args))
 
     # If the user is doing a regular setpref (not one from read/send), they must start with a list
     # to determine which numbers can be chosen from.
@@ -343,17 +372,6 @@ def handle_setpref_response(response) :
 
 # Helper for sending requests to the server
 def contact_server(to_send) :
-    # TODO remove this mock
-<<<<<<< HEAD
-    if(to_send.startswith('read')):
-        with open('mock.txt', 'r') as mock:
-            return mock.read()
-=======
-    #if(to_send.startswith('read')):
-    #    with open('mock.txt', 'r') as mock:
-    #        return mock.read()
->>>>>>> 39882736c0a01ab9fc39f4ce8af113db5dae2c2b
-
     sock = connect()
     if sock is None:
         return ''
@@ -419,14 +437,15 @@ def check_for_unread() :
     else:
         return ''
 
+# Configure IP address once
+ip_addr = configure()
+
 # Main function to be called from -p mode. Pass the arguments directly to be parsed here.
 def main(output, args_list) :
-    logprint('main: ' + str(args_list))
     parser = get_argparser()
     args = parser.parse_args(args_list)
 
     command, request = build_request(args)
-    logprint('cmd: ' + command + ' request: ' + request)
     if(command is None or request is None):
         quit()
 
@@ -439,13 +458,6 @@ def main(output, args_list) :
             parser.print_help()
 
     return result;
-
-#TODO remove this trash
-from datetime import datetime
-def logprint(strng):
-    with open('.shexternc.log', 'a') as logfile:
-        print('[' + str(datetime.now()) + '] ' + strng, file=logfile)
-ip_addr = configure()
 
 # for calling shexter directly
 if(sys.argv[0] == __file__):

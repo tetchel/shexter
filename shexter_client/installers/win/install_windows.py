@@ -6,19 +6,19 @@ import winreg
 APP_NAME = 'Shexter'
 # client .py and dependencies are kept 2 directories above this script, so use path[0]
 FILES_DIR = sys.path[0] + '\..\..\\'
-LIB_DIR = FILES_DIR + 'lib\\'
+#LIB_DIR = FILES_DIR + 'lib\\'
 # Add appdirs to the PATH so that we can use that code
-sys.path.append(LIB_DIR)
-from appdirs import user_config_dir
+#sys.path.append(LIB_DIR)
+#from appdirs import user_config_dir
 
 INSTALL_DIR = user_config_dir('Shexter', 'tetchel')
 BAT_NAME = APP_NAME.lower() + '.bat'
 CLIENT_NAME = APP_NAME.lower() + '.py'
 PERSIST_NAME = APP_NAME.lower() + '_persistant.py'
-DEPENDENCIES = [ 'appdirs.py' ]		# Add new dependencies to the list and the lib directory
+#DEPENDENCIES = [ 'appdirs.py' ]		# Add new dependencies to the list and the lib directory
 
 # add lib_dir to each dependency so installer can find
-DEPENDENCIES = [ LIB_DIR + s for s in DEPENDENCIES ]
+#DEPENDENCIES = [ LIB_DIR + s for s in DEPENDENCIES ]
 
 print('WARNING: This script does edit your registry, so run only if you trust me '
 	'or understand what this script does!')
