@@ -11,7 +11,17 @@ FILES_DIR = sys.path[0] + '\..\..\\'
 #sys.path.append(LIB_DIR)
 #from appdirs import user_config_dir
 
-INSTALL_DIR = user_config_dir('Shexter', 'tetchel')
+env_var = 'LOCALAPPDATA'
+# This code is duped from shexter.py
+install_dir = os.getenv(env_var)
+print(install_dir)
+if not install_dir:
+	# won't happen. I think.
+    print('Unable to get config directory. Please set the environment variable ' + env_var + ' to something like C:\\Users\\$Username\\AppData\\Local')
+    quit()
+
+install_dir = os.path.join(install_dir, APP_NAME.lower())
+
 BAT_NAME = APP_NAME.lower() + '.bat'
 CLIENT_NAME = APP_NAME.lower() + '.py'
 PERSIST_NAME = APP_NAME.lower() + '_persistant.py'
@@ -23,7 +33,7 @@ PERSIST_NAME = APP_NAME.lower() + '_persistant.py'
 print('WARNING: This script does edit your registry, so run only if you trust me '
 	'or understand what this script does!')
 
-print('Confirm install shexter into ' + INSTALL_DIR + '? y/N: ')
+print('Confirm install shexter into ' + install_dir + '? y/N: ')
 response = input().lower()
 
 if(response != 'y'):
@@ -32,27 +42,27 @@ if(response != 'y'):
 
 try:
 	#should change this. shouldn't delete settings every update.
-	shutil.rmtree(INSTALL_DIR)
+	shutil.rmtree(install_dir)
 except FileNotFoundError:
 	pass
 
-#print('Installing in: ' + INSTALL_DIR)
+#print('Installing in: ' + install_dir)
 
 # Copy the files
 
-os.makedirs(INSTALL_DIR)
-shutil.copy(FILES_DIR + CLIENT_NAME, INSTALL_DIR)
-shutil.copy(FILES_DIR + PERSIST_NAME, INSTALL_DIR)
+os.makedirs(install_dir)
+shutil.copy(FILES_DIR + CLIENT_NAME, install_dir)
+shutil.copy(FILES_DIR + PERSIST_NAME, install_dir)
 # use path[0] because .bat is in the same folder as this script
-shutil.copy(sys.path[0] + '\\' + BAT_NAME, INSTALL_DIR)
-for dep in DEPENDENCIES:
-	shutil.copy(dep, INSTALL_DIR)
+shutil.copy(sys.path[0] + '\\' + BAT_NAME, install_dir)
+#for dep in DEPENDENCIES:
+#	shutil.copy(dep, install_dir)
 
 # Assert the files were copied
 
-client_fullpath = INSTALL_DIR + '\\' + CLIENT_NAME
-bat_fullpath = INSTALL_DIR + '\\' + BAT_NAME
-persist_fullpath = INSTALL_DIR + '\\' + PERSIST_NAME
+client_fullpath = install_dir + '\\' + CLIENT_NAME
+bat_fullpath = install_dir + '\\' + BAT_NAME
+persist_fullpath = install_dir + '\\' + PERSIST_NAME
 
 if os.path.isfile(client_fullpath):
 	print('Copying client script successful.')
@@ -82,8 +92,8 @@ try:
 	pathkey = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment', 0, winreg.KEY_ALL_ACCESS)
 	SUBKEY = 'PATH'
 	currpath = winreg.QueryValueEx(pathkey, SUBKEY)[0] 
-	if INSTALL_DIR not in currpath:
-		winreg.SetValueEx(pathkey, SUBKEY, 0, winreg.REG_SZ, currpath + ';' + INSTALL_DIR)
+	if install_dir not in currpath:
+		winreg.SetValueEx(pathkey, SUBKEY, 0, winreg.REG_SZ, currpath + ';' + install_dir)
 
 	winreg.CloseKey(pathkey)
 	print('Successfully added ' + APP_NAME + ' to PATH.')
