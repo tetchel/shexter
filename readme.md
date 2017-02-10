@@ -28,7 +28,7 @@ You are probably going to want Unicode font support in your terminal so your Uni
 
 As an example:
 
-For `rxvt-unicode`, a popular terminal emulator, you can set the current line in your `.Xresources` :
+For `rxvt-unicode`, a popular terminal emulator, you can set the following line in your `.Xresources` :
 `URxvt*font: -xos4-terminus-medium-r-normal--14-140-72-72-c-80-iso10646-1, xft:WenQuanYi Micro Hei Mono,style=Regular, xft:Symbola`
 
 The first font is a bitmap font in XLFD format. The other two are Xft format. The order depicts the glyph priority if there is overlap.

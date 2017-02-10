@@ -85,8 +85,9 @@ def get_config_dir() :
         #TODO default for windows?
     else:
         if not (platf.startswith('linux') or platf.startswith('cyg')):
-            print('"' + platf + '" is not a recognized platform. If you can, set the environment variable '
-                    + env_var + '. If you can\'t, use a supported platform.')
+            print('"' + platf + '" is not a recognized platform. If you can, set the ' +
+                    'environment variable ' + env_var + '. If you can\'t set it, ' +
+                    'use a supported platform.')
 
     if platf.startswith('darwin'):
         # os x does not have a corresponding env var
@@ -140,8 +141,8 @@ def get_argparser():
 
     parser = argparse.ArgumentParser(prog='', usage='command [contact_name] [options]')
     parser.add_argument('command', type=str,
-            help='Possible commands:\nSend ContactName\nRead ContactName\nUnread\nContacts\n' +
-            'SetPref. Not case sensitive.')
+            help='Possible commands: Send $ContactName, Read $ContactName, Unread, Contacts,' +
+            'SetPref $ContactName. Not case sensitive.')
     parser.add_argument('contact_name', type=str, nargs='*',
             help='Specify contact for SEND and READ commands.')
     parser.add_argument('-c', '--count', default=DEFAULT_READ_COUNT, type=int,
@@ -165,16 +166,18 @@ port = DEFAULT_PORT
 # Connect to the phone using the config's IP, and return the socket
 def connect():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(15)
+    sock.settimeout(240)
     try:
         sock.connect((ip_addr, port))
     except OSError as e:
-        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' + settings_fullpath_global
+        TRY_RESTART_MSG = ('\n\nTry restarting the Shexter app and editing ' 
+            + settings_fullpath_global
             + ' with the displayed IP, and make sure your phone and computer are connected to the'
             + ' same network.')
         errorcode = e.errno
         if errorcode == errno.ECONNREFUSED:
-            print('Connection refused: Likely Shexter is not running on your phone.' + TRY_RESTART_MSG)
+            print('Connection refused: Likely Shexter is not running on your phone.' 
+                + TRY_RESTART_MSG)
             return None
         elif errorcode == errno.ETIMEDOUT:
             print('Connection timeout: Likely your phone is not on the same network as your ' +
@@ -208,7 +211,8 @@ def receive_all(sock) :
         quit()
     except OSError as e:
         if e.errno == errno.ETIMEDOUT:
-            print('Connection timeout: Server is frozen. Please try restarting ' + APP_NAME + ' on your phone.');
+            print('Connection timeout: Server is frozen. Please try restarting ' + APP_NAME 
+                + ' on your phone.');
             quit()
         else:
             raise
@@ -331,7 +335,7 @@ def build_request(args) :
     if(command == COMMAND_UNRE or command == COMMAND_SETPREF_LIST or command == COMMAND_READ):
         to_send += tty_width + '\n'
 
-    elif(args.count != DEFAULT_READ_COUNT):
+    if(command != COMMAND_READ and args.count != DEFAULT_READ_COUNT):
         print('Ignoring -c flag: only valid for READ command.')
 
     if(command != COMMAND_SEND):
@@ -344,8 +348,8 @@ def build_request(args) :
 
 # If the specified contact has multiple numbers, handle the response by picking a number.
 # response is the server's response containing the possible phone numbers
-# Returns the server's response after selecting a preference, which should be the output
-# of the command that was trying to be run.
+# Returns the server's response, which is either the setpref confirmation or the original
+# command's response.
 def handle_setpref_response(response) :
     response = response[len(SETPREF_NEEDED)+1:]
     numberOfNumbers = len(response.split('\n')) - 1
@@ -363,16 +367,17 @@ def handle_setpref_response(response) :
     preferred = int(preferred) - 1
 
     contact_name = response.split(' has', 1)[0]
-    to_send = (COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n' +
-                str(DEFAULT_READ_COUNT) + '\n' + tty_width + '\n')
+    to_send = COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n\n'
 
-    sock = connect()
-    sock.send(to_send.encode())
-    return receive_all(sock);
+    # Send the new pref to the phone. The phone will then perform the original request if needed.
+    return contact_server(to_send)
 
 # Helper for sending requests to the server
 def contact_server(to_send) :
+    #print('sending:\n' + to_send)
+    #print("...")
     sock = connect()
+    #print("Connected!")
     if sock is None:
         return ''
     sock.send(to_send.encode())
@@ -385,7 +390,8 @@ def contact_server(to_send) :
     return response
 
 # Perform all necessary operations for the given command.
-# This means getting the send message if needed, contacting the server, printing the response if needed.
+# This means getting the send message if needed, contacting the server, 
+# printing the response if needed.
 # Returns the response from the phone.
 def do_command(command, to_send, args):
     output = ''
@@ -407,6 +413,8 @@ def do_command(command, to_send, args):
                 break
             elif(len(msg.strip()) == 0):
                 output='Not sent: message body was empty.'
+            elif(len(msg.split('\n', 1)[0]) == 0):
+                output='Not sent: first line cannot be blank (for now).'
             else:
                 # add the message to to_send
                 to_send_full = to_send + msg + '\n'
@@ -414,7 +422,9 @@ def do_command(command, to_send, args):
                 output=response
                 msg = ''
 
-    elif(command == COMMAND_READ or command == COMMAND_SETPREF_LIST or command == COMMAND_GETCONTACTS):
+    elif(command == COMMAND_READ or command == COMMAND_SETPREF_LIST 
+        or command == COMMAND_GETCONTACTS):
+
         response = contact_server(to_send)
         output=response
     elif(command == COMMAND_UNRE):
@@ -428,7 +438,6 @@ def do_command(command, to_send, args):
     return output
 
 NO_UNRE_RESPONSE = 'No unread messages.'
-# Should call this every 5 seconds or so for -p mode
 def check_for_unread() :
     to_send = COMMAND_UNRE + '\n' + tty_width + '\n'
     response = contact_server(to_send, False)

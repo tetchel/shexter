@@ -13,14 +13,15 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Scanner;
 
 public class SmsServerService extends Service {
 
@@ -106,27 +107,41 @@ public class SmsServerService extends Service {
                 onDestroy();
             }
             // used to track previous command when setpref is used.
-            String originalCommand = null;
+            String oldRequest = null;
             while (!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
                 try {
                     //region SetupServer
                     Log.d(TAG, "Ready to accept");
                     Socket socket = serverSocket.accept();
-                    // make sure phone stays awake
+                    // make sure phone stays awake - does this even work?
                     PowerManager.WakeLock wakeLock = ((PowerManager) getSystemService(POWER_SERVICE))
                             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
                                     getString(R.string.app_name));
                     wakeLock.acquire();
 
-                    //reader from socket
-                    BufferedReader inReader = new BufferedReader(
-                            new InputStreamReader(socket.getInputStream()));
-                    //print back to socket
+                    // print back to socket using this
                     PrintStream replyStream = new PrintStream(socket.getOutputStream());
                     //endregion
-                    //The request protocol is command\ncontact\n command-specific-data
+                    // Store the full request
+                    Scanner scansAll;
+                    String request;
+                    try {
+                        // Do not close this - it will close when the socket is closed in onDestroy
+                        // TODO use a length header. This will break if message starts with newline!
+                        scansAll = new Scanner(socket.getInputStream()).useDelimiter("\n\n");
+                        request = scansAll.hasNext() ? scansAll.next() : "";
+                    }
+                    catch(IOException e) {
+                        Log.e(TAG, "Error scanning request", e);
+                        continue;
+                    }
+
+                    // Facilitates reading line-by-line
+                    BufferedReader requestReader = new BufferedReader(new StringReader(request));
+
+                    //The request protocol is command\ncontact\ncommand-specific-data
                     //so read the first line to get the command
-                    String command = inReader.readLine();
+                    String command = requestReader.readLine();
                     Log.d(TAG, "Received command: " + command);
                     //region GetContact
                     String contactGetResult = null;
@@ -137,12 +152,12 @@ public class SmsServerService extends Service {
                             (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command)) {
 
                         //second line for contact name
-                        String contactNameInput = inReader.readLine();
+                        String contactNameInput = requestReader.readLine();
                         try {
                             if (contactNameInput.equals(NUMBER_FLAG)) {
                                 // if number flag was given, don't retrieve contact, build one
                                 // with the number
-                                String number = inReader.readLine();
+                                String number = requestReader.readLine();
                                 contact = new Contact(number, Collections.singletonList(number));
                             }
                             else {
@@ -156,6 +171,7 @@ public class SmsServerService extends Service {
                                         "' with any associated phone numbers, please make sure the "
                                         + "contact exists and is spelled correctly.";
                             }
+                            // Validate the contact / do any additional work
                             else if (contact.count() == 0) {
                                 contactGetResult = "You have no phone number associated with " +
                                         contact.name() + ".";
@@ -166,10 +182,9 @@ public class SmsServerService extends Service {
                             }
                             else if (contact.count() > 1 && !contact.hasPreferred()
                                     && !command.equals(COMMAND_SETPREF)) {
-                                originalCommand = command;
                                 // reply to the client requesting that user pick a preferred #
+                                oldRequest = request;
                                 command = COMMAND_SETPREF_LIST;
-                                //                              Log.d(TAG, "Replying: " + contactGetResult);
                             }
                         } catch (SecurityException e) {
                             contactGetResult = "Could not retrieve contact info: make sure " +
@@ -182,7 +197,9 @@ public class SmsServerService extends Service {
                     }
                     //endregion
                     else {
-                        commandProcessor(command, originalCommand, contact, inReader, replyStream);
+                        String response = commandProcessor(command, oldRequest, contact,
+                                requestReader);
+                        sendReply(replyStream, response);
                     }
                     wakeLock.release();
                 } catch (IOException e) {
@@ -203,29 +220,34 @@ public class SmsServerService extends Service {
         int len = msg.length();
 
         final int HEADER_LEN = 32;
-        String lenStr = "" + len;
+        String header = "" + len;
 
         //if msg.length() >= 10^32, the stream will get stuck. this _probably_ won't happen.
-        if (lenStr.length() < HEADER_LEN) {
+        if (header.length() < HEADER_LEN) {
             //right-pad the header with spaces
-            lenStr = String.format("%1$-" + HEADER_LEN + "s", lenStr);
+            header = String.format("%1$-" + HEADER_LEN + "s", header);
         }
 
-        String response = lenStr + '\n' + msg;
+        String response = header + '\n' + msg;
         replyStream.println(response);
     }
 
-    private void commandProcessor(String command, String originalCommand, Contact contact,
-                                  BufferedReader inReader, PrintStream replyStream)
+    /**
+     * @return The response to be returned to the client.
+     * @throws IOException
+     */
+    private String commandProcessor(String command, String originalRequest, Contact contact,
+                                  BufferedReader requestReader)
             throws IOException {
         if (COMMAND_SEND.equals(command)) {
-            sendCommand(contact, inReader, replyStream);
+            return sendCommand(contact, requestReader);
         }
         else if (COMMAND_READ.equals(command)) {
-            readCommand(contact, inReader, replyStream);
+            return readCommand(contact, requestReader);
         }
         else if (COMMAND_UNREAD.equals(command)) {
-            unreadCommand(inReader, replyStream);
+            // Unread for a particular contact would need to be passed here
+            return unreadCommand(requestReader);
         }
         else if (COMMAND_SETPREF_LIST.equals(command)) {
             // respond to client with list of numbers to select from.
@@ -237,53 +259,57 @@ public class SmsServerService extends Service {
             if (contact.hasPreferred()) {
                 list += "\nCurrent: " + contact.preferred();
             }
-            sendReply(replyStream, list);
+            return list;
         }
         else if (COMMAND_SETPREF.equals(command)) {
             // receive the index to set the new preferred number to.
-            int replyIndex = Integer.parseInt(inReader.readLine());
+            int replyIndex = Integer.parseInt(requestReader.readLine());
             Log.d(TAG, "Setting " + contact.name() + " pref to " + replyIndex);
             contact.setPreferred(replyIndex);
 
-            if (COMMAND_SEND.equals(originalCommand)) {
-                sendCommand(contact, inReader, replyStream);
-            }
-            else if (COMMAND_READ.equals(originalCommand)) {
-                readCommand(contact, inReader, replyStream);
-            }
-            else if (COMMAND_UNREAD.equals(originalCommand)) {
-                unreadCommand(inReader, replyStream);
+            // Get the original command's data - will do a recursive call to perform it.
+            BufferedReader originalRequestReader = new BufferedReader(new StringReader(originalRequest));
+            String originalCommand = originalRequestReader.readLine();
+            // Remove the contact from the original - we already know it
+            originalRequestReader.readLine();
+
+            if(COMMAND_SETPREF.equals(originalCommand)) {
+                return "Changed " + contact.name() + "'s preferred number to: " +
+                        contact.preferred();
             }
             else {
-                sendReply(replyStream, "Changed " + contact.name() + "'s preferred number to: " +
-                        contact.preferred());
+                // still need to perform the original command
+                return commandProcessor(originalCommand, "", contact, originalRequestReader);
             }
         }
         else if (COMMAND_CONTACTS.equals(command)) {
-            //TODO should accept tty width
-            String allContacts = Utilities.getAllContacts();
-            if (allContacts != null && !allContacts.isEmpty()) {
-                sendReply(replyStream, allContacts);
-            }
-            else {
-                sendReply(replyStream, "An error occurred getting contacts, " +
-                        "or you have no contacts!");
+            try {
+                String allContacts = Utilities.getAllContacts();
+                if (allContacts != null && !allContacts.isEmpty()) {
+                    return allContacts;
+                }
+                else {
+                    return "An error occurred getting contacts, or you have no contacts!";
+                }
+            } catch (SecurityException e) {
+                return "No Contacts permission! Open the " + getString(R.string.app_name) +
+                        " app and give Contacts permission.";
             }
         }
         else {
             //should never happen
-            sendReply(replyStream, "'" + command + "' is a not a recognized command. " +
-                    "Please report this issue on GitHub.");
+            return "'" + command + "' is a not a recognized command. " +
+                    "Please report this issue on GitHub.";
         }
     }
 
-    private void sendCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
+    private String sendCommand(Contact contact, BufferedReader requestReader)
             throws IOException {
         StringBuilder msgBodyBuilder = new StringBuilder();
         //read the message body into msgBodyBuilder
         int current;
         char previous = ' ';
-        while ((current = inReader.read()) != -1) {
+        while ((current = requestReader.read()) != -1) {
             char chr = (char) current;
             if (chr == '\n' && previous == '\n') {
                 // Double newline means end-of-send.
@@ -296,15 +322,9 @@ public class SmsServerService extends Service {
 
         String messageInput = msgBodyBuilder.toString();
 
-        //chop off last newline
-        messageInput = messageInput.substring(0, messageInput.length() - 1);
         try {
             Integer numberSent = (new SmsSendThread().execute(contact.preferred(), messageInput))
                     .get();
-
-            sendReply(replyStream, "Successfully sent " + numberSent + " message" +
-                    (numberSent != 1 ? "s" : "") + " to " +
-                    contact.name() + ", " + contact.preferred() + ".");
 
             String preferred = "";
             if(!contact.name().equals(contact.preferred())) {
@@ -312,34 +332,32 @@ public class SmsServerService extends Service {
                 preferred = ", " + contact.preferred();
             }
 
-            String reply = String.format(Locale.getDefault(), "Successfully sent %d message%s to %s%s.",
+            return String.format(Locale.getDefault(), "Successfully sent %d message%s to %s%s.",
                     numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
-
-            sendReply(replyStream, reply);
         } catch (SecurityException e) {
-            sendReply(replyStream, "No SMS permission! Open the " + getString(R.string.app_name) +
-                    " app and give SMS permission.");
+            return "No SMS permission! Open the " + getString(R.string.app_name) +
+                    " app and give SMS permission.";
         } catch (Exception e) {
-            sendReply(replyStream, "Unexpected exception in the SMS send " +
-                    "thread; please report this issue on GitHub.");
             Log.e(TAG, "Exception from sendThread", e);
+            return "Unexpected exception in the SMS send thread; " +
+                    "please report this issue on GitHub.";
         }
     }
 
-    private void readCommand(Contact contact, BufferedReader inReader, PrintStream replyStream)
+    private String readCommand(Contact contact, BufferedReader requestReader)
             throws IOException {
         Log.d(TAG, "Reading from " + contact.preferred());
-        int numberToRetrieve = Integer.parseInt(inReader.readLine());
-        int outputWidth = Integer.parseInt(inReader.readLine());
+        int numberToRetrieve = Integer.parseInt(requestReader.readLine());
+        int outputWidth = Integer.parseInt(requestReader.readLine());
 
         try {
             String convo = Utilities.getConversation(contact, numberToRetrieve,
                     outputWidth);
 
             if (convo != null) {
-                sendReply(replyStream, convo);
                 receiver.removeMessagesFromNumber(contact.preferred());
                 Log.d(TAG, "Responded with convo with " + contact.name());
+                return convo;
             }
             else {
                 String response = "No messages found with " + contact.name();
@@ -347,36 +365,33 @@ public class SmsServerService extends Service {
                     // Don't display the preferred twice in the -n case.
                     response += ", " + contact.preferred() + ".";
                 }
-                sendReply(replyStream, response + '.');
+                return response + '.';
             }
 
         } catch (SecurityException e) {
-            sendReply(replyStream, "Could not retrieve messages: make sure " +
-                    getString(R.string.app_name) + " has SMS permission.");
             Log.w(TAG, "No SMS permission for reading.");
+            return "No SMS permission! Open the " + getString(R.string.app_name) +
+                    " app and give SMS permission.";
         }
     }
 
-    private void unreadCommand(BufferedReader inReader, PrintStream replyStream)
+    private String unreadCommand(BufferedReader requestReader)
             throws IOException {
-        int outputWidth = Integer.parseInt(inReader.readLine());
+        int outputWidth = Integer.parseInt(requestReader.readLine());
         try {
             String unread = receiver.getAllSms(outputWidth);
 
             if (unread != null && !unread.isEmpty()) {
                 unread = "Unread Messages:\n" + unread;
-                sendReply(replyStream, unread);
+                return unread;
             }
-            //            else if (contact != null)
-            //                sendReply(replyStream, "No unread messages found with " +
-            //                        contact.name() + ".");
             else {
-                sendReply(replyStream, "No unread messages.");
+                return "No unread messages.";
             }
         } catch (SecurityException e) {
-            sendReply(replyStream, "Could not retrieve messages: make sure " +
-                    getString(R.string.app_name) + " has SMS permission.");
             Log.w(TAG, "No SMS permission for reading.");
+            return "Could not retrieve messages: make sure " +
+                    getString(R.string.app_name) + " has SMS permission.";
         }
     }
 }
@@ -414,7 +429,7 @@ class Contact {
     // numbers includes the type, as returned from getNumberForContact
     private List<String> numbers;
 
-    public Contact(String name, List<String> numbers) {
+    Contact(String name, List<String> numbers) {
         this.name = name;
         this.numbers = numbers;
     }
@@ -424,7 +439,7 @@ class Contact {
      *
      * @param number Number to set the contact's preferred number to.
      */
-    public void setPreferred(String number) {
+    private void setPreferred(String number) {
         boolean contains = false;
         for (String n : numbers) {
             if (numbers.size() == 1 || n.contains(number)) {
@@ -452,7 +467,7 @@ class Contact {
      *
      * @param index Which index in numbers to set the new preferred to.
      */
-    public void setPreferred(int index) {
+    void setPreferred(int index) {
         Log.d(TAG, "Setting " + name() + "'s preferred to " + numbers().get(index));
         setPreferred(numbers.get(index));
     }
@@ -473,23 +488,23 @@ class Contact {
     }
 
     // Getters //
-    public boolean hasPreferred() {
+    boolean hasPreferred() {
         return checkPrefs() != null;
     }
 
-    public String preferred() {
+    String preferred() {
         return checkPrefs();
     }
 
-    public String name() {
+    String name() {
         return name;
     }
 
-    public List<String> numbers() {
+    List<String> numbers() {
         return numbers;
     }
 
-    public int count() {
+    int count() {
         return numbers.size();
     }
 }
