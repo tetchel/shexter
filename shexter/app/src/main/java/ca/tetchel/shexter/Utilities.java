@@ -21,7 +21,7 @@ import java.util.TimeZone;
 /**
  * Public static utility methods to support the bulk of the code.
  */
-public class Utilities {
+class Utilities {
 
     private static final String TAG = "Utilities";
 
@@ -34,7 +34,7 @@ public class Utilities {
      * Day of Week (if date is in the past week), Month/Day (if date is in the current year),
      * Full date otherwise
      */
-    public static String unixTimeToRelativeDate(long unixTime) {
+    private static String unixTimeToRelativeDate(long unixTime) {
         Date inputDate = new Date(unixTime);
 
         Calendar cal = Calendar.getInstance();
@@ -98,7 +98,7 @@ public class Utilities {
     /**
      * Returns unix time as HH:mm format.
      */
-    public static String unixTimeToTime(long unixTime) {
+    private static String unixTimeToTime(long unixTime) {
         Date d = new Date(unixTime);
         DateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
         df.setTimeZone(TimeZone.getDefault());
@@ -106,25 +106,26 @@ public class Utilities {
         return df.format(d);
     }
 
-    public static String formatSms(String sender, String otherSender, String body, long time,
+    static String formatSms(String sender, String otherSender, String body, long time,
                                    int width) {
         StringBuilder messageBuilder = new StringBuilder();
 
-        //a left/right conversation display like real texting would be stellar!
         String niceTime = '[' +  Utilities.unixTimeToTime(time) + "] ";
         messageBuilder.append(niceTime);
-
         messageBuilder.append(sender);
 
         //Indent the messages the same length as their prefix so they don't look weird
         int firstLineIndent = niceTime.length() + sender.length();
         int amountToIndent = niceTime.length() + Math.max(sender.length(), otherSender.length());
+        // Shift over any newlines in the body so that they line up with the sender's name
+        String indent = new String(new char[amountToIndent]).replace("\0", " ");
+        body = body.replaceAll("\n", "\n"+indent);
+
         //keep lines shorter than LINE_LEN chars.
         int remainingLineChars = width - amountToIndent;
         List<String> divided = divideString(body, remainingLineChars);
         for(int i = 0; i < divided.size(); i++) {
             //shift the message body over for nicer-looking output
-            //(IMO. up for discussion).
             if(i != 0) {
                 int numberOfSpacesToWrite = amountToIndent;
                 //if it starts with a space shift it over to the left
@@ -144,7 +145,7 @@ public class Utilities {
         return messageBuilder.toString();
     }
 
-    public static String messagesIntoOutput(List<String> messages, List<Long> dates) {
+    static String messagesIntoOutput(List<String> messages, List<Long> dates) {
         //combine the messages into one string to be sent to the client
         StringBuilder resultBuilder = new StringBuilder();
         //Generate and print a new date header each time the next message is from a different day
@@ -176,7 +177,7 @@ public class Utilities {
     /**
      * Divides a String into a List of substrings of the length subStringLength.
      */
-    public static List<String> divideString(String input, int subStringLength) {
+    private static List<String> divideString(String input, int subStringLength) {
         List<String> result = new ArrayList<>((input.length() / subStringLength) + 1);
         int currentIndex = 0;
         while(currentIndex < input.length()) {
@@ -197,7 +198,7 @@ public class Utilities {
 
     ////////// Database Querying methods //////////
 
-    public static String getConversation(Contact contact, int numberToRetrieve, int outputWidth)
+    static String getConversation(Contact contact, int numberToRetrieve, int outputWidth)
             throws SecurityException {
         if(BuildConfig.DEBUG && !(contact != null && contact.count() != 0))
             throw new RuntimeException("Invalid data passed to getConversation: contact is null? " +
@@ -360,7 +361,7 @@ public class Utilities {
      * Accepts contact name (case insensitive), returns:
      * @return Contact data object with the contact's name and numbers.
      */
-    public static Contact getContactInfo(String name) throws SecurityException {
+    static Contact getContactInfo(String name) throws SecurityException {
         String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
                 " like'%" + name + "%'";
         String[] projection = new String[] {
@@ -423,7 +424,7 @@ public class Utilities {
      * @return A formatted string
      * @throws SecurityException
      */
-    public static String getAllContacts() throws SecurityException {
+    static String getAllContacts() throws SecurityException {
         // could be expanded to start with an input / match a regex
         String[] projection = new String[]{
                 ContactsContract.Contacts._ID,
@@ -484,7 +485,7 @@ public class Utilities {
      * @param contactId ContactsContact.Contacts._ID of the contact to get numbers for.
      * @return List of numbers, each in the form $type: $number
      */
-    public static List<String> getNumbersForContact(long contactId) {
+    private static List<String> getNumbersForContact(long contactId) {
         Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
         String[] projection = { ContactsContract.CommonDataKinds.Phone.NUMBER,
                                 ContactsContract.CommonDataKinds.Phone.TYPE };
@@ -509,7 +510,6 @@ public class Utilities {
                 int typeCol = numbersQuery.getColumnIndex(
                         ContactsContract.CommonDataKinds.Phone.TYPE);
 
-                //TODO formatting (line up colons or smtg) and normalize numbers
                 do {
                     String number = numbersQuery.getString(numberCol);
                     //normalize the numbers

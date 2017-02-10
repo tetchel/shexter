@@ -333,7 +333,7 @@ def build_request(args) :
         to_send += str(args.count) + '\n'
 
     if(command == COMMAND_UNRE or command == COMMAND_SETPREF_LIST or command == COMMAND_READ):
-        to_send += tty_width + '\n'
+        to_send += tty_width + '\n\n'
 
     if(command != COMMAND_READ and args.count != DEFAULT_READ_COUNT):
         print('Ignoring -c flag: only valid for READ command.')
@@ -439,7 +439,7 @@ def do_command(command, to_send, args):
 
 NO_UNRE_RESPONSE = 'No unread messages.'
 def check_for_unread() :
-    to_send = COMMAND_UNRE + '\n' + tty_width + '\n'
+    to_send = COMMAND_UNRE + '\n' + tty_width + '\n\n'
     response = contact_server(to_send, False)
     if(response != NO_UNRE_RESPONSE):
         return response

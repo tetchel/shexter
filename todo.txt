@@ -1,10 +1,12 @@
 .git/hooks/pre-commit:6:#TODO convert all hard tabs to 4 spaces
 
+hooks/pre-commit:6:#TODO convert all hard tabs to 4 spaces
+
 shexter/app/src/main/java/ca/tetchel/shexter/SmsServerService.java:130:// TODO use a length header. This will break if message starts with newline!
 
-shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:285://TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
+shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:286://TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
 
-shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:512://TODO formatting (line up colons or smtg) and normalize numbers
+shexter/app/src/main/java/ca/tetchel/shexter/Utilities.java:513://TODO formatting (line up colons or smtg) and normalize numbers
 
 shexter_client/shexter.py:85:#TODO default for windows?
 

@@ -17,7 +17,8 @@ install_dir = os.getenv(env_var)
 print(install_dir)
 if not install_dir:
 	# won't happen. I think.
-    print('Unable to get config directory. Please set the environment variable ' + env_var + ' to something like C:\\Users\\$Username\\AppData\\Local')
+    print('Unable to get config directory. Please set the environment variable ' + env_var 
+    	+ ' to something like C:\\Users\\$Username\\AppData\\Local')
     quit()
 
 install_dir = os.path.join(install_dir, APP_NAME.lower())
@@ -49,8 +50,13 @@ except FileNotFoundError:
 #print('Installing in: ' + install_dir)
 
 # Copy the files
-
-os.makedirs(install_dir)
+try:
+	os.makedirs(install_dir)
+except PermissionError:
+	print('Creating ' + install_dir ' failed to due permissions error. '
+		'Close any applications that are using this folder.');
+	quit()
+	
 shutil.copy(FILES_DIR + CLIENT_NAME, install_dir)
 shutil.copy(FILES_DIR + PERSIST_NAME, install_dir)
 # use path[0] because .bat is in the same folder as this script
