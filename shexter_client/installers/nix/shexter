@@ -1,9 +1,4 @@
 # !/usr/bin/env bash
 # quick executable that is symlinked to /usr/bin/shexter to run shexter from anywhere
-# use -p flag for persistant
 
-if [ "$1" == "-p" ]; then
-    python3 /opt/shexter/shexter_persistant.py
-else
-    python3 /opt/shexter/shexter.py "$@" 
-fi
+python3 /opt/shexter/shexter.py "$@"

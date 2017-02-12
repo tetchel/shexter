@@ -2,3 +2,5 @@
 
 *.swp
 /lib/__pycache__
+/shexter/__pycache__/
+.idea/

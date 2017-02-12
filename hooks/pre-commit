@@ -6,7 +6,7 @@
 #TODO convert all hard tabs to 4 spaces
 sed -i 's/[[:space:]]*$//' *
 
-grep -rnE --exclude=todo.txt '[#/] ?TODO' | sed 's/  //g' | sed 's/$/&\n/' > todo.txt
+#grep -rnE --exclude=todo.txt '[#/] ?TODO' | sed 's/  //g' | sed 's/$/&\n/' > todo.txt
 
 # bundle the client into an archive for easy download
  git archive -o shexter_client.zip HEAD:shexter_client
