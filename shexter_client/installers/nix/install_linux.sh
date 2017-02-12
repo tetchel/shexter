@@ -13,7 +13,8 @@ OPT_DIR='/opt/shexter/'
 # $_ should have worked but it did not
 mkdir -p $OPT_DIR &&
         cp ../../shexter.py $OPT_DIR &&
-        cp ./shexter $OPT_DIR
+        cp ./shexter $OPT_DIR &&
+        cp -r ../../shexter $OPT_DIR
 
 if [ $? -ne 0 ]; then
     echo "Install failed. Make sure your working directory is the original installer location, and that you have the permission to write to "$OPT_DIR
@@ -26,7 +27,7 @@ NOW=`date +"%Y%m%d%H%M%S"`
 FDATE1=`date -r $OPT_DIR"shexter.py" +"%Y%m%d%H%M%S"`
 
 if [ -f $OPT_DIR"shexter.py" ]  && [ -f /usr/bin/shexter ] &&
-    [ `expr $NOW - $FDATE1` -lt 5 ]; then
+    [ -f $OPT_DIR"shexter" ] && [ `expr $NOW - $FDATE1` -lt 5 ]; then
 
     chmod -R a+rx /opt/shexter
 

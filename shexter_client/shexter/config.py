@@ -24,7 +24,8 @@ def _write_config_file(fullpath, ip_addr):
     configfile.close()
 
 
-#  Deletes the settings file and creates a new one, requiring an IP address from the user.
+# Deletes the settings file and creates a new one, requiring an IP address from the user.
+# Returns the IP address.
 def _new_settings_file(config_file_path):
     # remove settings if it exists
     if os.path.isfile(config_file_path):
@@ -51,6 +52,7 @@ def _new_settings_file(config_file_path):
             print('Invalid IP Address. Try again. (CTRL + C to give up)')
 
     _write_config_file(config_file_path, new_ip_addr)
+    return new_ip_addr
 
 
 # Assembles and returns the absolute path to the settings file.
@@ -129,6 +131,6 @@ def configure(edit_mode):
         new_settings_file_required = True
 
     if new_settings_file_required:
-        _new_settings_file(config_file_path)
+        ip_addr = _new_settings_file(config_file_path)
 
     return ip_addr

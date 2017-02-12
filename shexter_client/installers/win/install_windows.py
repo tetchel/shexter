@@ -3,9 +3,9 @@ import shutil
 import sys
 import winreg
 
-APP_NAME = 'Shexter'
+APP_NAME = 'shexter'
 # client .py and dependencies are kept 2 directories above this script, so use path[0]
-FILES_DIR = sys.path[0] + '\..\..\\'
+CLIENT_DIR = sys.path[0] + '\..\..\\'
 # LIB_DIR = FILES_DIR + 'lib\\'
 # Add appdirs to the PATH so that we can use that code
 # sys.path.append(LIB_DIR)
@@ -14,18 +14,18 @@ FILES_DIR = sys.path[0] + '\..\..\\'
 env_var = 'LOCALAPPDATA'
 # This code is duped from shexter.py
 install_dir = os.getenv(env_var)
-print(install_dir)
 if not install_dir:
     # won't happen. I think.
     print('Unable to get config directory. Please set the environment variable ' + env_var
           + ' to something like C:\\Users\\$Username\\AppData\\Local')
     quit()
 
-install_dir = os.path.join(install_dir, APP_NAME.lower())
+install_dir = os.path.join(install_dir, APP_NAME)
+print("Installing into " + install_dir)
 
-BAT_NAME = APP_NAME.lower() + '.bat'
-CLIENT_NAME = APP_NAME.lower() + '.py'
-# PERSIST_NAME = APP_NAME.lower() + '_persistant.py'
+BAT_NAME = APP_NAME + '.bat'
+CLIENT_NAME = APP_NAME + '.py'
+# PERSIST_NAME = APP_NAME() + '_persistant.py'
 # DEPENDENCIES = [ 'appdirs.py' ]		# Add new dependencies to the list and the lib directory
 
 # add lib_dir to each dependency so installer can find
@@ -41,25 +41,33 @@ if response != 'y':
     print('Sorry to hear that!')
     quit()
 
+# make the dir if necessary
+if not os.path.exists(install_dir):
+    try:
+        os.makedirs(install_dir)
+    except PermissionError:
+        print('Creating ' + install_dir + ' failed to due permissions error. '
+              'Close any applications that are using this folder.')
+        quit()
+
 # Delete old files, but not the config file
 for file in os.listdir(install_dir):
     if not file.endswith(".ini"):
-        os.remove(os.path.join(install_dir, file))
+        try:
+            os.remove(os.path.join(install_dir, file))
+        except PermissionError as e:
+            print(e)
+            print('Make sure no other processes are using it.')
+            print('If this persists, delete the folder manually.')
+            quit()
 
-print('Installing in: ' + install_dir)
-
-# Copy the files
-try:
-    os.makedirs(install_dir)
-except PermissionError:
-    print('Creating ' + install_dir + ' failed to due permissions error. '
-          'Close any applications that are using this folder.')
-    quit()
-
-shutil.copy(FILES_DIR + CLIENT_NAME, install_dir)
+# copy the files
+shutil.copy(CLIENT_DIR + CLIENT_NAME, install_dir)
 # shutil.copy(FILES_DIR + PERSIST_NAME, install_dir)
 # use path[0] because .bat is in the same folder as this script
-shutil.copy(sys.path[0] + '\\' + BAT_NAME, install_dir)
+shutil.copy(os.path.join(sys.path[0], BAT_NAME), install_dir)
+# copy the 'shexter' python module (folder)
+shutil.copytree(os.path.join(CLIENT_DIR, APP_NAME), os.path.join(install_dir, APP_NAME))
 # for dep in DEPENDENCIES:
 # 	shutil.copy(dep, install_dir)
 
