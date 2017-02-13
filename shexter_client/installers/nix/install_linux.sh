@@ -10,10 +10,9 @@ fi
 
 OPT_DIR='/opt/shexter/'
 
-# $_ should have worked but it did not
 mkdir -p $OPT_DIR &&
         cp ../../shexter.py $OPT_DIR &&
-        cp ./shexter $OPT_DIR &&
+        cp ./shexter_exec $OPT_DIR &&
         cp -r ../../shexter $OPT_DIR
 
 if [ $? -ne 0 ]; then
@@ -21,17 +20,32 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-ln -s $OPT_DIR"shexter" /usr/bin/shexter
+ln -s $OPT_DIR"shexter_exec" /usr/bin/shexter
 
 NOW=`date +"%Y%m%d%H%M%S"`
 FDATE1=`date -r $OPT_DIR"shexter.py" +"%Y%m%d%H%M%S"`
 
-if [ -f $OPT_DIR"shexter.py" ]  && [ -f /usr/bin/shexter ] &&
-    [ -f $OPT_DIR"shexter" ] && [ `expr $NOW - $FDATE1` -lt 5 ]; then
-
-    chmod -R a+rx /opt/shexter
-
-    echo "Success!"
+if [ -f $OPT_DIR"shexter.py" ] && [ `expr $NOW - $FDATE1` -lt 5 ]; then
+    echo "shexter.py copied successfully"
 else
-    echo "Something went wrong."
+    echo "shexter.py was not copied!"
+    exit
 fi
+
+if [ -f /usr/bin/shexter ]; then
+    echo "/usr/bin/shexter link created successfully"
+else
+    echo "/usr/bin/shexter was not copied!"
+    exit
+fi
+
+if [ -d $OPT_DIR"shexter" ]; then
+    echo "shexter module copied successfully"
+else 
+    echo "shexter module was not copied!"
+    exit
+fi
+
+chmod -R a+rx /opt/shexter
+
+echo "Success!"
