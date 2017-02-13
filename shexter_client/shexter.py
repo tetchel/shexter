@@ -4,9 +4,6 @@ import sys
 from shexter.config import configure, APP_NAME
 from shexter.requester import DEFAULT_READ_COUNT, request
 
-CONFIG_COMMAND = 'config'
-CONFIG_COMMAND_2 = 'configure'
-
 
 # Build help/usage, and the parser to determine options
 def get_argparser():
@@ -33,6 +30,9 @@ def get_argparser():
                         help='Specify a phone number instead of a contact name for applicable commands.')
 
     return parser
+
+CONFIG_COMMAND = 'config'
+CONFIG_COMMAND_2 = 'configure'
 
 
 # Main function to be called from -p mode. Pass the arguments directly to be parsed here.

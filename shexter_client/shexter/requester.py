@@ -95,7 +95,8 @@ def _send_command(ip_addr, to_send, arg_send, arg_multi):
             # add the message to to_send
             to_send_full = to_send + msg + '\n'
             output = contact_server(ip_addr, to_send_full)
-            print(output)
+            if arg_multi:
+                print(output)
             msg = ''
 
     return output
