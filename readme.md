@@ -6,7 +6,7 @@ Send and read texts from your Android phone using your Linux or Windows command 
 
 [Get apk here](https://github.com/tetchel/Shexter/raw/master/shexter/app/app-release.apk)
 
-Or, download everything: `git clone https://github.com/tetchel/shexter.git`
+Or, download everything: `git clone https://github.com/tetchel/shexter.git` or `git clone ssh://git@github.com/tetchel/shexter.git`
 
 ##Client Setup
 
@@ -16,7 +16,7 @@ To install, extract the client archive, navigate to the installer for your platf
 
 You can do an acid test with `shexter send -n $YourPhoneNumber`.
 
-On first run, you will be prompted for an IP address - make sure your phone and computer are on the same LAN and then enter the IP that appears in the Shexter app.
+On first run, you will be prompted for an IP address - make sure your phone and computer are on the same LAN and then enter the hostname that appears in the Shexter app.
 
 Note that, for now, Shexter ignores MMS messages altogether.
 
