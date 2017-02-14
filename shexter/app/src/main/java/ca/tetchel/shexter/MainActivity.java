@@ -65,7 +65,7 @@ public class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         needToUpdatePermissions = true;
-        updateIpAddress();
+        updateHostname();
     }
 
     @Override
@@ -99,8 +99,9 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void updateIpAddress() {
-        ((TextView) findViewById(R.id.ipAddressTV)).setText(getIpAddress());
+    private void updateHostname() {
+        String hostnameOut = getString(R.string.your_hostname_is) + '\n' + getHostname();
+        ((TextView) findViewById(R.id.ipAddressTV)).setText(hostnameOut);
     }
 
     private boolean isServiceRunning(Class<?> serviceClass) {
@@ -116,8 +117,7 @@ public class MainActivity extends Activity {
         return false;
     }
 
-    private String getIpAddress() {
-        String ip = "";
+    private String getHostname() {
         try {
             Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
                     .getNetworkInterfaces();
@@ -127,20 +127,36 @@ public class MainActivity extends Activity {
                 Enumeration<InetAddress> enumInetAddress = networkInterface
                         .getInetAddresses();
                 while (enumInetAddress.hasMoreElements()) {
-                    InetAddress inetAddress = enumInetAddress.nextElement();
-
+                    final InetAddress inetAddress = enumInetAddress.nextElement();
                     if (inetAddress.isSiteLocalAddress()) {
-                        ip += "Your subnet IP Address is: "
-                                + inetAddress.getHostAddress() + "\n";
+
+                        final String[] addr = new String[1];
+                        Thread hostnameGetter = new Thread() {
+                            public void run() {
+                                addr[0] = inetAddress.getHostName();
+                            }
+                        };
+
+                        hostnameGetter.start();
+                        try {
+                            hostnameGetter.join();
+                        }
+                        catch (InterruptedException e) {
+                            Log.e(TAG, "Error executing hostnameGetter thread", e);
+                        }
+
+                        return addr[0];
                     }
                 }
             }
         }
         catch (SocketException e) {
-            Log.e(TAG, "Error getting IP address", e);
-            ip += "Error: " + e.toString() + "\n";
+            Log.e(TAG, "Error getting hostname", e);
+            return "Error: " + e.toString() + "\n";
         }
-        return ip;
+
+        // this shouldn't happen :(
+        return "Not found!";
     }
 
     public void onClickPermissionsButton(View v) {

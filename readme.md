@@ -14,9 +14,9 @@ Or, download everything: `git clone https://github.com/tetchel/shexter.git` or `
 
 To install, extract the client archive, navigate to the installer for your platform, and run the installer (using `python .\installer_windows.py` or `sudo ./install_linux.sh`) through the command line. If the install is successful, after restarting your terminal (sometimes log out is required on Windows), you should be able to run 'shexter' from anywhere, and consult the help for how to use the client.
 
-You can do an acid test with `shexter send -n $YourPhoneNumber`.
+On first run, you will be prompted for an hostname - make sure your phone and computer are on the same LAN and then carefully enter the hostname that appears in the Shexter app. You only have to do this setup once per computer.
 
-On first run, you will be prompted for an IP address - make sure your phone and computer are on the same LAN and then enter the hostname that appears in the Shexter app.
+You can do an acid test with `shexter send -n $YourPhoneNumber`.
 
 Note that, for now, Shexter ignores MMS messages altogether.
 
