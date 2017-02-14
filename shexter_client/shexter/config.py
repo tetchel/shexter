@@ -8,7 +8,7 @@ from socket import inet_aton
 APP_NAME = "shexter"
 SETTINGS_FILE_NAME = APP_NAME + '.ini'
 SETTING_SECTION_NAME = 'Settings'
-SETTING_IP = 'IP Address'
+SETTING_HOSTNAME = 'hostname'
 SETTING_PORT = 'Port'
 
 
@@ -18,7 +18,7 @@ def _write_config_file(fullpath, ip_addr):
     # configfile = open(user_config_dir(APP_NAME), 'w')
     config = ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
-    config.set(SETTING_SECTION_NAME, SETTING_IP, ip_addr)
+    config.set(SETTING_SECTION_NAME, SETTING_HOSTNAME, ip_addr)
     # config.set(SETTING_SECTION_NAME, SETTING_PORT, str(DEFAULT_PORT))
     config.write(configfile)
     configfile.close()
@@ -31,28 +31,19 @@ def _new_settings_file(config_file_path):
     if os.path.isfile(config_file_path):
         os.remove(config_file_path)
 
-    new_ip_addr = ''
-    validip = False
+    new_hostname = ''
     # prompt user for an IP address until they give you one.
-    while not validip:
-        try:
-            new_ip_addr = input('Enter your IP Address from the Shexter app in dotted decimal '
-                                '(eg. 192.168.1.1): ')
-        except (EOFError, KeyboardInterrupt):
-            # user gave up
-            print()
-            quit()
+    try:
+        new_hostname = input('Enter your hostname from the Shexter app (eg. android-1d2e3a4d5b6e7e8f): ')
+    except (EOFError, KeyboardInterrupt):
+        # user gave up
+        print()
+        quit()
 
-        try:
-            # validate ip
-            inet_aton(new_ip_addr)
-            print('Setting your phone\'s IP to ' + new_ip_addr)
-            validip = True
-        except OSError:
-            print('Invalid IP Address. Try again. (CTRL + C to give up)')
+    print('Setting your phone\'s hostname to ' + new_hostname)
 
-    _write_config_file(config_file_path, new_ip_addr)
-    return new_ip_addr
+    _write_config_file(config_file_path, new_hostname)
+    return new_hostname
 
 
 # Assembles and returns the absolute path to the settings file.
@@ -113,13 +104,13 @@ def configure(edit_mode):
     config.read(config_file_path)
 
     new_settings_file_required = False
-    ip_addr = ''
+    hostname = ''
     try:
-        ip_addr = config[SETTING_SECTION_NAME][SETTING_IP]
+        hostname = config[SETTING_SECTION_NAME][SETTING_HOSTNAME]
         if edit_mode:
             print('Your settings file is ' + config_file_path)
-            confirm = input('Your current IP is ' + ip_addr + '\nWould you like to change it? y/N: ')
-            if confirm is 'y' or confirm is 'Y':
+            confirm = input('Your current hostname is ' + hostname + '\nWould you like to change it? y/N: ')
+            if confirm.lower() == 'y':
                 new_settings_file_required = True
             else:
                 print('Configuring cancelled.')
@@ -127,10 +118,10 @@ def configure(edit_mode):
         print('Error parsing ' + config_file_path + '. Making a new one.')
         new_settings_file_required = True
     except OSError:
-        print('Bad IP ' + ip_addr + ' found in ' + config_file_path + '. Making a new one.')
+        print('Bad hostname ' + hostname + ' found in ' + config_file_path + '. Making a new one.')
         new_settings_file_required = True
 
     if new_settings_file_required:
-        ip_addr = _new_settings_file(config_file_path)
+        hostname = _new_settings_file(config_file_path)
 
-    return ip_addr
+    return hostname

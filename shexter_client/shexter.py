@@ -11,7 +11,7 @@ def get_argparser():
 
     parser = argparse.ArgumentParser(prog='', usage='command [contact_name] [options]\n'
                                                     'You can also run "' + APP_NAME +
-                                                    ' help to see commands and their options".')
+                                                    ' help" to see commands and their options.')
     parser.add_argument('command', type=str,
                         help='Possible commands: Send $ContactName, Read $ContactName, Unread, Contacts, ' +
                              'SetPref $ContactName, Config. Not case sensitive.')
@@ -37,7 +37,7 @@ CONFIG_COMMAND_2 = 'configure'
 
 # Main function to be called from -p mode. Pass the arguments directly to be parsed here.
 def main(args_list):
-    ip_addr = configure(False)
+    hostname = configure(False)
     parser = get_argparser()
     args = parser.parse_args(args_list)
 
@@ -46,7 +46,7 @@ def main(args_list):
         configure(True)
         quit()
 
-    result = request(ip_addr, args)
+    result = request(hostname, args)
 
     if result:
         print(result)

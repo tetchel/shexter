@@ -9,23 +9,29 @@ port = DEFAULT_PORT
 
 
 # Connect to the phone using the config's IP, and return the socket
-def _connect(ip_addr):
+def _connect(hostname):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(15)
+    ip = 'unresolved'
     try:
-        sock.connect((ip_addr, port))
+        ip = socket.gethostbyname(hostname)
+        sock.connect((ip, port))
     except OSError as e:
-        restart_msg = ('\n\nTry restarting the Shexter app, then run "shexter config" to change the IP address '
+        restart_msg = ('\n\nTry restarting the Shexter app, then run "shexter config" to change the hostname '
                        'to the one displayed on the app.\n'
                        'Also ensure your phone and computer are connected to the same network.')
         errorcode = e.errno
-        if errorcode == errno.ECONNREFUSED:
+        print('Connection error: Hostname is ' + hostname + ', IP is ' + ip)
+        if ip == 'unresolved':
+            print('Hostname is not correct.' + restart_msg)
+            return None
+        elif errorcode == errno.ECONNREFUSED:
             print('Connection refused: Likely Shexter is not running on your phone.'
                   + restart_msg)
             return None
         elif errorcode == errno.ETIMEDOUT:
             print('Connection timeout: Likely your phone is not on the same network as your '
-                  'computer or the IP address ' + ip_addr + ' is not correct.' + restart_msg)
+                  'computer or the hostname is not correct.' + restart_msg)
             return None
         else:
             print('Unexpected error occurred: ')
@@ -82,13 +88,13 @@ def _receive_all(sock):
 
 
 # Helper for sending requests to the server
-def contact_server(ip_addr, to_send):
+def contact_server(hostname, to_send):
     # print('sending:\n' + to_send)
     # print("...")
-    sock = _connect(ip_addr)
+    sock = _connect(hostname)
     # print("Connected!")
     if sock is None:
-        return ''
+        return 'Failed to connect to phone.'
     sock.send(to_send.encode())
     response = _receive_all(sock)
     sock.close()
