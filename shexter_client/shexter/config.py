@@ -1,7 +1,6 @@
 import os
 import sys
 from configparser import ConfigParser
-from socket import inet_aton
 
 ''' This file deals with reading and writing settings. Call configure() to get the ip address.'''
 
@@ -46,12 +45,15 @@ def _new_settings_file(config_file_path):
     return new_hostname
 
 
-# Assembles and returns the absolute path to the settings file.
-def _create_config_file():
-    # platform-dependent: Check an environment variable for user config directory
-    platf = sys.platform
-    # This env var is used for anything not windows or osx -
-    # ie, linux, cygwin, as a backup in case there's an error or user is using something strange.
+def _create_config_file(platf):
+    """
+    # Assembles and returns the absolute path to the settings file.
+    :param platf: Platform as set by get_platform
+    :return: Full path to settings file
+    """
+
+    # This env var is used for anything not windows right now (OS X should change in future)
+    # ie, linux, cygwin, or as a backup in case there's an error or user is using something strange.
     env_var = 'XDG_CONFIG_HOME'
     home_dir = os.getenv("HOME")
     if home_dir:
@@ -61,16 +63,17 @@ def _create_config_file():
 
     if platf.startswith('win'):
         env_var = 'LOCALAPPDATA'
-        # TODO default for windows?
+        # I dont think non-admin user will have write access to this, so hopefully this is never needed...
+        default_path = 'C:\\Users\\Default\\AppData\\Local'
+    elif platf.startswith('darwin'):
+        # os x does not have a corresponding env var
+        # could still set XDG_CONFIG_DIR, though (probably)
+        print('WARNING: macos is not supported at this time')
     else:
         if not (platf.startswith('linux') or platf.startswith('cyg')):
             print('"' + platf + '" is not a recognized platform. If you can, set the ' +
                   'environment variable ' + env_var + '. If you can\'t set it, ' +
                   'use a supported platform.')
-
-    if platf.startswith('darwin'):
-        # os x does not have a corresponding env var
-        print('macos is not supported at this time')
 
     config_path = os.getenv(env_var, default_path)
     if not config_path:
@@ -88,7 +91,42 @@ def _create_config_file():
 
     return os.path.join(config_path, SETTINGS_FILE_NAME)
 
+# These two variables are not to be modified by other classes
+# full path to the config file
 glob_config_file_path = None
+
+glob_platform = None
+
+
+def get_platform():
+    """
+    :return:    The user's platform: hopefully one of: linux, win, cyg, macos.
+                If it's an unknown platform, it is whatever sys.platform returned.
+    """
+    # persist this data since it won't change during execution
+    global glob_platform
+    if glob_platform is not None:
+        return glob_platform
+
+    platf = sys.platform
+
+    if platf.startswith('win'):
+        platform = 'win'
+    elif platf.startswith('darwin'):
+        # os x does not have a corresponding env var
+        # could still set XDG_CONFIG_DIR, though (probably)
+        print('WARNING: macos is not supported at this time')
+        platform = 'macos'
+    else:
+        if platf.startswith('linux'):
+            platform = 'linux'
+        elif platf.startswith('cyg'):
+            platform = 'cyg'
+        else:
+            print('WARNING: Unrecognized (and therefore unsupported) platform ' + platf)
+            platform = platf
+
+    return platform
 
 
 # Try and load existing config file. Create a new config file if needed.
@@ -96,7 +134,11 @@ glob_config_file_path = None
 # or if there's a problem with the settings file (or there isn't one)
 # Returns the new ip address.
 def configure(edit_mode):
-    config_file_path = _create_config_file()
+    global glob_platform
+    if glob_platform is None:
+        glob_platform = get_platform()
+
+    config_file_path = _create_config_file(glob_platform)
     global glob_config_file_path
     glob_config_file_path = config_file_path
 
