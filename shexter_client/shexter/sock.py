@@ -1,7 +1,6 @@
 import errno
 import socket
-from subprocess import Popen, PIPE, TimeoutExpired
-from shexter.config import get_platform
+
 ''' This file performs network operations. The entry point is contact_server '''
 
 
@@ -9,53 +8,13 @@ DEFAULT_PORT = 5678
 port = DEFAULT_PORT
 
 
-def _dirty_windows_hostname_getter(hostname):
-    """
-    I hate that this is required, but gethostbyname doesn't work on Windows for some hosts (ie. phones).
-    Maybe there is a better way, but this works.
-    :param hostname: Hostname to try and resolve into an IP.
-    :return: The IP address the hostname resolved to.
-    """
-    nslu_proc = Popen("nslookup " + hostname, stdout=PIPE, shell=True)
-    try:
-        output, error = nslu_proc.communicate(timeout=15)
-
-        found = False
-        ip_addr = ''
-        if get_platform().startswith('win'):
-            platf_sep = b'\r\n'
-        else:
-            platf_sep = b'\n'
-        for line in output.split(sep=platf_sep):
-            line = str(line)
-            if found:
-                line = line.replace("'", "").replace('\n', "")
-                line = line.split("Address:", 1)[1].strip()
-                ip_addr = line
-                break
-            elif hostname in line:
-                # we want the line after this one
-                found = True
-
-    except TimeoutExpired:
-        nslu_proc.kill()
-        return None
-
-    print('Resolved Phone IP to ' + ip_addr)
-    return ip_addr
-
-
 # Connect to the phone using the config's IP, and return the socket
 def _connect(hostname):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(15)
-    ip = None
+    ip = 'unresolved'
     try:
-        if get_platform().startswith('win'):
-            # TODO which of these works on cygwin?
-            ip = _dirty_windows_hostname_getter(hostname)
-        else:
-            ip = socket.gethostbyname(hostname)
+        ip = socket.gethostbyname_ex(hostname)
         sock.connect((ip, port))
     except OSError as e:
         restart_msg = ('\n\nTry restarting the Shexter app, then run "shexter config" to change the hostname '
@@ -63,7 +22,7 @@ def _connect(hostname):
                        'Also ensure your phone and computer are connected to the same network.')
         errorcode = e.errno
         print('Connection error: Hostname is ' + hostname + ', IP is ' + ip)
-        if ip is None:
+        if ip == 'unresolved':
             print('Hostname is not correct.')
         elif errorcode == errno.ECONNREFUSED:
             print('Connection refused: Likely Shexter is not running on your phone.')
@@ -80,6 +39,7 @@ def _connect(hostname):
         return None
 
     return sock
+
 
 HEADER_LEN = 32
 BUFFSIZE = 8192
