@@ -54,11 +54,7 @@ if not os.path.exists(install_dir):
 for file in os.listdir(install_dir):
     if not file.endswith(".ini"):
         try:
-            fullpath=os.path.join(install_dir, file)
-            if os.path.isdir(fullpath):
-                shutil.rmtree(fullpath)
-            else:
-                os.remove(fullpath)
+            os.remove(os.path.join(install_dir, file))
         except PermissionError as e:
             print(e)
             print('Make sure no other processes are using it.')

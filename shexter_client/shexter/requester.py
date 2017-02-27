@@ -203,10 +203,12 @@ def request(ip_addr, args):
         response = contact_server(ip_addr, to_send)
     elif command == COMMAND_UNRE:
         response = unread_command(ip_addr)
+    elif command == "help" or command == "h":
+        return ''
     else:
         print('Command \"{}\" not recognized.'.format(command))
 
-    if response and response.startswith(SETPREF_NEEDED):
+    if response.startswith(SETPREF_NEEDED):
         response = _handle_setpref_response(ip_addr, response)
 
     return response

@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Shexter</string>
-    <string name="your_hostname_is">Your phone\'s hostname is:</string>
     <string name="action_settings">Settings</string>
     <string name="preferred_contacts_file">preferred_contacts.ini</string>
     <string name="preferred_contacts_prefix">contact-prefers-</string>

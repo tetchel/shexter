@@ -14,7 +14,7 @@ def _connect(hostname):
     sock.settimeout(15)
     ip = 'unresolved'
     try:
-        ip = socket.gethostbyname_ex(hostname)
+        ip = socket.gethostbyname(hostname)
         sock.connect((ip, port))
     except OSError as e:
         restart_msg = ('\n\nTry restarting the Shexter app, then run "shexter config" to change the hostname '
@@ -23,17 +23,21 @@ def _connect(hostname):
         errorcode = e.errno
         print('Connection error: Hostname is ' + hostname + ', IP is ' + ip)
         if ip == 'unresolved':
-            print('Hostname is not correct.')
+            print('Hostname is not correct.' + restart_msg)
+            return None
         elif errorcode == errno.ECONNREFUSED:
-            print('Connection refused: Likely Shexter is not running on your phone.')
+            print('Connection refused: Likely Shexter is not running on your phone.'
+                  + restart_msg)
+            return None
         elif errorcode == errno.ETIMEDOUT:
             print('Connection timeout: Likely your phone is not on the same network as your '
-                  'computer or the hostname is not correct.')
+                  'computer or the hostname is not correct.' + restart_msg)
+            return None
         else:
             print('Unexpected error occurred: ')
-        print(str(e))
-        print(restart_msg)
-        return None
+            print(str(e))
+            print(restart_msg)
+            quit()
     except (EOFError, KeyboardInterrupt):
         print('Connect cancelled')
         return None
@@ -90,7 +94,7 @@ def contact_server(hostname, to_send):
     sock = _connect(hostname)
     # print("Connected!")
     if sock is None:
-        return None
+        return 'Failed to connect to phone.'
     sock.send(to_send.encode())
     response = _receive_all(sock)
     sock.close()

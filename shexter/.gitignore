@@ -1,4 +1,9 @@
+*.iml
+.gradle
+/.idea/*
 /local.properties
+/.idea/workspace.xml
+/.idea/libraries
 .DS_Store
 /build
 /captures
@@ -6,4 +11,3 @@ app/build/*
 app/build/generated
 app/build/intermediates/
 app/build/outputs/l*
-.gradle/

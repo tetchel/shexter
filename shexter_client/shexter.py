@@ -31,10 +31,8 @@ def get_argparser():
 
     return parser
 
-COMMAND_CONFIG = 'config'
-COMMAND_CONFIG_2 = 'configure'
-COMMAND_HELP = "help"
-COMMAND_HELP_2 = "h"
+CONFIG_COMMAND = 'config'
+CONFIG_COMMAND_2 = 'configure'
 
 
 # Main function to be called from -p mode. Pass the arguments directly to be parsed here.
@@ -44,10 +42,7 @@ def main(args_list):
     args = parser.parse_args(args_list)
 
     command = args.command.lower()
-    if command == COMMAND_HELP or command == COMMAND_HELP_2:
-        parser.print_help()
-        quit()
-    elif command == COMMAND_CONFIG or command == COMMAND_CONFIG_2:
+    if command == CONFIG_COMMAND or command == CONFIG_COMMAND_2:
         configure(True)
         quit()
 
@@ -55,6 +50,8 @@ def main(args_list):
 
     if result:
         print(result)
+    else:
+        parser.print_help()
 
     return result
 
