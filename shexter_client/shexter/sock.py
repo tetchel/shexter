@@ -31,7 +31,7 @@ def _connect(ip_addr):
             print('Unexpected error occurred: ')
             print(str(e))
             print(restart_msg)
-            quit()
+            return None
     except (EOFError, KeyboardInterrupt):
         print('Connect cancelled')
         return None
@@ -88,7 +88,7 @@ def contact_server(ip_addr, to_send):
     sock = _connect(ip_addr)
     # print("Connected!")
     if sock is None:
-        return ''
+        return None
     sock.send(to_send.encode())
     response = _receive_all(sock)
     sock.close()

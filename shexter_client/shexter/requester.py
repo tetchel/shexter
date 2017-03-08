@@ -208,7 +208,7 @@ def request(ip_addr, args):
     else:
         print('Command \"{}\" not recognized.'.format(command))
 
-    if response.startswith(SETPREF_NEEDED):
+    if response and response.startswith(SETPREF_NEEDED):
         response = _handle_setpref_response(ip_addr, response)
 
     return response
