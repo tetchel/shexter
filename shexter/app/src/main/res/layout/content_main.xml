@@ -45,7 +45,6 @@
         android:layout_alignParentBottom="true"
         android:visibility="gone"
         android:layout_centerHorizontal="true"
-        android:nestedScrollingEnabled="false"
         android:onClick="onClickPermissionsButton" />
 
 </RelativeLayout>

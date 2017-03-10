@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import ca.tetchel.shexter.sms.service.SmsServerService;
+
 /**
  * Receives an Intent when the phone finishes booting which triggers starting the SmsServerService.
  * TODO need a way to stop/start the service (from UI)

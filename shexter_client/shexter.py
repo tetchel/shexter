@@ -3,6 +3,7 @@ import sys
 
 from shexter.config import configure, APP_NAME
 from shexter.requester import DEFAULT_READ_COUNT, request
+from shexter.sock import find_phones
 
 
 # Build help/usage, and the parser to determine options
@@ -39,6 +40,9 @@ COMMAND_HELP_2 = 'h'
 
 # Main function to be called from -p mode. Pass the arguments directly to be parsed here.
 def main(args_list):
+    find_phones()
+    quit()
+
     ip_addr = configure(False)
     parser = get_argparser()
     args = parser.parse_args(args_list)

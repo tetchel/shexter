@@ -29,7 +29,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".SmsServerService" />
+        <service android:name=".sms.service.SmsServerService" />
 
         <receiver android:name=".BootCompletedReceiver">
             <intent-filter>

@@ -1,4 +1,4 @@
-package ca.tetchel.shexter;
+package ca.tetchel.shexter.sms;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -6,18 +6,21 @@ import android.util.Log;
 
 import java.util.List;
 
+import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.sms.service.SmsServerService;
+
 /**
  * Data type class to hold info about a contact, and access preferred contact data when it's
  * required.
  */
-class Contact {
+public class Contact {
     private static final String TAG = Contact.class.getSimpleName();
 
     private String name;
     // numbers includes the type, as returned from getNumberForContact
     private List<String> numbers;
 
-    Contact(String name, List<String> numbers) {
+    public Contact(String name, List<String> numbers) {
         this.name = name;
         this.numbers = numbers;
     }
@@ -55,7 +58,7 @@ class Contact {
      *
      * @param index Which index in numbers to set the new preferred to.
      */
-    void setPreferred(int index) {
+    public void setPreferred(int index) {
         Log.d(TAG, "Setting " + name() + "'s preferred to " + numbers().get(index));
         setPreferred(numbers.get(index));
     }
@@ -76,7 +79,7 @@ class Contact {
     }
 
     // Getters //
-    boolean hasPreferred() {
+    public boolean hasPreferred() {
         return checkPrefs() != null;
     }
 
@@ -84,15 +87,15 @@ class Contact {
         return checkPrefs();
     }
 
-    String name() {
+    public String name() {
         return name;
     }
 
-    List<String> numbers() {
+    public List<String> numbers() {
         return numbers;
     }
 
-    int count() {
+    public int count() {
         return numbers.size();
     }
 }

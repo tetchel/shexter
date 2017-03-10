@@ -3,15 +3,11 @@ package ca.tetchel.shexter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsMessage;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,40 +68,9 @@ public class SmsReceiver extends BroadcastReceiver {
         }
     }
 
-    public String getAllSms(int width) {
-        List<String> formattedMessages = new ArrayList<>(messages.size());
-        List<Long> dates = new ArrayList<>(messages.size());
-
-        for(SmsMessage sms : messages) {
-            String sender = sms.getOriginatingAddress();
-            Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                    Uri.encode(sender));
-            Cursor c = SmsServerService.instance().getContentResolver()
-                    .query(lookupUri, new String[]{ ContactsContract.Data.DISPLAY_NAME },
-                            null, null, null);
-
-            if(c != null) {
-                try {
-                    if(c.moveToFirst()) {
-                        String displayName = c.getString(0);
-                        if(!displayName.isEmpty())
-                            sender = displayName + ": ";
-                    }
-                }
-                catch (Exception e) {
-                    Log.e(TAG, "Exception occurred getting contact name for sms.", e);
-                }
-                finally{
-                    c.close();
-                }
-            }
-
-            long timestamp = sms.getTimestampMillis();
-            formattedMessages.add(Utilities.formatSms(sender, "", sms.getMessageBody(),
-                    timestamp, width));
-            dates.add(timestamp);
-        }
+    public List<SmsMessage> getAllSms() {
+        List<SmsMessage> messagesDupe = new ArrayList<>(messages);
         messages.clear();
-        return Utilities.messagesIntoOutput(formattedMessages, dates);
+        return messagesDupe;
     }
 }

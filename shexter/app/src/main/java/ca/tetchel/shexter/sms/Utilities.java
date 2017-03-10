@@ -1,4 +1,4 @@
-package ca.tetchel.shexter;
+package ca.tetchel.shexter.sms;
 
 import android.content.ContentResolver;
 import android.database.Cursor;
@@ -8,6 +8,7 @@ import android.provider.Telephony;
 import android.telephony.PhoneNumberUtils;
 import android.util.Log;
 
+import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -18,93 +19,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import ca.tetchel.shexter.BuildConfig;
+import ca.tetchel.shexter.sms.service.SmsServerService;
+
 /**
- * Public static utility methods to support the bulk of the code.
+ * static utility methods to support the SMS code.
  */
-class Utilities {
+public class Utilities {
 
     private static final String TAG = "Utilities";
-
-    ////////// String/Date Utilities //////////
-
-    /**
-     * Determine how old the message is and return a date label depending on the current date.
-     * @param unixTime Unix time in milliseconds to be converted to date label.
-     * @return Date label depending on how long ago the date was - eg Today, Yesterday,
-     * Day of Week (if date is in the past week), Month/Day (if date is in the current year),
-     * Full date otherwise
-     */
-    private static String unixTimeToRelativeDate(long unixTime) {
-        Date inputDate = new Date(unixTime);
-
-        Calendar cal = Calendar.getInstance();
-
-        Date today = cal.getTime();
-        //subtract a day to get yesterday's date
-        cal.add(Calendar.DATE, -1);
-        Date yesterday = cal.getTime();
-        //subtract 6 more days to get days that were this week
-        cal.add(Calendar.DATE, -6);
-        Date lastWeek = cal.getTime();
-        //look only at the year field for this one, ie if it's 2016, all dates not from
-        //2016 will be display with their year.
-        cal.set(Calendar.MONTH, 0);
-        cal.set(Calendar.DAY_OF_MONTH, 1);
-        Date startOfThisYear = cal.getTime();
-
-        if(compareDatesWithoutTime(inputDate, today) == 0) {
-            return "Today";
-        }
-        else if (compareDatesWithoutTime(inputDate, yesterday) == 0){
-            return "Yesterday";
-        }
-        else if (inputDate.after(lastWeek)) {
-            //return the day of week
-            SimpleDateFormat sdf = new SimpleDateFormat("EEEE", Locale.getDefault());
-            return sdf.format(inputDate);
-        }
-        else if(inputDate.after(startOfThisYear)) {
-            //"January 1"
-            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd", Locale.getDefault());
-            return sdf.format(inputDate);
-        }
-        else {
-            //not from this year, include the year
-            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
-            return sdf.format(inputDate);
-        }
-    }
-
-    /**
-     * The java.util.Date api really sucks. Compares two dates, ignoring their time-of-day fields.
-     * Horrifying for such a simple thing.
-     */
-    private static int compareDatesWithoutTime(Date d1, Date d2) {
-        Calendar c1 = Calendar.getInstance();
-        Calendar c2 = Calendar.getInstance();
-        c1.setTime(d1);
-        c1.set(Calendar.MILLISECOND, 0);
-        c1.set(Calendar.SECOND, 0);
-        c1.set(Calendar.MINUTE, 0);
-        c1.set(Calendar.HOUR_OF_DAY, 0);
-        c2.setTime(d2);
-        c2.set(Calendar.MILLISECOND, 0);
-        c2.set(Calendar.SECOND, 0);
-        c2.set(Calendar.MINUTE, 0);
-        c2.set(Calendar.HOUR_OF_DAY, 0);
-        return c1.getTime().compareTo(c2.getTime());
-    }
-
-    /**
-     * Returns unix time as HH:mm format.
-     */
-    private static String unixTimeToTime(long unixTime) {
-        Date d = new Date(unixTime);
-        DateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
-        df.setTimeZone(TimeZone.getDefault());
-
-        return df.format(d);
-    }
 
     static String formatSms(String sender, String otherSender, String body, long time,
                                    int width) {
@@ -198,13 +121,13 @@ class Utilities {
 
     ////////// Database Querying methods //////////
 
-    static String getConversation(Contact contact, int numberToRetrieve, int outputWidth)
+    static String getConversation(ContentResolver contentResolver, Contact contact,
+                                  int numberToRetrieve, int outputWidth)
             throws SecurityException {
         if(BuildConfig.DEBUG && !(contact != null && contact.count() != 0))
             throw new RuntimeException("Invalid data passed to getConversation: contact is null? " +
                     (contact == null));
 
-        ContentResolver contentResolver = SmsServerService.instance().getContentResolver();
         Uri uri = Uri.parse("content://sms/");
         final String[] projection = new String[]{"date", "body", "type", "address", "read"};
 
@@ -281,87 +204,12 @@ class Utilities {
         return Utilities.messagesIntoOutput(messages, dates);
     }
 
-    /*
-    //will return List<String> when it is confirmed to work.
-    //TODO figure out why 'read' and 'send' don't behave intuitively, making this not work.
-    public static String getUnread(@Nullable String phoneNumber, int numberToRetrieve) {
-        Log.d(TAG, "Getting unread");
-        Uri uri = Uri.parse("content://sms/inbox");
-
-        Cursor query = SmsServerService.instance().getContentResolver()
-                .query(uri, null, null, null, null);
-
-        if(query == null) {
-            Log.e(TAG, "Null Cursor trying to get unread.");
-            return null;
-        }
-        else if(query.getCount() == 0) {
-            Log.e(TAG, "No result trying to get unread.");
-
-            query.close();
-            return null;
-        }
-
-//        List<String> messages = new ArrayList<>();
-//        List<Long> dates = new ArrayList<>();
-
-        //this will succeed because already checked query's count
-        query.moveToFirst();
-
-        int count = 0;
-        //DEBUG ONLY
-        int seen_count = 0;
-        int read_count = 0;
-        int seen_and_read_count = 0;
-        int index_date = query.getColumnIndex("date");
-        int index_body = query.getColumnIndex("body");
-        int index_read = query.getColumnIndex("read");
-        int index_seen = query.getColumnIndex("seen");
-        int index_addr = query.getColumnIndex("address");
-        do {
-            String addr = query.getString(index_addr);
-            if(phoneNumber != null && !PhoneNumberUtils.compare(addr, phoneNumber))
-                continue;
-
-            String body = query.getString(index_body);
-            int spaceIndex = body.indexOf(' ');
-            if(spaceIndex != -1)
-                body = body.substring(0, spaceIndex);
-            int read = query.getInt(index_read);
-            int seen = query.getInt(index_seen);
-            long time = query.getLong(index_date);
-
-            if(read == 1) {
-                if(seen == 1) {
-                    seen_and_read_count++;
-                }
-                else {
-                    read_count++;
-                }
-            }
-            else if(seen == 1) {
-                seen_count++;
-            }
-
-            //type 1 is received, type 2 is sent
-            Log.d(TAG, String.format("Seen: %d Read: %d Date: %s Addr: %s Body: %s",
-                    seen, read, Utilities.unixTimeToTime(time), addr, body));
-
-            count++;
-        } while(query.moveToNext() && count < numberToRetrieve);
-
-        if(phoneNumber == null) { phoneNumber = "anyone"; }
-        return String.format(Locale.getDefault(), "Read %d received messages from %s. %d were seen and " +
-                        "read, %d were read but not seen, %d were seen but not read.",
-                count, phoneNumber, seen_and_read_count, read_count, seen_count);
-    }
-    */
-
     /**
      * Accepts contact name (case insensitive), returns:
      * @return Contact data object with the contact's name and numbers.
      */
-    static Contact getContactInfo(String name) throws SecurityException {
+    public static Contact getContactInfo(ContentResolver contentResolver, String name)
+            throws SecurityException {
         String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
                 " like'%" + name + "%'";
         String[] projection = new String[] {
@@ -369,8 +217,7 @@ class Utilities {
                 ContactsContract.Contacts._ID,};
         Cursor query;
         try {
-            query = SmsServerService.instance().getContentResolver().query(
-                    ContactsContract.Contacts.CONTENT_URI,
+            query = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
                     projection, selection, null, null);
         }
         catch (SecurityException e) {
@@ -385,7 +232,8 @@ class Utilities {
                         ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME);
                 int idCol = query.getColumnIndex(ContactsContract.Contacts._ID );
                 if (query.moveToFirst()) {
-                    List<String> numbers = getNumbersForContact(query.getLong(idCol));
+                    List<String> numbers = getNumbersForContact(contentResolver,
+                            query.getLong(idCol));
                     result = new Contact(query.getString(nameCol), numbers);
                 } else {
                     Log.w(TAG, "No result for getting phone number of " + name);
@@ -399,7 +247,8 @@ class Utilities {
                     //contact every time.
                     if(result.numbers().isEmpty() ||
                             query.getString(nameCol).equalsIgnoreCase(name)) {
-                        List<String> numbers = getNumbersForContact(query.getLong(idCol));
+                        List<String> numbers = getNumbersForContact(contentResolver,
+                                query.getLong(idCol));
                         //make sure the contact has numbers associated with them, otherwise
                         //this is a waste. this is to stop from selecting email contacts etc
                         if(!numbers.isEmpty())
@@ -422,9 +271,9 @@ class Utilities {
     /**
      * Gets all contacts the user has stored and returns a list of them with all their numbers.
      * @return A formatted string
-     * @throws SecurityException
+     * @throws SecurityException If there's no Contacts permission.
      */
-    static String getAllContacts() throws SecurityException {
+    static String getAllContacts(ContentResolver contentResolver) throws SecurityException {
         // could be expanded to start with an input / match a regex
         String[] projection = new String[]{
                 ContactsContract.Contacts._ID,
@@ -433,8 +282,8 @@ class Utilities {
 
         Cursor query;
         try {
-            query = SmsServerService.instance().getContentResolver().query(
-                    ContactsContract.Contacts.CONTENT_URI, projection, null, null,
+            query = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
+                    projection, null, null,
                     ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" ASC");
         }
         catch (SecurityException e) {
@@ -455,7 +304,7 @@ class Utilities {
                         long id = query.getLong(idIndex);
                         String name = query.getString(nameIndex);
                         if (query.getInt(hasNumberIndex) > 0) {
-                            List<String> numbers = getNumbersForContact(id);
+                            List<String> numbers = getNumbersForContact(contentResolver, id);
                             for(String s : numbers) {
                                 contactsBuilder.append(name).append(": ").append(s).append('\n');
                             }
@@ -485,12 +334,13 @@ class Utilities {
      * @param contactId ContactsContact.Contacts._ID of the contact to get numbers for.
      * @return List of numbers, each in the form $type: $number
      */
-    private static List<String> getNumbersForContact(long contactId) {
+    private static List<String> getNumbersForContact(ContentResolver contentResolver,
+                                                     long contactId) {
         Uri uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI;
         String[] projection = { ContactsContract.CommonDataKinds.Phone.NUMBER,
                                 ContactsContract.CommonDataKinds.Phone.TYPE };
 
-        Cursor numbersQuery = SmsServerService.instance().getContentResolver().query(uri, projection,
+        Cursor numbersQuery = contentResolver.query(uri, projection,
                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID+ " = ?",
                 new String[] { ""+contactId }, null);
 
@@ -531,5 +381,112 @@ class Utilities {
             numbersQuery.close();
         }
         return numbers;
+    }
+
+    ////////// String/Date Utilities //////////
+
+    /**
+     * Determine how old the message is and return a date label depending on the current date.
+     * @param unixTime Unix time in milliseconds to be converted to date label.
+     * @return Date label depending on how long ago the date was - eg Today, Yesterday,
+     * Day of Week (if date is in the past week), Month/Day (if date is in the current year),
+     * Full date otherwise
+     */
+    private static String unixTimeToRelativeDate(long unixTime) {
+        Date inputDate = new Date(unixTime);
+
+        Calendar cal = Calendar.getInstance();
+
+        Date today = cal.getTime();
+        //subtract a day to get yesterday's date
+        cal.add(Calendar.DATE, -1);
+        Date yesterday = cal.getTime();
+        //subtract 6 more days to get days that were this week
+        cal.add(Calendar.DATE, -6);
+        Date lastWeek = cal.getTime();
+        //look only at the year field for this one, ie if it's 2016, all dates not from
+        //2016 will be display with their year.
+        cal.set(Calendar.MONTH, 0);
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        Date startOfThisYear = cal.getTime();
+
+        if(compareDatesWithoutTime(inputDate, today) == 0) {
+            return "Today";
+        }
+        else if (compareDatesWithoutTime(inputDate, yesterday) == 0){
+            return "Yesterday";
+        }
+        else if (inputDate.after(lastWeek)) {
+            //return the day of week
+            SimpleDateFormat sdf = new SimpleDateFormat("EEEE", Locale.getDefault());
+            return sdf.format(inputDate);
+        }
+        else if(inputDate.after(startOfThisYear)) {
+            //"January 1"
+            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd", Locale.getDefault());
+            return sdf.format(inputDate);
+        }
+        else {
+            //not from this year, include the year
+            SimpleDateFormat sdf = new SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault());
+            return sdf.format(inputDate);
+        }
+    }
+
+    /**
+     * The java.util.Date api really sucks. Compares two dates, ignoring their time-of-day fields.
+     * Horrifying.
+     */
+    private static int compareDatesWithoutTime(Date d1, Date d2) {
+        Calendar c1 = Calendar.getInstance();
+        Calendar c2 = Calendar.getInstance();
+        c1.setTime(d1);
+        c1.set(Calendar.MILLISECOND, 0);
+        c1.set(Calendar.SECOND, 0);
+        c1.set(Calendar.MINUTE, 0);
+        c1.set(Calendar.HOUR_OF_DAY, 0);
+        c2.setTime(d2);
+        c2.set(Calendar.MILLISECOND, 0);
+        c2.set(Calendar.SECOND, 0);
+        c2.set(Calendar.MINUTE, 0);
+        c2.set(Calendar.HOUR_OF_DAY, 0);
+        return c1.getTime().compareTo(c2.getTime());
+    }
+
+    /**
+     * Returns unix time as HH:mm format.
+     */
+    private static String unixTimeToTime(long unixTime) {
+        Date d = new Date(unixTime);
+        DateFormat df = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        df.setTimeZone(TimeZone.getDefault());
+
+        return df.format(d);
+    }
+
+    private static String rightPad(String str, int desiredLength) {
+        return String.format("%1$-" + desiredLength + "s", str);
+    }
+
+    /**
+     * Wrapper for printStream.println which sends a length header followed by \n before the body
+     * to make it easier for the client to properly receive all data.
+     *
+     * @param replyStream Stream to print message to.
+     * @param msg         Message to send.
+     */
+    public static void sendReply(PrintStream replyStream, String msg) {
+        int len = msg.length();
+
+        String header = Integer.toString(len);
+
+        //if msg.length() >= 10^32, the stream will get stuck. this _probably_ won't happen.
+        if (header.length() < ServiceConstants.LENGTH_HEADER_LEN) {
+            header = Utilities.rightPad(header, ServiceConstants.LENGTH_HEADER_LEN);
+        }
+
+        Log.d(TAG, "Sending with header: " + header);
+        String response = header + '\n' + msg;
+        replyStream.println(response);
     }
 }

@@ -1,8 +1,6 @@
 package ca.tetchel.shexter;
 
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -25,6 +23,8 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+
+import ca.tetchel.shexter.sms.service.SmsServerService;
 
 public class MainActivity extends Activity {
 
@@ -50,20 +50,24 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "Being created.");
         setContentView(R.layout.activity_main);
 
         checkAndGetPermissions();
 
-        Intent serverIntent = new Intent(this, SmsServerService.class);
-
-        if(!isServiceRunning(SmsServerService.class)) {
-            startService(serverIntent);
+        if(!SmsServerService.isRunning()) {
+            Intent smsServerIntent = new Intent(this, SmsServerService.class);
+            startService(smsServerIntent);
+            Log.d(TAG, "SmsServerService has (probably) been started.");
+        } else {
+            Log.d(TAG, "SmsServerService is already running.");
         }
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        Log.d(TAG, "Starting up.");
         needToUpdatePermissions = true;
         updateIpAddress();
     }
@@ -71,7 +75,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        Log.d(TAG, "Resuming");
         if(needToUpdatePermissions) {
+            Log.d(TAG, "Need to update permissions");
             checkAndGetPermissions();
             needToUpdatePermissions = false;
         }
@@ -95,29 +101,24 @@ public class MainActivity extends Activity {
         if (id == R.id.action_settings) {
             return true;
         }
+//        else if(id == R.id.action_refresh) {
+//            updateIpAddress();
+//            Toast.makeText(this.getApplicationContext(), "Updated IP address.", Toast.LENGTH_SHORT)
+//                    .show();
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
 
     private void updateIpAddress() {
-        ((TextView) findViewById(R.id.ipAddressTV)).setText(getIpAddress());
-    }
-
-    private boolean isServiceRunning(Class<?> serviceClass) {
-        ActivityManager manager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-
-        for (ActivityManager.RunningServiceInfo service : manager
-                .getRunningServices(Integer.MAX_VALUE)) {
-
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
-        }
-        return false;
+        String ip = getIpAddress();
+        Log.d(TAG, "Updating IP Address to " + ip);
+        String fullIp = "Your subnet IP Address is: " + ip;
+        ((TextView) findViewById(R.id.ipAddressTV)).setText(fullIp);
     }
 
     private String getIpAddress() {
-        String ip = "";
         try {
             Enumeration<NetworkInterface> enumNetworkInterfaces = NetworkInterface
                     .getNetworkInterfaces();
@@ -130,17 +131,16 @@ public class MainActivity extends Activity {
                     InetAddress inetAddress = enumInetAddress.nextElement();
 
                     if (inetAddress.isSiteLocalAddress()) {
-                        ip += "Your subnet IP Address is: "
-                                + inetAddress.getHostAddress() + "\n";
+                        return inetAddress.getHostAddress();
                     }
                 }
             }
         }
         catch (SocketException e) {
             Log.e(TAG, "Error getting IP address", e);
-            ip += "Error: " + e.toString() + "\n";
+            return "Error: " + e.toString() + "\n";
         }
-        return ip;
+        return "Not found!";
     }
 
     public void onClickPermissionsButton(View v) {
@@ -211,6 +211,7 @@ public class MainActivity extends Activity {
     }
 
     private void showOrHidePermissionsRequired(boolean show) {
+        Log.d(TAG, "Showing that showing permissions are required: " + show);
         int visibility = show ? View.VISIBLE : View.GONE;
         findViewById(R.id.noPermissionsTV).setVisibility(visibility);
         findViewById(R.id.permissionsButton).setVisibility(visibility);
