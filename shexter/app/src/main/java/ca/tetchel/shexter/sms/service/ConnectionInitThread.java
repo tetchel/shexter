@@ -10,12 +10,11 @@ import java.net.DatagramSocket;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import static javax.xml.transform.OutputKeys.ENCODING;
-
 class ConnectionInitThread extends Thread {
     private final String TAG = ConnectionInitThread.class.getSimpleName();
 
-    private static final String DISCOVER_REQUEST = "shexter-discover";
+    private static final String DISCOVER_REQUEST = "shexter-discover",
+                                ENCODING = "utf-8";
 
     private static final int BUFFSIZE = 256;
 

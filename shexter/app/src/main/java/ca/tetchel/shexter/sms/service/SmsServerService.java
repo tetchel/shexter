@@ -167,7 +167,7 @@ public class SmsServerService extends Service {
     /**
      * @return If this service is running. Only one instance of this service can run at a time.
      */
-    static boolean isRunning() {
+    public static boolean isRunning() {
         SmsServerService instance = instance();
         if(instance == null) {
             return false;

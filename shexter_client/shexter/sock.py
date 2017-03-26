@@ -2,7 +2,7 @@ import errno
 import socket
 from select import select
 
-''' This file performs network operations. The entry point is contact_server '''
+''' This file performs network operations. '''
 
 
 PORT_MIN = 23456
