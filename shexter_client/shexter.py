@@ -3,11 +3,13 @@ import sys
 
 from shexter.config import configure, APP_NAME
 from shexter.requester import DEFAULT_READ_COUNT, request
-from shexter.sock import find_phones
 
 
-# Build help/usage, and the parser to determine options
-def get_argparser():
+def _get_argparser():
+    """
+    :return: Shexter's ArgumentParser
+    """
+
     # description='Send and read texts using your ' + 'Android phone from the command line.'
 
     parser = argparse.ArgumentParser(prog='', usage='command [contact_name] [options]\n'
@@ -38,13 +40,9 @@ COMMAND_HELP = 'help'
 COMMAND_HELP_2 = 'h'
 
 
-# Main function to be called from -p mode. Pass the arguments directly to be parsed here.
 def main(args_list):
-    find_phones()
-    quit()
-
-    ip_addr = configure(False)
-    parser = get_argparser()
+    connectinfo = configure()
+    parser = _get_argparser()
     args = parser.parse_args(args_list)
 
     command = args.command.lower()
@@ -55,7 +53,7 @@ def main(args_list):
         configure(True)
         quit()
 
-    result = request(ip_addr, args)
+    result = request(connectinfo, args)
 
     if result:
         print(result)

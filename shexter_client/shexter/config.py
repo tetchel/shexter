@@ -1,7 +1,10 @@
 import os
 import sys
 from configparser import ConfigParser
-from enum import Enum
+from shutil import get_terminal_size
+
+from shexter.platform import get_platform, Platform
+from shexter.sock import find_phones
 
 
 ''' This file deals with reading and writing settings. Call configure() to get the ip address.'''
@@ -12,12 +15,16 @@ SETTING_SECTION_NAME = 'Settings'
 SETTING_IP = 'IP Address'
 SETTING_PORT = 'Port'
 
+# These two variables are not to be modified by other classes
+# full path to the config file
+glob_config_file_path = None
 
-def _write_config_file(fullpath, ip_addr):
+
+def _write_config_file(fullpath, connectioninfo):
     """
     Write the settings to the file.
     :param fullpath: Path to the file.
-    :param ip_addr: IP address to write.
+    :param connectioninfo: (IP, Port) to write.
     :return: Nothing.
     """
 
@@ -25,44 +32,20 @@ def _write_config_file(fullpath, ip_addr):
     # configfile = open(user_config_dir(APP_NAME), 'w')
     config = ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
-    config.set(SETTING_SECTION_NAME, SETTING_IP, ip_addr)
-    # config.set(SETTING_SECTION_NAME, SETTING_PORT, str(DEFAULT_PORT))
+    config.set(SETTING_SECTION_NAME, SETTING_IP, connectioninfo[0])
+    config.set(SETTING_SECTION_NAME, SETTING_PORT, connectioninfo[1])
     config.write(configfile)
     configfile.close()
 
 
-def _new_settings_file(config_file_path):
-    """
-    Deletes the settings file and creates a new one, requiring an IP address from the user.
-    :param config_file_path: Path to create the settings file at.
-    :return: Returns the new IP address.
-    """
-
-    # remove settings if it exists
-    if os.path.isfile(config_file_path):
-        os.remove(config_file_path)
-
-    new_ip_addr = ''
-    # prompt user for an IP address until they give you one.
-    try:
-        new_ip_addr = input('Enter your IP address from the Shexter app (eg. 192.168.1.101): ')
-    except (EOFError, KeyboardInterrupt):
-        # user gave up
-        print()
-        quit()
-
-    print('Setting your phone\'s IP address to ' + new_ip_addr)
-
-    _write_config_file(config_file_path, new_ip_addr)
-    return new_ip_addr
-
-
-def _create_config_file(platf):
+def _get_config_file_path():
     """
     Assembles and returns the absolute path to the settings file.
-    :param platf: Platform as set by get_platform
     :return: Full path to settings file
     """
+
+    # Obtain the platform if it hasn't been done already.
+    platf = get_platform()
 
     if platf == Platform.WIN:
         config_path = os.environ['LOCALAPPDATA']
@@ -88,63 +71,24 @@ def _create_config_file(platf):
 
     return os.path.join(config_path, SETTINGS_FILE_NAME)
 
-# These two variables are not to be modified by other classes
-# full path to the config file
-glob_config_file_path = None
 
-# Platform - an instance of the Platform enum
-glob_platform = None
+# Return terminal width as a string
+def get_tty_width():
+    return str(get_terminal_size()[0])
 
 
-class Platform(Enum):
-    WIN = 1
-    LINUX = 2
-    MACOS = 3
-    CYGWIN = 4
-    OTHER = 5
-
-
-def get_platform():
+def configure():
     """
-    :return:    The user's platform: hopefully one of: linux, win, cyg, macos.
-                If it's an unknown platform, it is whatever sys.platform returned.
+    First, tries to ping the phone using the exists
+    :return: (IP, Port) that was recorded (either autoconnected or manual).
     """
-    # persist this data since it won't change during execution
-    global glob_platform
-    if glob_platform is not None:
-        return glob_platform
 
-    platf = sys.platform
-
-    if platf.startswith('win'):
-        platform = Platform.WIN
-    elif platf.startswith('darwin'):
-        print('WARNING: macos is not supported at this time')
-        platform = Platform.MACOS
-    else:
-        if platf.startswith('linux'):
-            platform = Platform.LINUX
-        elif platf.startswith('cyg'):
-            platform = Platform.CYGWIN
-        else:
-            print('WARNING: Unrecognized (and therefore unsupported) platform ' + platf)
-            platform = Platform.OTHER
-
-    return platform
-
-
-# Try and load existing config file. Create a new config file if needed.
-# Will create a new settings file if (edit_mode),
-# or if there's a problem with the settings file (or there isn't one)
-# Returns the new ip address.
-def configure(edit_mode):
-    global glob_platform
-    if glob_platform is None:
-        glob_platform = get_platform()
-
-    config_file_path = _create_config_file(glob_platform)
+    # Create the config file and update the path to it, if necessary
     global glob_config_file_path
-    glob_config_file_path = config_file_path
+    config_file_path = glob_config_file_path
+    if not config_file_path:
+        config_file_path = _get_config_file_path()
+        glob_config_file_path = config_file_path
 
     config = ConfigParser()
     config.read(config_file_path)
@@ -153,21 +97,18 @@ def configure(edit_mode):
     ip_addr = ''
     try:
         ip_addr = config[SETTING_SECTION_NAME][SETTING_IP]
-        if edit_mode:
-            print('Your settings file is ' + config_file_path)
-            confirm = input('Your current IP address is ' + ip_addr + '\nWould you like to change it? y/N: ')
-            if confirm.lower() == 'y':
-                new_settings_file_required = True
-            else:
-                print('Configuring cancelled.')
+        port = config[SETTING_SECTION_NAME][SETTING_PORT]
+        print('Current phone info: ' + ip_addr + ', ' + port)
     except KeyError:
         print('Error parsing ' + config_file_path + '. Making a new one.')
         new_settings_file_required = True
-    except OSError:
-        print('Bad hostname ' + ip_addr + ' found in ' + config_file_path + '. Making a new one.')
-        new_settings_file_required = True
 
     if new_settings_file_required:
-        ip_addr = _new_settings_file(config_file_path)
+        find_phones()
+        quit()
+
+        if os.path.isfile(config_file_path):
+            os.remove(config_file_path)
+        _write_config_file(config_file_path, autoconnect_info)
 
     return ip_addr

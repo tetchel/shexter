@@ -37,17 +37,19 @@ class ConnectionInitThread extends Thread {
 
                 String requestBody = new String(request.getData(), ENCODING).trim();
 
-                if (!requestBody.equals(DISCOVER_REQUEST)) {
+                if (!requestBody.startsWith(DISCOVER_REQUEST)) {
                     Log.i(TAG, "Received UNEXPECTED request: " + requestBody);
                 }
                 else {
-                    Log.d(TAG, "Received discover request");
+                    Log.d(TAG, "Received discover request. Body: " + requestBody);
                 }
 
                 // Get the phone information. This will be displayed to the user to ID their phone.
                 // Manufacturer model eg. SAMSUNG-SGH-I337
-                String response = Build.MANUFACTURER.toUpperCase() + ' ' + Build.MODEL +
-                        ", Android v" + Build.VERSION.RELEASE;
+                String response = "shexter-confirm\n" + Build.MANUFACTURER.toUpperCase() + ' ' +
+                        Build.MODEL + ", Android v" + Build.VERSION.RELEASE;
+
+                response += '\n' + "Port: " + SmsServerService.instance().getMainPortNumber();
 
                 Log.d(TAG, "Init thread response: " + response);
 
@@ -60,12 +62,29 @@ class ConnectionInitThread extends Thread {
                     responseBuffer = Arrays.copyOf(responseBuffer, BUFFSIZE);
                 }
 
-                DatagramPacket responsePacket = new DatagramPacket(responseBuffer,
-                        responseBuffer.length,
-                        request.getAddress(), request.getPort());
+                // The broadcast appears to arrive on a different port than it gets sent on
+                // The correct port is provided in the request on the second line
+                int requestPortIndex = requestBody.indexOf('\n') + 1;
+                if(requestPortIndex == -1) {
+                    Log.d(TAG, "Request didn't have a new line: index is " + requestPortIndex);
+                    Log.d(TAG, "Malformed request: " + requestBody);
+                    return;
+                }
 
-                socket.send(responsePacket);
-                Log.d(TAG, "Successfully confirmed discover.");
+                try {
+                    String requestPort = requestBody.substring(requestPortIndex);
+                    int requestPortInt = Integer.parseInt(requestPort);
+                    Log.d(TAG, "Responded to port " + requestPortInt);
+
+                    DatagramPacket responsePacket = new DatagramPacket(responseBuffer,
+                            responseBuffer.length,
+                            request.getAddress(), requestPortInt);
+                    socket.send(responsePacket);
+
+                    Log.d(TAG, "Successfully confirmed discover.");
+                } catch(NumberFormatException e) {
+                    Log.e(TAG, "Malformed request; second line is not a number: " + requestBody, e);
+                }
             } catch(UnsupportedEncodingException e) {
                 Log.e(TAG, "Exception decoding from " + ENCODING, e);
             } catch (IOException e) {

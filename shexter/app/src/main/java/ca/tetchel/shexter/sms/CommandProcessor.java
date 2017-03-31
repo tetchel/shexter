@@ -164,7 +164,8 @@ public class CommandProcessor {
                     contact, numberToRetrieve, outputWidth);
 
             if (convo != null) {
-                SmsServerService.getSmsReceiver().removeMessagesFromNumber(contact.preferred());
+                SmsServerService.instance().getSmsReceiver()
+                        .removeMessagesFromNumber(contact.preferred());
                 Log.d(TAG, "Responded with convo.");
                 return convo;
             }
@@ -190,7 +191,7 @@ public class CommandProcessor {
         Log.d(TAG, "UnreadCommand");
         int outputWidth = Integer.parseInt(requestReader.readLine());
         try {
-            List<SmsMessage> unreadMessages = SmsServerService.getSmsReceiver()
+            List<SmsMessage> unreadMessages = SmsServerService.instance().getSmsReceiver()
                     .getAllSms();
 
             List<String> formattedMessages = new ArrayList<>(unreadMessages.size());
@@ -198,7 +199,8 @@ public class CommandProcessor {
 
             for(SmsMessage sms : unreadMessages) {
                 String sender = sms.getOriginatingAddress();
-                Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri lookupUri = Uri.withAppendedPath(
+                        ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
                         Uri.encode(sender));
                 Cursor c = SmsServerService.instance().getContentResolver()
                         .query(lookupUri, new String[]{ ContactsContract.Data.DISPLAY_NAME },

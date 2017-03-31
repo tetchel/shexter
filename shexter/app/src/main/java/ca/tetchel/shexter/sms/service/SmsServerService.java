@@ -28,15 +28,15 @@ public class SmsServerService extends Service {
     // Fields are static - this is a singleton
 
     // TCP initSocket for receiving and processing app requests
-    private static ServerSocket serverSocket;
+    private ServerSocket serverSocket;
     // UDP initSocket for receiving DISCOVER and picking a port for the above initSocket
-    private static DatagramSocket initSocket;
+    private DatagramSocket initSocket;
 
-    private static SmsServerThread serverThread;
-    private static ConnectionInitThread initThread;
+    private SmsServerThread serverThread;
+    private ConnectionInitThread initThread;
 
     // Register to receive new SMS intents
-    private static SmsReceiver receiver;
+    private SmsReceiver receiver;
 
     // Probably should remove this
 //    WifiManager.WifiLock wifiLock;
@@ -186,7 +186,11 @@ public class SmsServerService extends Service {
         return false;
     }
 
-    public static SmsReceiver getSmsReceiver() {
+    public int getMainPortNumber() {
+        return serverSocket.getLocalPort();
+    }
+
+    public SmsReceiver getSmsReceiver() {
         return receiver;
     }
 }

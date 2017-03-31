@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
-from shutil import get_terminal_size
-
 from shexter.sock import contact_server
+from shexter.config import get_tty_width
 
 ''' Build requests, and send them to the server. '''
 
@@ -22,9 +21,14 @@ DEFAULT_READ_COUNT = 20
 READ_COUNT_LIMIT = 5000
 
 
-# Force user to input contact name if one wasn't given in the args.
-# Used for SEND, READ, and SETPREF commands.
 def _get_contact_name(args, required):
+    """
+    Force user to input contact name if one wasn't given in the args.
+    Used for SEND, READ, and SETPREF commands.
+    :param args: Command-line args to be checked for the contact name
+    :param required: If the contact name must be specified, or it's optional
+    :return: The contact name, or None
+    """
     contact_name = ''
     # build the contact name (can span multiple words)
     for name in args.contact_name:
@@ -45,8 +49,11 @@ def _get_contact_name(args, required):
     return contact_name
 
 
-# Used for SEND command. Get user to input the message to send.
 def _get_message():
+    """
+    Used for SEND command. Get user to input the message to send.
+    :return: The message, or None if the input was cancelled
+    """
     print('Enter message (Press Enter twice to send, CTRL + C to cancel): ')
     try:
         msg_input = ""
@@ -65,12 +72,17 @@ def _get_message():
         return None
 
 
-# Do the send command - Get the message to send, send it, print the phone's response.
-# Repeat if necessary
-# arg_send: args.send is the message to send if it was specified using -s
-# arg_multi: args.multi is if multiple messages are to be sent in one command
-# Returns the message to output to the user.
-def _send_command(ip_addr, to_send, arg_send, arg_multi):
+def _send_command(connectinfo, to_send, arg_send, arg_multi):
+    """
+    Do the send command - Get the message to send, send it, print the phone's response.
+    Repeat if necessary (-m flag).
+    :param connectinfo: Phone's connection info
+    :param to_send: The request to send (lacking the actual message)
+    :param arg_send: The message to send if it was specified using -s
+    :param arg_multi: If multiple messages are to be sent in one command
+    :return: The message to be output to the user.
+    """
+
     msg = ''
     if arg_send is not None:
         msg = arg_send + '\n'
@@ -94,7 +106,7 @@ def _send_command(ip_addr, to_send, arg_send, arg_multi):
         else:
             # add the message to to_send
             to_send_full = to_send + msg + '\n'
-            output = contact_server(ip_addr, to_send_full)
+            output = contact_server(connectinfo, to_send_full)
             if arg_multi:
                 print(output)
             msg = ''
@@ -102,11 +114,14 @@ def _send_command(ip_addr, to_send, arg_send, arg_multi):
     return output
 
 
-# If the specified contact has multiple numbers, handle the response by picking a number.
-# response is the server's response containing the possible phone numbers
-# Returns the server's response, which is either the setpref confirmation or the original
-# command's response.
-def _handle_setpref_response(ip_addr, response):
+def _handle_setpref_response(connectinfo, response):
+    """
+    If the specified contact has multiple numbers, handle the response by picking a number.
+    :param connectinfo: Phone's connection info
+    :param response: The server's response containing the possible phone numbers
+    :return: The server's response, which is either the setpref confirmation or the original command's response.
+    """
+
     response = response[len(SETPREF_NEEDED) + 1:]
     number_of_numbers = len(response.split('\n')) - 1
     if 'Current:' in response:
@@ -126,17 +141,12 @@ def _handle_setpref_response(ip_addr, response):
     to_send = COMMAND_SETPREF + '\n' + contact_name + '\n' + str(preferred) + '\n\n'
 
     # Send the new pref to the phone. The phone will then perform the original request if needed.
-    return contact_server(ip_addr, to_send)
+    return contact_server(connectinfo, to_send)
 
 
-# Return terminal width as a string
-def get_tty_width():
-    return str(get_terminal_size()[0])
-
-
-def unread_command(ip_addr):
+def unread_command(connectinfo):
     to_send = COMMAND_UNRE + '\n' + get_tty_width() + '\n\n'
-    response = contact_server(ip_addr, to_send)
+    response = contact_server(connectinfo, to_send)
     # Must match the phone's 'no unread' response
     # if response != 'No unread messages.':
     return response
@@ -144,11 +154,16 @@ def unread_command(ip_addr):
     #    return ''
 
 
-# From list of command-line args, build the beginning of the request to send.
-# Get any missing info from the user (contact name)
-# then, invoke the command and contact the server.
-# Returns the server's response.
-def request(ip_addr, args):
+
+def request(connectinfo, args):
+    """
+    From list of command-line args, build the beginning of the request to send.
+    Get any missing info from the user (contact name) then, invoke the command and contact the server.
+    :param connectinfo: Server's connection info
+    :param args: Command-line arguments
+    :return: The response from the server.
+    """
+
     command = args.command.lower()
 
     # Print messages if user passes useless flags.
@@ -198,17 +213,15 @@ def request(ip_addr, args):
     # Contact the server
     response = ''
     if command == COMMAND_SEND:
-        response = _send_command(ip_addr, to_send, args.send, args.multi)
+        response = _send_command(connectinfo, to_send, args.send, args.multi)
     elif command == COMMAND_READ or command == COMMAND_SETPREF_LIST or command == COMMAND_GETCONTACTS:
-        response = contact_server(ip_addr, to_send)
+        response = contact_server(connectinfo, to_send)
     elif command == COMMAND_UNRE:
-        response = unread_command(ip_addr)
-    elif command == "help" or command == "h":
-        return ''
+        response = unread_command(connectinfo)
     else:
         print('Command \"{}\" not recognized.'.format(command))
 
     if response and response.startswith(SETPREF_NEEDED):
-        response = _handle_setpref_response(ip_addr, response)
+        response = _handle_setpref_response(connectinfo, response)
 
     return response
