@@ -71,12 +71,16 @@ def _get_broadcast_addrs():
         try:
             with Popen('ifconfig', stdout=PIPE) as subproc:
                 output, errors = subproc.communicate()
-            
-            if errors:
                 print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
-            print('***** ifconfig is not installed! Install ifconfig. *****')
-            return None 
+            try:    
+                # Some Linux distros (arch) have moved from ifconfig to 'ip address'
+                with Popen(['ip', 'address'], stdout=PIPE) as subproc:
+                    output, errors = subproc.communicate()
+            except FileNotFoundError:
+                print('Could not find "ifconfig" or "ip" command. ' +
+                        'Install one of these programs to find your phone automatically')
+                return None
 
         output = output.decode('utf8')
         broadcast_addresses = []
@@ -88,8 +92,11 @@ def _get_broadcast_addrs():
             elif 'broadcast' in line:
                 bcast = line.split('broadcast ', 1)[1]
             elif 'brd' in line:
-                bcast = line.split('brd', 1)[1]
-            
+                bcast = line.split('brd ', 1)[1]
+                # Reject IPv6 addresses
+                if ':' in bcast:
+                    bcast = None
+
             if bcast:
                 # now contains everything after Bcast. Truncate at the first space to get the bcast address.
                 bcast = bcast.split(' ', 1)[0]
@@ -201,7 +208,7 @@ def _connect_tcp(connectinfo):
             print('Connection refused: Likely Shexter is not running on your phone.'
                   + restart_msg)
             return None
-        elif errorcode == errno.ETIMEDOUT:
+        elif errorcode == errno.ETIMEDOUT or 'time' in str(e):
             print('Connection timeout: Likely your phone is not on the same network as your '
                   'computer or the connection info ' + connectinfo + ' is not correct.' + restart_msg)
             return None
