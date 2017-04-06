@@ -45,8 +45,9 @@ def _get_broadcast_addrs():
         try:
             with Popen('ipconfig', stdout=PIPE) as subproc:
                 output, errors = subproc.communicate()
-
-            print('Something went wrong running ipconfig:\n' + errors.decode('utf8'))
+    
+            if errors:
+                print('Something went wrong running ipconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
             print('***** ipconfig is not installed! Install ipconfig. *****')
             return None
@@ -71,7 +72,8 @@ def _get_broadcast_addrs():
             with Popen('ifconfig', stdout=PIPE) as subproc:
                 output, errors = subproc.communicate()
             
-            print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
+            if errors:
+                print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
             print('***** ifconfig is not installed! Install ifconfig. *****')
             return None 
