@@ -14,7 +14,7 @@ def _get_argparser():
 
     parser = argparse.ArgumentParser(prog='', usage='command [contact_name] [options]\n'
                                                     'You can also run "' + APP_NAME +
-                                                    ' help to see commands and their options".')
+                                                    ' help" to see commands and their options.')
     parser.add_argument('command', type=str,
                         help='Possible commands: Send $ContactName, Read $ContactName, Unread, Contacts, ' +
                              'SetPref $ContactName, Config. Not case sensitive.')
@@ -41,7 +41,12 @@ COMMAND_HELP_2 = 'h'
 
 
 def main(args_list):
-    connectinfo = configure()
+    try:
+        connectinfo = configure(False)
+    except KeyboardInterrupt:
+        print()
+        quit()
+
     parser = _get_argparser()
     args = parser.parse_args(args_list)
 
@@ -49,6 +54,7 @@ def main(args_list):
     if command == COMMAND_HELP or command == COMMAND_HELP_2:
         parser.print_help()
         quit()
+
     if command == COMMAND_CONFIG or command == COMMAND_CONFIG_2:
         configure(True)
         quit()

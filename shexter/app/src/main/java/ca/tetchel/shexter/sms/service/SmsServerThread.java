@@ -16,6 +16,7 @@ import java.util.Scanner;
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.sms.CommandProcessor;
 import ca.tetchel.shexter.sms.Contact;
+import ca.tetchel.shexter.sms.ServiceConstants;
 import ca.tetchel.shexter.sms.Utilities;
 
 import static android.content.Context.POWER_SERVICE;
@@ -26,7 +27,6 @@ import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SETPREF_LIST;
 import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_UNREAD;
 import static ca.tetchel.shexter.sms.ServiceConstants.NUMBER_FLAG;
 import static ca.tetchel.shexter.sms.ServiceConstants.UNREAD_CONTACT_FLAG;
-import static javax.xml.transform.OutputKeys.ENCODING;
 
 class SmsServerThread extends Thread {
 
@@ -59,7 +59,7 @@ class SmsServerThread extends Thread {
 
                 // print back to initSocket using this
                 PrintStream replyStream = new PrintStream(socket.getOutputStream(), false,
-                        ENCODING);
+                        ServiceConstants.ENCODING);
                 //endregion
                 // Store the full request
                 Scanner scansAll;
@@ -68,7 +68,7 @@ class SmsServerThread extends Thread {
                     // Do not close this - it will close when the initSocket
                     // is closed in onDestroy
                     // TODO use a length header. This will break if message starts with newline!
-                    scansAll = new Scanner(socket.getInputStream(), ENCODING)
+                    scansAll = new Scanner(socket.getInputStream(), ServiceConstants.ENCODING)
                             .useDelimiter("\n\n");
                     request = scansAll.hasNext() ? scansAll.next() : "";
                 }
@@ -154,14 +154,15 @@ class SmsServerThread extends Thread {
             } catch (IOException e) {
                 Log.e(TAG, "Socket error occurred.", e);
             }
-            finally {
-                if(serverSocket != null) {
-                    try {
-                        serverSocket.close();
-                    } catch (IOException e) {
-                        Log.e(TAG, "Exception closing ServerSocket in finally block", e);
-                    }
-                }
+        }
+
+        Log.d(TAG, "Server loop exited. Interrupted? " + isInterrupted());
+        if(serverSocket != null) {
+            try {
+                serverSocket.close();
+                Log.d(TAG, "Closed ServerSocket");
+            } catch (IOException e) {
+                Log.e(TAG, "Exception closing ServerSocket in finally block", e);
             }
         }
     }

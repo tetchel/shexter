@@ -131,7 +131,8 @@ def _handle_setpref_response(connectinfo, response):
 
     preferred = input('Select a number from the above, 1 to ' + str(number_of_numbers) + ': ')
 
-    while not preferred.isdigit or int(preferred) > number_of_numbers or int(preferred) < 1:
+    # Check that user input a valid digit, and that it is within the acceptable range.
+    while not (preferred.isdigit() or (int(preferred) > number_of_numbers or int(preferred) < 1)):
         print('Not a valid selection: must be integer between 1 and ' + str(number_of_numbers))
         preferred = input('Select a number: ')
 

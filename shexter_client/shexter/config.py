@@ -4,7 +4,7 @@ from configparser import ConfigParser
 from shutil import get_terminal_size
 
 from shexter.platform import get_platform, Platform
-from shexter.sock import find_phones
+from shexter.sock import find_phones, port_str_to_int
 
 
 ''' This file deals with reading and writing settings. Call configure() to get the ip address.'''
@@ -32,8 +32,8 @@ def _write_config_file(fullpath, connectioninfo):
     # configfile = open(user_config_dir(APP_NAME), 'w')
     config = ConfigParser()
     config.add_section(SETTING_SECTION_NAME)
-    config.set(SETTING_SECTION_NAME, SETTING_IP, connectioninfo[0])
-    config.set(SETTING_SECTION_NAME, SETTING_PORT, connectioninfo[1])
+    config.set(SETTING_SECTION_NAME, SETTING_IP, str(connectioninfo[0]))
+    config.set(SETTING_SECTION_NAME, SETTING_PORT, str(connectioninfo[1]))
     config.write(configfile)
     configfile.close()
 
@@ -72,14 +72,20 @@ def _get_config_file_path():
     return os.path.join(config_path, SETTINGS_FILE_NAME)
 
 
-# Return terminal width as a string
 def get_tty_width():
+    """
+
+    :return: Terminal width as a string
+    """
     return str(get_terminal_size()[0])
 
 
-def configure():
+def configure(force_new_config=False):
     """
-    First, tries to ping the phone using the exists
+    First, tries to ping the phone using the existing settings file. If the phone is not found,
+    tries to find it using find_phones(). If it is still not found,
+    user can enter info manually, or quit.
+    :param force_new_config: If True, will skip over reading the config file and will jump straight to acquiring the phone.
     :return: (IP, Port) that was recorded (either autoconnected or manual).
     """
 
@@ -93,22 +99,31 @@ def configure():
     config = ConfigParser()
     config.read(config_file_path)
 
-    new_settings_file_required = False
-    ip_addr = ''
+    connectinfo = ()
     try:
         ip_addr = config[SETTING_SECTION_NAME][SETTING_IP]
         port = config[SETTING_SECTION_NAME][SETTING_PORT]
         print('Current phone info: ' + ip_addr + ', ' + port)
+
+        port = port_str_to_int(port)
+        if not port:
+            # An invalid port was in the config file
+            raise KeyError
+
+        connectinfo = (ip_addr, port)
     except KeyError:
         print('Error parsing ' + config_file_path + '. Making a new one.')
-        new_settings_file_required = True
 
-    if new_settings_file_required:
-        find_phones()
-        quit()
+    if not connectinfo or force_new_config:
+        connectinfo = find_phones()
+
+        if not connectinfo:
+            print('Couldn\'t find your phone - configure automatically?')
+            # TODO manual config
+            quit()
 
         if os.path.isfile(config_file_path):
             os.remove(config_file_path)
-        _write_config_file(config_file_path, autoconnect_info)
+        _write_config_file(config_file_path, connectinfo)
 
-    return ip_addr
+    return connectinfo

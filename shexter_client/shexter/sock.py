@@ -3,7 +3,7 @@ import socket
 from subprocess import Popen, PIPE
 from select import select
 from sys import stdout
-from ipaddress import IPv4Network, IPv4Address
+from ipaddress import IPv4Network
 
 from shexter.platform import get_platform, Platform
 
@@ -11,9 +11,26 @@ from shexter.platform import get_platform, Platform
 
 
 PORT_MIN = 23456
-PORT_MAX = 23457
+PORT_MAX = 23460
 DISCOVER_REQUEST = 'shexter-discover'
+DISCOVER_CONFIRM = 'shexter-confirm'
 ENCODING = 'utf-8'
+
+
+def port_str_to_int(port):
+    """
+    Accepts a string port, validates it is a valid port, and returns it as an int.
+    :param port: A string representing a port
+    :return: The port as an int, or None if it was not valid.
+    """
+    try:
+        port = int(port)
+        if port < 1024 or port > 49151:
+            raise ValueError
+        return port
+    except ValueError:
+        print(str(port) + ' is not a valid port. Must be an integer between 1025 and 49150.')
+        return None
 
 
 def _get_broadcast_addrs():
@@ -63,11 +80,10 @@ def _get_broadcast_addrs():
 def find_phones():
     """
     This function broadcasts on the LAN to the Shexter ports, and looks for a reply from a phone.
-    This does not work on Windows due to Windows not properly broadcasting on all interfaces.
-    :return: (IP, Port) tuple representing the phone the user selects.
+    :return: (IP, Port) tuple representing the phone the user selects. None if no phone found.
     """
-    udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    udpsock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    sock_sender = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock_sender.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     # IP, Port tuple representing the phone
     phone = None
@@ -75,54 +91,69 @@ def find_phones():
 
     print('Searching for phones, can take a few seconds...')
 
+    broadcast_addrs = _get_broadcast_addrs()
+
     for port in range(PORT_MIN, PORT_MAX+1):
         count = 0
 
         # Search more on the earlier ports which are much more likely to be the right one
         if port == PORT_MIN:
-            tries = 6
+            tries = 4
         else:
-            tries = 3
+            tries = 2
 
         print('Searching on port ' + str(port), end="")
         while not phone and count < tries:
             count += 1
             print('.', end='')
             stdout.flush()
-            # Send on ALL the interfaces (required by Windows!)
-            for broadcast_addr in _get_broadcast_addrs():
-                discover_bytes = bytes(DISCOVER_REQUEST + '\n' + str(port), ENCODING)
-                udpsock.bind(('', port))
-                udpsock.sendto(discover_bytes, (broadcast_addr, port))
 
-                ready = select([udpsock], [], [udpsock], 1)
-                for readysock in ready[0]:
+            # Send on ALL the interfaces (required by Windows!)
+            for broadcast_addr in broadcast_addrs:
+                discover_bytes = bytes(DISCOVER_REQUEST, ENCODING)
+                sock_sender.sendto(discover_bytes, (broadcast_addr, port))
+
+                sock_recvr = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock_recvr.bind(('', port))
+                ready = select([sock_recvr], [], [sock_sender, sock_recvr], 1)
+                if ready[0]:
                     # Buffsize must match ConnectionInitThread.BUFFSIZE
-                    data, other_host = udpsock.recvfrom(256)
-                    data = data.decode(ENCODING)
-                    if not data.startswith('shexter-confirm'):
-                        print('received ugly response: ' + data)
+                    data, other_host = sock_recvr.recvfrom(256)
+                    data = data.decode(ENCODING).rstrip(' \0')
+                    if not data.startswith(DISCOVER_CONFIRM):
+                        print('Received a strange response: ' + data)
                         continue
 
                     # Skip over rejected hosts
                     if not other_host[0] in rejected_hosts:
+                        print()
                         print('Got a response from ' + str(other_host))
+                        # The first line of the response is a confirm, the second is phone info, the third is port#
                         # Print out the phone info received, and get the user to confirm
-                        print('Phone info: ' + data)
+                        print('Phone info: ' + data.splitlines()[1])
                         confirm = input('Is this your phone? y/N: ')
                         if confirm.lower() == 'y':
-                            phone = other_host
+                            # Get the port the TCP Socket is listening for from the third line of the request
+                            tcp_port_str = data.splitlines()[2]
+                            # Convert to an int
+                            tcp_port = port_str_to_int(tcp_port_str)
+                            if not tcp_port:
+                                # Cannot recover from this; it's a server bug. Manual config only workaround.
+                                print('Received invalid port from phone; cannot continue.'.format(tcp_port_str))
+                                return None
+
+                            return other_host[0], tcp_port
                         else:
                             rejected_hosts.append(other_host[0])
+
                 if ready[2]:
-                    print('There was an error selecting')
+                    print('There was an error selecting ' + ready[2])
+
+                sock_recvr.close()
 
         print()
 
-    if not phone:
-        print('Couldn\'t find your phone.')
-
-    return phone
+    return None
 
 
 def _connect_tcp(connectinfo):
@@ -195,8 +226,6 @@ def _receive_all(sock):
         data += response
         recvd_len += len(response)
 
-    # TODO get this working on Windows
-    # if any retrieved message contains emoji
     decoded = data.decode(ENCODING, 'strict')
     # decoded = data.decode('ascii', 'ignore')
     # remove first newline
@@ -214,7 +243,7 @@ def contact_server(connectinfo, to_send):
     if sock is None:
         return None
     sock.send(bytes(to_send, ENCODING))
-    response = _receive_all(sock)[1]
+    response = _receive_all(sock)
     sock.close()
 
     return response

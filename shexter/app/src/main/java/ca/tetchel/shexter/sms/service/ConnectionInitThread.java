@@ -10,11 +10,13 @@ import java.net.DatagramSocket;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
+import ca.tetchel.shexter.sms.ServiceConstants;
+
 class ConnectionInitThread extends Thread {
     private final String TAG = ConnectionInitThread.class.getSimpleName();
 
     private static final String DISCOVER_REQUEST = "shexter-discover",
-                                ENCODING = "utf-8";
+                                DISCOVER_CONFIRM = "shexter-confirm";
 
     private static final int BUFFSIZE = 256;
 
@@ -35,25 +37,33 @@ class ConnectionInitThread extends Thread {
                 Log.d(TAG, "Init ready to accept");
                 socket.receive(request);
 
-                String requestBody = new String(request.getData(), ENCODING).trim();
+                String requestBody = new String(request.getData(),
+                        ServiceConstants.ENCODING).trim();
 
                 if (!requestBody.startsWith(DISCOVER_REQUEST)) {
                     Log.i(TAG, "Received UNEXPECTED request: " + requestBody);
+                    continue;
                 }
                 else {
-                    Log.d(TAG, "Received discover request. Body: " + requestBody);
+                    Log.d(TAG, "Received discover request from: " + request.getSocketAddress() +
+                            " Body: " + requestBody);
                 }
 
                 // Get the phone information. This will be displayed to the user to ID their phone.
                 // Manufacturer model eg. SAMSUNG-SGH-I337
-                String response = "shexter-confirm\n" + Build.MANUFACTURER.toUpperCase() + ' ' +
-                        Build.MODEL + ", Android v" + Build.VERSION.RELEASE;
+                String response = String.format(
+                        "%s\n" +
+                        "%s %s Android v%s\n" +
+                        "%d",
+                        DISCOVER_CONFIRM,
+                        Build.MANUFACTURER.toUpperCase(), Build.MODEL, Build.VERSION.RELEASE,
+                        SmsServerService.instance().getMainPortNumber());
 
-                response += '\n' + "Port: " + SmsServerService.instance().getMainPortNumber();
+                Log.d(TAG, "Init thread response:\n" + response);
 
-                Log.d(TAG, "Init thread response: " + response);
+                byte[] responseBuffer = response.getBytes(
+                        Charset.forName(ServiceConstants.ENCODING));
 
-                byte[] responseBuffer = response.getBytes(Charset.forName(ENCODING));
                 if (responseBuffer.length > BUFFSIZE) {
                     Log.e(TAG, "Response to be sent is too long! Will be cut off! Length is " +
                             responseBuffer.length);
@@ -62,31 +72,20 @@ class ConnectionInitThread extends Thread {
                     responseBuffer = Arrays.copyOf(responseBuffer, BUFFSIZE);
                 }
 
-                // The broadcast appears to arrive on a different port than it gets sent on
-                // The correct port is provided in the request on the second line
-                int requestPortIndex = requestBody.indexOf('\n') + 1;
-                if(requestPortIndex == -1) {
-                    Log.d(TAG, "Request didn't have a new line: index is " + requestPortIndex);
-                    Log.d(TAG, "Malformed request: " + requestBody);
-                    return;
-                }
-
                 try {
-                    String requestPort = requestBody.substring(requestPortIndex);
-                    int requestPortInt = Integer.parseInt(requestPort);
-                    Log.d(TAG, "Responded to port " + requestPortInt);
-
                     DatagramPacket responsePacket = new DatagramPacket(responseBuffer,
                             responseBuffer.length,
-                            request.getAddress(), requestPortInt);
+                            request.getAddress(), socket.getLocalPort());
                     socket.send(responsePacket);
 
-                    Log.d(TAG, "Successfully confirmed discover.");
+                    Log.d(TAG, "Successfully confirmed discover to "
+                            + responsePacket.getSocketAddress());
+
                 } catch(NumberFormatException e) {
                     Log.e(TAG, "Malformed request; second line is not a number: " + requestBody, e);
                 }
             } catch(UnsupportedEncodingException e) {
-                Log.e(TAG, "Exception decoding from " + ENCODING, e);
+                Log.e(TAG, "Exception decoding from " + ServiceConstants.ENCODING, e);
             } catch (IOException e) {
                 Log.e(TAG, "Exception in the InitThread", e);
             }
