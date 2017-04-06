@@ -45,6 +45,9 @@ def _get_broadcast_addrs():
         with Popen('ipconfig', stdout=PIPE) as subproc:
             output, errors = subproc.communicate()
 
+        if errors:
+            print('Something went wrong running ipconfig:\n' + errors.decode('utf8'))
+
         # List to hold IP, Mask pairings (will have to calculate broadcast address later)
         output = output.decode('utf8')
         lines = output.splitlines()
@@ -63,6 +66,9 @@ def _get_broadcast_addrs():
     else:
         with Popen('ifconfig', stdout=PIPE) as subproc:
             output, errors = subproc.communicate()
+
+        if errors:
+            print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
 
         output = output.decode('utf8')
         broadcast_addresses = []

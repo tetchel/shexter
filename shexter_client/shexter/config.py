@@ -86,7 +86,8 @@ def configure(force_new_config=False):
     First, tries to ping the phone using the existing settings file. If the phone is not found,
     tries to find it using find_phones(). If it is still not found,
     user can enter info manually, or quit.
-    :param force_new_config: If True, will skip over reading the config file and will jump straight to acquiring the phone.
+    :param force_new_config: If True, will skip over reading the config file and will jump straight to
+    acquiring the phone.
     :return: (IP, Port) that was recorded (either autoconnected or manual).
     """
 
@@ -104,7 +105,7 @@ def configure(force_new_config=False):
     try:
         ip_addr = config[SETTING_SECTION_NAME][SETTING_IP]
         port = config[SETTING_SECTION_NAME][SETTING_PORT]
-        print('Current phone info: ' + ip_addr + ', ' + port)
+        # print('Current phone info: ' + ip_addr + ', ' + port)
 
         port = port_str_to_int(port)
         if not port:
@@ -120,7 +121,7 @@ def configure(force_new_config=False):
 
         if not connectinfo:
             manual = input('Couldn\'t find your phone - configure manually? Y/n: ')
-            if manual.lower() is not 'n':
+            if manual is not 'n' and manual is not 'N':
 
                 ip_addr = ''
                 port = -1
@@ -144,7 +145,8 @@ def configure(force_new_config=False):
                 while first or not passed:
                     first = False
                     port = input('Enter the Port in the app, eg "23457": ')
-                    passed = port_str_to_int(port) is not None
+                    port = port_str_to_int(port)
+                    passed = port is not None
 
                 connectinfo = (ip_addr, port)
 
