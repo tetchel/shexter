@@ -123,7 +123,7 @@ def find_phones():
 
                 sock_recvr = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock_recvr.bind(('', port))
-                ready = select([sock_recvr], [], [sock_sender, sock_recvr], 1)
+                ready = select([sock_recvr], [], [sock_sender, sock_recvr], 0.5)
                 if ready[0]:
                     # Buffsize must match ConnectionInitThread.BUFFSIZE
                     data, other_host = sock_recvr.recvfrom(256)
@@ -170,7 +170,8 @@ def _connect_tcp(connectinfo):
     :return: The created TCP socket.
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(120)
+    #sock.settimeout(120)
+    sock.settimeout(10)
     try:
         sock.connect(connectinfo)
     except OSError as e:

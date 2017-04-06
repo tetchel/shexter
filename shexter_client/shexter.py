@@ -41,12 +41,6 @@ COMMAND_HELP_2 = 'h'
 
 
 def main(args_list):
-    try:
-        connectinfo = configure(False)
-    except KeyboardInterrupt:
-        print()
-        quit()
-
     parser = _get_argparser()
     args = parser.parse_args(args_list)
 
@@ -57,6 +51,13 @@ def main(args_list):
 
     if command == COMMAND_CONFIG or command == COMMAND_CONFIG_2:
         configure(True)
+        print('Config completed.')
+        quit()
+
+    try:
+        connectinfo = configure(False)
+    except (KeyboardInterrupt, EOFError):
+        print()
         quit()
 
     result = request(connectinfo, args)

@@ -114,8 +114,10 @@ public class MainActivity extends Activity {
     private void updateIpAddress() {
         String ip = getIpAddress();
         Log.d(TAG, "Updating IP Address to " + ip);
-        String fullIp = "Your subnet IP Address is: " + ip;
-        ((TextView) findViewById(R.id.ipAddressTV)).setText(fullIp);
+        String addressInfo = "Your subnet IP Address is: " + ip;
+        addressInfo += "\n\nPort: " + " 23457, probably";
+
+        ((TextView) findViewById(R.id.ipAddressTV)).setText(addressInfo);
     }
 
     private String getIpAddress() {

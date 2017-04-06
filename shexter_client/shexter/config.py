@@ -2,6 +2,7 @@ import os
 import sys
 from configparser import ConfigParser
 from shutil import get_terminal_size
+from socket import inet_aton
 
 from shexter.platform import get_platform, Platform
 from shexter.sock import find_phones, port_str_to_int
@@ -118,9 +119,34 @@ def configure(force_new_config=False):
         connectinfo = find_phones()
 
         if not connectinfo:
-            print('Couldn\'t find your phone - configure automatically?')
-            # TODO manual config
-            quit()
+            manual = input('Couldn\'t find your phone - configure manually? Y/n: ')
+            if manual.lower() is not 'n':
+
+                ip_addr = ''
+                port = -1
+
+                passed = False
+                first = True
+                while first or not passed:
+                    first = False
+                    ip_addr = input('Enter the IP Address in the app, eg. "192.168.1.100" : ')
+                    try:
+                        inet_aton(ip_addr)
+                        passed = True
+                    except KeyboardInterrupt:
+                        print(APP_NAME + ' cannot run without a valid IP.')
+                        quit()
+                    except OSError:
+                        print('"' + ip_addr + '" is not a valid IP. ')
+
+                passed = False
+                first = True
+                while first or not passed:
+                    first = False
+                    port = input('Enter the Port in the app, eg "23457": ')
+                    passed = port_str_to_int(port) is not None
+
+                connectinfo = (ip_addr, port)
 
         if os.path.isfile(config_file_path):
             os.remove(config_file_path)
