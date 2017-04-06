@@ -67,8 +67,13 @@ def _get_broadcast_addrs():
         output = output.decode('utf8')
         broadcast_addresses = []
         for line in output.splitlines():
+            bcast = ''
             if 'Bcast' in line:
                 bcast = line.split('Bcast:', 1)[1]
+            # Alternative output format (probably there are others, great)
+            elif 'broadcast' in line:
+                bcast = line.split('broadcast ', 1)[1]
+            if bcast:
                 # now contains everything after Bcast. Truncate at the first space to get the bcast address.
                 bcast = bcast.split(' ', 1)[0]
                 broadcast_addresses.append(bcast)
@@ -92,6 +97,9 @@ def find_phones():
     print('Searching for phones, can take a few seconds...')
 
     broadcast_addrs = _get_broadcast_addrs()
+    if not broadcast_addrs:
+        print('There was a problem getting your broadcast address. You will have to configure manually.')
+        return None
 
     for port in range(PORT_MIN, PORT_MAX+1):
         count = 0
