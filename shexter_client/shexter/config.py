@@ -152,6 +152,10 @@ def configure(force_new_config=False):
 
         if os.path.isfile(config_file_path):
             os.remove(config_file_path)
-        _write_config_file(config_file_path, connectinfo)
+        
+        if connectinfo: 
+            _write_config_file(config_file_path, connectinfo)
+        else:
+            quit()
 
     return connectinfo

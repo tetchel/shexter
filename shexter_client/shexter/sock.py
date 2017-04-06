@@ -42,11 +42,14 @@ def _get_broadcast_addrs():
     """
 
     if get_platform() == Platform.WIN:
-        with Popen('ipconfig', stdout=PIPE) as subproc:
-            output, errors = subproc.communicate()
+        try:
+            with Popen('ipconfig', stdout=PIPE) as subproc:
+                output, errors = subproc.communicate()
 
-        if errors:
             print('Something went wrong running ipconfig:\n' + errors.decode('utf8'))
+        except FileNotFoundError:
+            print('***** ipconfig is not installed! Install ipconfig. *****')
+            return None
 
         # List to hold IP, Mask pairings (will have to calculate broadcast address later)
         output = output.decode('utf8')
@@ -64,11 +67,14 @@ def _get_broadcast_addrs():
                 network = IPv4Network((inet_addr, mask), False)
                 broadcast_addresses.append(str(network.broadcast_address))
     else:
-        with Popen('ifconfig', stdout=PIPE) as subproc:
-            output, errors = subproc.communicate()
-
-        if errors:
+        try:
+            with Popen('ifconfig', stdout=PIPE) as subproc:
+                output, errors = subproc.communicate()
+            
             print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
+        except FileNotFoundError:
+            print('***** ifconfig is not installed! Install ifconfig. *****')
+            return None 
 
         output = output.decode('utf8')
         broadcast_addresses = []
@@ -79,6 +85,9 @@ def _get_broadcast_addrs():
             # Alternative output format (probably there are others, great)
             elif 'broadcast' in line:
                 bcast = line.split('broadcast ', 1)[1]
+            elif 'brd' in line:
+                bcast = line.split('brd', 1)[1]
+            
             if bcast:
                 # now contains everything after Bcast. Truncate at the first space to get the bcast address.
                 bcast = bcast.split(' ', 1)[0]
@@ -100,12 +109,13 @@ def find_phones():
     phone = None
     rejected_hosts = []
 
-    print('Searching for phones, can take a few seconds...')
-
     broadcast_addrs = _get_broadcast_addrs()
     if not broadcast_addrs:
         print('There was a problem getting your broadcast address. You will have to configure manually.')
         return None
+    
+    print('Searching for phones, can take a few seconds...')
+
 
     for port in range(PORT_MIN, PORT_MAX+1):
         count = 0
