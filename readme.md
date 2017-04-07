@@ -1,4 +1,4 @@
-#Shexter - Shell Texter
+# Shexter - Shell Texter
 
 Send and read texts from your Android phone using your Linux or Windows command line.
 
@@ -8,17 +8,17 @@ Send and read texts from your Android phone using your Linux or Windows command 
 
 Or, download everything: `git clone https://github.com/tetchel/shexter.git` or `git clone ssh://git@github.com/tetchel/shexter.git`
 
-##Client Setup
+## Client Setup
 
-**Dependencies:** Python 3.
+**Dependencies:** Python 3. On Linux, you must also have either 'ifconfig' or 'ip' installed (most systems will have these installed by default).
 
 To install, extract the client archive, navigate to the installer for your platform, and run the installer (using `python .\installer_windows.py` or `sudo ./install_linux.sh`) through the command line. If the install is successful, after restarting your terminal (sometimes log out is required on Windows), you should be able to run 'shexter' from anywhere, and consult the help for how to use the client.
 
-You can do an acid test with `shexter send -n $YourPhoneNumber`.
+Your phone and computer must be on the same LAN for the app to work. You can check if it is working with `shexter send -n $YourPhoneNumber`.
 
-On first run, you will be prompted for an IP address - make sure your phone and computer are on the same LAN and then enter the hostname that appears in the Shexter app.
+By default, the client will try and find your phone automatically by scanning your local network. If this fails, you can also configure the location of your phone manually using the IP address and Port presented in the app. However, this will need to be updated every time you change WiFi networks, or reset your router. Your phone's network info is stored in a configuration file, which you are free to edit manually, or use `shexter config`.
 
-Note that, for now, Shexter ignores MMS messages altogether.
+Note that, for now, Shexter ignores MMS messages altogether. Bear in mind that some normal-looking messages (such as group messages) are MMS.
 
 ### Fonts (Linux, Optional)
 
@@ -35,7 +35,7 @@ The first font is a bitmap font in XLFD format. The other two are Xft format. Th
 
 So this setting would show Terminus for ASCII, WenQuanYi Micro Hei Mono for Chinese, and Symbola for remaining Unicode characters such as emoji.
 
-##App Setup
+## App Setup
 
 You must [enable installation from unknown sources](http://www.androidcentral.com/allow-app-installs-unknown-sources) in order to be able to install the apk.
 

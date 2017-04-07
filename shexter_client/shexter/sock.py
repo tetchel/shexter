@@ -45,7 +45,7 @@ def _get_broadcast_addrs():
         try:
             with Popen('ipconfig', stdout=PIPE) as subproc:
                 output, errors = subproc.communicate()
-    
+
             if errors:
                 print('Something went wrong running ipconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
@@ -73,13 +73,13 @@ def _get_broadcast_addrs():
                 output, errors = subproc.communicate()
                 print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
-            try:    
+            try:
                 # Some Linux distros (arch) have moved from ifconfig to 'ip address'
                 with Popen(['ip', 'address'], stdout=PIPE) as subproc:
                     output, errors = subproc.communicate()
             except FileNotFoundError:
                 print('Could not find "ifconfig" or "ip" command. ' +
-                        'Install one of these programs to find your phone automatically')
+                      'Install one of these programs to find your phone automatically')
                 return None
 
         output = output.decode('utf8')
@@ -122,7 +122,7 @@ def find_phones():
     if not broadcast_addrs:
         print('There was a problem getting your broadcast address. You will have to configure manually.')
         return None
-    
+
     print('Searching for phones, can take a few seconds...')
 
 
@@ -210,7 +210,7 @@ def _connect_tcp(connectinfo):
             return None
         elif errorcode == errno.ETIMEDOUT or 'time' in str(e):
             print('Connection timeout: Likely your phone is not on the same network as your '
-                  'computer or the connection info ' + connectinfo + ' is not correct.' + restart_msg)
+                  'computer or the connection info ' + str(connectinfo) + ' is not correct.' + restart_msg)
             return None
         else:
             print('Unexpected error occurred: ')
