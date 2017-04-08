@@ -26,12 +26,10 @@ public class SmsServerService extends Service {
     // Binder used to communicate with bound activities
     private final IBinder binder = new SmsServiceBinder();
     // Callback methods implemented by bound activities
-    private SmsServiceCallbacks smsServiceCallbacks;
+//    private SmsServiceCallbacks smsServiceCallbacks;
 
     // Singleton instance to be called to get access to the Application Context from static code
     private static SmsServerService INSTANCE;
-
-    // Fields are static - this is a singleton
 
     // TCP initSocket for receiving and processing app requests
     private ServerSocket serverSocket;
@@ -75,7 +73,6 @@ public class SmsServerService extends Service {
             Log.e(TAG, "Everything is doomed. Init is port " + initPort + " and main socket is "
                     + port[0]);
 
-            smsServiceCallbacks.onServerRunning(-1);
             return START_STICKY;
         }
         else {
@@ -105,7 +102,6 @@ public class SmsServerService extends Service {
         */
 
         Log.d(TAG, getString(R.string.app_name) + " service started.");
-        smsServiceCallbacks.onServerRunning(serverSocket.getLocalPort());
 
         return START_STICKY;
     }
@@ -191,6 +187,9 @@ public class SmsServerService extends Service {
     }
 
     public int getMainPortNumber() {
+        if(serverSocket == null) {
+            return -1;
+        }
         return serverSocket.getLocalPort();
     }
 
@@ -206,21 +205,16 @@ public class SmsServerService extends Service {
         return binder;
     }
 
-    public interface SmsServiceCallbacks {
-        /**
-         *
-         * @param portNumber The port number this server is listening on.
-         */
-        void onServerRunning(int portNumber);
-    }
+//    public interface SmsServiceCallbacks {
+//    }
+
+    //    public void setCallbacks(SmsServiceCallbacks callbacks) {
+//        smsServiceCallbacks = callbacks;
+//    }
 
     public class SmsServiceBinder extends Binder {
         public SmsServerService getService() {
             return SmsServerService.this;
         }
-    }
-
-    public void setCallbacks(SmsServiceCallbacks callbacks) {
-        smsServiceCallbacks = callbacks;
     }
 }

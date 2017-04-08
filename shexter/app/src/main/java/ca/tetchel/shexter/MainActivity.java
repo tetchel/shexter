@@ -29,7 +29,7 @@ import java.util.List;
 
 import ca.tetchel.shexter.sms.service.SmsServerService;
 
-public class MainActivity extends Activity implements SmsServerService.SmsServiceCallbacks {
+public class MainActivity extends Activity {
 
     private final String TAG = "Main";
 
@@ -37,10 +37,9 @@ public class MainActivity extends Activity implements SmsServerService.SmsServic
     private boolean neverAgain = false,
                     needToUpdatePermissions;
 
-    private SmsServerService boundService;
-
     // each permission has to have a unique 'code' to ID whether user accepted it or not
-    private static final int    PERMISSION_CODE = 1234,
+    private static final int
+            PERMISSION_CODE = 1234,
             SETTINGS_ACTIVITY_CODE = 1234;
 
     // order must match the order of permissionCodes
@@ -63,7 +62,9 @@ public class MainActivity extends Activity implements SmsServerService.SmsServic
         if(!SmsServerService.isRunning()) {
             Intent smsServerIntent = new Intent(this, SmsServerService.class);
             startService(smsServerIntent);
+            smsServerIntent = new Intent(this, SmsServerService.class);
             bindService(smsServerIntent, serviceConnection, BIND_AUTO_CREATE);
+
             Log.d(TAG, "SmsServerService has (probably) been started.");
         } else {
             Log.d(TAG, "SmsServerService is already running.");
@@ -75,8 +76,11 @@ public class MainActivity extends Activity implements SmsServerService.SmsServic
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             Log.d(TAG, "Service connecting");
             SmsServerService.SmsServiceBinder binder = (SmsServerService.SmsServiceBinder) iBinder;
-            boundService = binder.getService();
-            boundService.setCallbacks(MainActivity.this);
+            SmsServerService boundService = binder.getService();
+
+            setPortTextView(boundService.getMainPortNumber());
+
+//            boundService.setCallbacks(MainActivity.this);
         }
 
         @Override
@@ -147,7 +151,7 @@ public class MainActivity extends Activity implements SmsServerService.SmsServic
         }
 
         Log.d(TAG, "Setting port to " + portStr);
-        String portInfo = getString(R.string.port) + '\n' + portStr;
+        String portInfo = getString(R.string.port) + ' ' + portStr;
 
         ((TextView) findViewById(R.id.portTV)).setText(portInfo);
     }
@@ -252,12 +256,5 @@ public class MainActivity extends Activity implements SmsServerService.SmsServic
 
         // refresh the view by invalidating it
         (((ViewGroup) this.findViewById(android.R.id.content)).getChildAt(0)).invalidate();
-    }
-
-    @Override
-    public void onServerRunning(int portNumber) {
-        Log.d(TAG, "OnServerRunning");
-
-        setPortTextView(portNumber);
     }
 }

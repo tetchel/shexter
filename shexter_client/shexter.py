@@ -51,14 +51,15 @@ def main(args_list):
         parser.print_help()
         quit()
 
-    if command == COMMAND_CONFIG or command == COMMAND_CONFIG_2:
-        configure(True)
-        print('Config completed.')
-        quit()
-
     try:
+        if command == COMMAND_CONFIG or command == COMMAND_CONFIG_2:
+            configure(True)
+            print('Config completed.')
+            quit()
+
         connectinfo = configure(False)
     except (KeyboardInterrupt, EOFError):
+        # Catch configuration cancel
         print()
         quit()
 
