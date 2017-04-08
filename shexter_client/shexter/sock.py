@@ -50,7 +50,7 @@ def _get_broadcast_addrs():
                 print('Something went wrong running ipconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
             print('***** ipconfig is not installed! Install ipconfig. *****')
-            return None
+            return []
 
         # List to hold IP, Mask pairings (will have to calculate broadcast address later)
         output = output.decode('utf8')
@@ -80,7 +80,7 @@ def _get_broadcast_addrs():
             except FileNotFoundError:
                 print('Could not find "ifconfig" or "ip" command. ' +
                       'Install one of these programs to find your phone automatically')
-                return None
+                return []
 
         output = output.decode('utf8')
         broadcast_addresses = []
@@ -124,7 +124,6 @@ def find_phones():
         return None
 
     print('Searching for phones, can take a few seconds...')
-
 
     for port in range(PORT_MIN, PORT_MAX+1):
         count = 0

@@ -1,10 +1,13 @@
 package ca.tetchel.shexter;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
@@ -26,17 +29,19 @@ import java.util.List;
 
 import ca.tetchel.shexter.sms.service.SmsServerService;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SmsServerService.SmsServiceCallbacks {
 
     private final String TAG = "Main";
-
-    // each permission has to have a unique 'code' to ID whether user accepted it or not
-    private static final int    PERMISSION_CODE = 1234,
-                                SETTINGS_ACTIVITY_CODE = 1234;
 
     // if the user has flagged 'never ask me again' about a permission
     private boolean neverAgain = false,
                     needToUpdatePermissions;
+
+    private SmsServerService boundService;
+
+    // each permission has to have a unique 'code' to ID whether user accepted it or not
+    private static final int    PERMISSION_CODE = 1234,
+            SETTINGS_ACTIVITY_CODE = 1234;
 
     // order must match the order of permissionCodes
     private static final String[] requiredPermissions = {
@@ -58,18 +63,34 @@ public class MainActivity extends Activity {
         if(!SmsServerService.isRunning()) {
             Intent smsServerIntent = new Intent(this, SmsServerService.class);
             startService(smsServerIntent);
+            bindService(smsServerIntent, serviceConnection, BIND_AUTO_CREATE);
             Log.d(TAG, "SmsServerService has (probably) been started.");
         } else {
             Log.d(TAG, "SmsServerService is already running.");
         }
     }
 
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+            Log.d(TAG, "Service connecting");
+            SmsServerService.SmsServiceBinder binder = (SmsServerService.SmsServiceBinder) iBinder;
+            boundService = binder.getService();
+            boundService.setCallbacks(MainActivity.this);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            Log.d(TAG, "Service disconnecting");
+        }
+    };
+
     @Override
     protected void onStart() {
         super.onStart();
         Log.d(TAG, "Starting up.");
         needToUpdatePermissions = true;
-        updateIpAddress();
+        setIPTextView();
     }
 
     @Override
@@ -111,13 +132,24 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void updateIpAddress() {
+    private void setIPTextView() {
         String ip = getIpAddress();
         Log.d(TAG, "Updating IP Address to " + ip);
-        String addressInfo = "Your subnet IP Address is: " + ip;
-        addressInfo += "\n\nPort: " + " 23457, probably";
+        String addressInfo = getString(R.string.your_ip_is) + '\n' + ip;
 
         ((TextView) findViewById(R.id.ipAddressTV)).setText(addressInfo);
+    }
+
+    private void setPortTextView(int port) {
+        String portStr = "" + port;
+        if (port == -1) {
+            portStr = "Error!";
+        }
+
+        Log.d(TAG, "Setting port to " + portStr);
+        String portInfo = getString(R.string.port) + '\n' + portStr;
+
+        ((TextView) findViewById(R.id.portTV)).setText(portInfo);
     }
 
     private String getIpAddress() {
@@ -220,5 +252,12 @@ public class MainActivity extends Activity {
 
         // refresh the view by invalidating it
         (((ViewGroup) this.findViewById(android.R.id.content)).getChildAt(0)).invalidate();
+    }
+
+    @Override
+    public void onServerRunning(int portNumber) {
+        Log.d(TAG, "OnServerRunning");
+
+        setPortTextView(portNumber);
     }
 }

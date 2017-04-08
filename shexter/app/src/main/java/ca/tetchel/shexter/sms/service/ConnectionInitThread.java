@@ -90,5 +90,7 @@ class ConnectionInitThread extends Thread {
                 Log.e(TAG, "Exception in the InitThread", e);
             }
         }
+
+        socket.close();
     }
 }

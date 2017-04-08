@@ -4,6 +4,7 @@ import android.app.ActivityManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 import android.widget.Toast;
@@ -21,6 +22,11 @@ import static ca.tetchel.shexter.sms.ServiceConstants.PORT_MIN;
 public class SmsServerService extends Service {
 
     private static final String TAG = SmsServerService.class.getSimpleName();
+
+    // Binder used to communicate with bound activities
+    private final IBinder binder = new SmsServiceBinder();
+    // Callback methods implemented by bound activities
+    private SmsServiceCallbacks smsServiceCallbacks;
 
     // Singleton instance to be called to get access to the Application Context from static code
     private static SmsServerService INSTANCE;
@@ -51,12 +57,6 @@ public class SmsServerService extends Service {
     }
 
     @Override
-    public IBinder onBind(Intent intent) {
-        Log.d(TAG, "Enter onBind");
-        return null;
-    }
-
-    @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
         Log.d(TAG, "Enter onStartCommand");
@@ -74,6 +74,9 @@ public class SmsServerService extends Service {
                     .show();
             Log.e(TAG, "Everything is doomed. Init is port " + initPort + " and main socket is "
                     + port[0]);
+
+            smsServiceCallbacks.onServerRunning(-1);
+            return START_STICKY;
         }
         else {
             Log.d(TAG, "Successful socket creations. initPort: " + initPort + " Other port: " +
@@ -102,6 +105,7 @@ public class SmsServerService extends Service {
         */
 
         Log.d(TAG, getString(R.string.app_name) + " service started.");
+        smsServiceCallbacks.onServerRunning(serverSocket.getLocalPort());
 
         return START_STICKY;
     }
@@ -192,5 +196,31 @@ public class SmsServerService extends Service {
 
     public SmsReceiver getSmsReceiver() {
         return receiver;
+    }
+
+    ///// Code that allows binding to this service /////
+
+    @Override
+    public IBinder onBind(Intent intent) {
+        Log.d(TAG, "Enter onBind");
+        return binder;
+    }
+
+    public interface SmsServiceCallbacks {
+        /**
+         *
+         * @param portNumber The port number this server is listening on.
+         */
+        void onServerRunning(int portNumber);
+    }
+
+    public class SmsServiceBinder extends Binder {
+        public SmsServerService getService() {
+            return SmsServerService.this;
+        }
+    }
+
+    public void setCallbacks(SmsServiceCallbacks callbacks) {
+        smsServiceCallbacks = callbacks;
     }
 }

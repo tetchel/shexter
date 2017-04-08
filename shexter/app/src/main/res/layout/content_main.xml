@@ -47,4 +47,17 @@
         android:layout_centerHorizontal="true"
         android:onClick="onClickPermissionsButton" />
 
+    <TextView
+        android:id="@+id/portTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Large Text"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:layout_below="@+id/ipAddressTV"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="40dp"
+        android:layout_alignRight="@+id/ipAddressTV"
+        android:layout_alignEnd="@+id/ipAddressTV"/>
+
 </RelativeLayout>

@@ -3,11 +3,16 @@
     <string name="action_settings">Settings</string>
     <string name="preferred_contacts_file">preferred_contacts.ini</string>
     <string name="preferred_contacts_prefix">contact-prefers-</string>
+
     <string name="no_permissions">Required permissions are not granted!</string>
     <string name="grant">Grant</string>
+
     <string name="send_succeeded">Send succeeded</string>
     <string name="send_failed_generic">Unknown error</string>
     <string name="send_failed_noservice">No cell service</string>
     <string name="send_failed_nullpdu">PDU was null</string>
     <string name="send_failed_noradio">Cell radio is off</string>
+
+    <string name="your_ip_is">LAN IP Address:</string>
+    <string name="port">Port:</string>
 </resources>
