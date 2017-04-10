@@ -71,6 +71,8 @@ def _get_broadcast_addrs():
         try:
             with Popen('ifconfig', stdout=PIPE) as subproc:
                 output, errors = subproc.communicate()
+
+            if errors:
                 print('Something went wrong running ifconfig:\n' + errors.decode('utf8'))
         except FileNotFoundError:
             try:
