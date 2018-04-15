@@ -12,6 +12,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.SmsReceiver;
@@ -19,9 +20,9 @@ import ca.tetchel.shexter.SmsReceiver;
 import static ca.tetchel.shexter.sms.ServiceConstants.PORT_MAX;
 import static ca.tetchel.shexter.sms.ServiceConstants.PORT_MIN;
 
-public class SmsServerService extends Service {
+public class ShexterService extends Service {
 
-    private static final String TAG = SmsServerService.class.getSimpleName();
+    private static final String TAG = ShexterService.class.getSimpleName();
 
     // Binder used to communicate with bound activities
     private final IBinder binder = new SmsServiceBinder();
@@ -29,7 +30,7 @@ public class SmsServerService extends Service {
 //    private SmsServiceCallbacks smsServiceCallbacks;
 
     // Singleton instance to be called to get access to the Application Context from static code
-    private static SmsServerService INSTANCE;
+    private static ShexterService INSTANCE;
 
     // TCP initSocket for receiving and processing app requests
     private ServerSocket serverSocket;
@@ -50,7 +51,7 @@ public class SmsServerService extends Service {
      *
      * @return The singleton instance.
      */
-    public static SmsServerService instance() {
+    public static ShexterService instance() {
         return INSTANCE;
     }
 
@@ -60,24 +61,33 @@ public class SmsServerService extends Service {
         Log.d(TAG, "Enter onStartCommand");
         INSTANCE = this;
 
-        int[] port = new int[1];
-        port[0] = PORT_MIN;
+        // We have to open two ports. One for the connection init service, and one for the
+        // main sms server service. The ports used then have to be passed to the MainActivity to
+        // be displayed to the user.
+        AtomicInteger port = new AtomicInteger(PORT_MIN);
         boolean success = openSocket(true, port);
-        int initPort = port[0];
-        port[0]++;
-        success = success && openSocket(false, port);
+        int initPort = port.get();
+        if(!success) {
+            Log.e(TAG, "Failed to open init service socket!");
+            // we can still try to open the main socket, I guess.
+        }
+
+        port.addAndGet(1);
+        success = openSocket(false, port);
         if(!success) {
             // TODO handle this better :D
-            Toast.makeText(getApplicationContext(), "Everything is doomed", Toast.LENGTH_LONG)
+            Toast.makeText(getApplicationContext(),
+                    "Failed to open service socket!", Toast.LENGTH_LONG)
                     .show();
+
             Log.e(TAG, "Everything is doomed. Init is port " + initPort + " and main socket is "
-                    + port[0]);
+                    + port.get());
 
             return START_STICKY;
         }
         else {
             Log.d(TAG, "Successful socket creations. initPort: " + initPort + " Other port: " +
-                    port[0]);
+                    port.get());
         }
 
         // TODO move this logic to the Thread classes?
@@ -106,23 +116,23 @@ public class SmsServerService extends Service {
         return START_STICKY;
     }
 
-    private boolean openSocket(boolean isInitSocket, int[] port) {
+    private boolean openSocket(boolean isInitSocket, AtomicInteger port) {
         boolean success = false;
 
-        while(!success && port[0] <= PORT_MAX) {
+        while(!success && port.get() <= PORT_MAX) {
             try {
                 if(isInitSocket) {
-                    initSocket = new DatagramSocket(port[0]);
+                    initSocket = new DatagramSocket(port.get());
                     initSocket.setBroadcast(true);
                 }
                 else {
-                    serverSocket = new ServerSocket(port[0]);
+                    serverSocket = new ServerSocket(port.get());
                 }
                 success = true;
             } catch (IOException e) {
                 Log.w(TAG, "Exception opening socket: isInit: " + isInitSocket + " Port is " +
-                                port[0], e);
-                port[0]++;
+                                port.get(), e);
+                port.addAndGet(1);
             }
         }
         return success;
@@ -168,7 +178,7 @@ public class SmsServerService extends Service {
      * @return If this service is running. Only one instance of this service can run at a time.
      */
     public static boolean isRunning() {
-        SmsServerService instance = instance();
+        ShexterService instance = instance();
         if(instance == null) {
             return false;
         }
@@ -176,10 +186,15 @@ public class SmsServerService extends Service {
         ActivityManager manager = (ActivityManager) instance.getApplicationContext()
                 .getSystemService(Context.ACTIVITY_SERVICE);
 
+        if(manager == null) {
+            Log.e(TAG, "Couldn't get ActivityManager!");
+            return false;
+        }
+
         for (ActivityManager.RunningServiceInfo runningService : manager
                 .getRunningServices(Integer.MAX_VALUE)) {
 
-            if (SmsServerService.class.getName().equals(runningService.service.getClassName())) {
+            if (ShexterService.class.getName().equals(runningService.service.getClassName())) {
                 return true;
             }
         }
@@ -213,8 +228,8 @@ public class SmsServerService extends Service {
 //    }
 
     public class SmsServiceBinder extends Binder {
-        public SmsServerService getService() {
-            return SmsServerService.this;
+        public ShexterService getService() {
+            return ShexterService.this;
         }
     }
 }

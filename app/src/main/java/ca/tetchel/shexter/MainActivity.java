@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-import ca.tetchel.shexter.sms.service.SmsServerService;
+import ca.tetchel.shexter.sms.service.ShexterService;
 
 public class MainActivity extends Activity {
 
@@ -59,15 +59,15 @@ public class MainActivity extends Activity {
 
         checkAndGetPermissions();
 
-        if(!SmsServerService.isRunning()) {
-            Intent smsServerIntent = new Intent(this, SmsServerService.class);
+        if(!ShexterService.isRunning()) {
+            Intent smsServerIntent = new Intent(this, ShexterService.class);
             startService(smsServerIntent);
-            smsServerIntent = new Intent(this, SmsServerService.class);
+            smsServerIntent = new Intent(this, ShexterService.class);
             bindService(smsServerIntent, serviceConnection, BIND_AUTO_CREATE);
 
-            Log.d(TAG, "SmsServerService has (probably) been started.");
+            Log.d(TAG, "ShexterService has (probably) been started.");
         } else {
-            Log.d(TAG, "SmsServerService is already running.");
+            Log.d(TAG, "ShexterService is already running.");
         }
     }
 
@@ -75,8 +75,8 @@ public class MainActivity extends Activity {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             Log.d(TAG, "Service connecting");
-            SmsServerService.SmsServiceBinder binder = (SmsServerService.SmsServiceBinder) iBinder;
-            SmsServerService boundService = binder.getService();
+            ShexterService.SmsServiceBinder binder = (ShexterService.SmsServiceBinder) iBinder;
+            ShexterService boundService = binder.getService();
 
             setPortTextView(boundService.getMainPortNumber());
 

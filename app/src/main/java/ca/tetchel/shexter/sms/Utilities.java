@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import ca.tetchel.shexter.BuildConfig;
-import ca.tetchel.shexter.sms.service.SmsServerService;
+import ca.tetchel.shexter.sms.service.ShexterService;
 
 /**
  * static utility methods to support the SMS code.
@@ -370,7 +370,7 @@ public class Utilities {
 //                        number = PhoneNumberUtils.formatNumber(number);
                     int typeInt = numbersQuery.getInt(typeCol);
                     String type = ContactsContract.CommonDataKinds.Phone
-                            .getTypeLabel(SmsServerService.instance().getResources(), typeInt, "")
+                            .getTypeLabel(ShexterService.instance().getResources(), typeInt, "")
                                     .toString();
                     numbers.add(type + ": " + number);
                 } while (numbersQuery.moveToNext());

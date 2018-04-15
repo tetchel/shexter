@@ -4,6 +4,8 @@
     <string name="preferred_contacts_file">preferred_contacts.ini</string>
     <string name="preferred_contacts_prefix">contact-prefers-</string>
 
+    <string name="ip_addr_error">Could not get IP Address!</string>
+    <string name="port_error">Could not get broadcast listening port!</string>
     <string name="no_permissions">Required permissions are not granted!</string>
     <string name="grant">Grant</string>
 

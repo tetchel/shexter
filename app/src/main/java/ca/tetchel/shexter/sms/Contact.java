@@ -7,7 +7,7 @@ import android.util.Log;
 import java.util.List;
 
 import ca.tetchel.shexter.R;
-import ca.tetchel.shexter.sms.service.SmsServerService;
+import ca.tetchel.shexter.sms.service.ShexterService;
 
 /**
  * Data type class to hold info about a contact, and access preferred contact data when it's
@@ -43,7 +43,7 @@ public class Contact {
             Log.e(TAG, "Invalid number " + number + " passed to setPreferred!!");
             return;
         }
-        Context c = SmsServerService.instance().getApplicationContext();
+        Context c = ShexterService.instance().getApplicationContext();
         SharedPreferences sp = c.getSharedPreferences(c.getString(R.string.preferred_contacts_file),
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = sp.edit();
@@ -71,7 +71,7 @@ public class Contact {
      * @return The preferred number if it is in the preferences, null otherwise.
      */
     private String checkPrefs() {
-        Context c = SmsServerService.instance().getApplicationContext();
+        Context c = ShexterService.instance().getApplicationContext();
         SharedPreferences prefs = c.getSharedPreferences(
                 c.getString(R.string.preferred_contacts_file),
                 Context.MODE_PRIVATE);

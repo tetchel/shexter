@@ -14,8 +14,8 @@ import java.util.List;
 import java.util.Locale;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.sms.service.ShexterService;
 import ca.tetchel.shexter.sms.service.SmsSendThread;
-import ca.tetchel.shexter.sms.service.SmsServerService;
 
 import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_CONTACTS;
 import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_READ;
@@ -85,7 +85,7 @@ public class CommandProcessor {
         else if (COMMAND_CONTACTS.equals(command)) {
             Log.d(TAG, "Contacts command.");
             try {
-                String allContacts = Utilities.getAllContacts(SmsServerService.instance()
+                String allContacts = Utilities.getAllContacts(ShexterService.instance()
                         .getContentResolver());
                 if (allContacts != null && !allContacts.isEmpty()) {
                     Log.d(TAG, "Retrieved contacts successfully.");
@@ -159,12 +159,12 @@ public class CommandProcessor {
         int outputWidth = Integer.parseInt(requestReader.readLine());
 
         try {
-            String convo = Utilities.getConversation(SmsServerService.instance()
+            String convo = Utilities.getConversation(ShexterService.instance()
                             .getContentResolver(),
                     contact, numberToRetrieve, outputWidth);
 
             if (convo != null) {
-                SmsServerService.instance().getSmsReceiver()
+                ShexterService.instance().getSmsReceiver()
                         .removeMessagesFromNumber(contact.preferred());
                 Log.d(TAG, "Responded with convo.");
                 return convo;
@@ -191,7 +191,7 @@ public class CommandProcessor {
         Log.d(TAG, "UnreadCommand");
         int outputWidth = Integer.parseInt(requestReader.readLine());
         try {
-            List<SmsMessage> unreadMessages = SmsServerService.instance().getSmsReceiver()
+            List<SmsMessage> unreadMessages = ShexterService.instance().getSmsReceiver()
                     .getAllSms();
 
             List<String> formattedMessages = new ArrayList<>(unreadMessages.size());
@@ -202,7 +202,7 @@ public class CommandProcessor {
                 Uri lookupUri = Uri.withAppendedPath(
                         ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
                         Uri.encode(sender));
-                Cursor c = SmsServerService.instance().getContentResolver()
+                Cursor c = ShexterService.instance().getContentResolver()
                         .query(lookupUri, new String[]{ ContactsContract.Data.DISPLAY_NAME },
                                 null, null, null);
 

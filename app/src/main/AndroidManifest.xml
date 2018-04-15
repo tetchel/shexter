@@ -22,14 +22,14 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
-        <service android:name=".sms.service.SmsServerService" />
+        <service android:name=".sms.service.ShexterService" />
 
         <receiver android:name=".BootCompletedReceiver">
             <intent-filter>

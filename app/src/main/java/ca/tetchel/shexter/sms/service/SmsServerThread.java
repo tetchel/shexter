@@ -6,6 +6,7 @@ import android.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.StringReader;
 import java.net.ServerSocket;
@@ -38,6 +39,17 @@ class SmsServerThread extends Thread {
         this.serverSocket = serverSocket;
     }
 
+    private void onRequest(InputStream request, PrintStream replyStream) {
+
+    }
+
+    private boolean commandRequiresContact(String command) {
+        return COMMAND_READ.equals(command) || COMMAND_SEND.equals(command) ||
+                COMMAND_SETPREF_LIST.equals(command) ||
+                COMMAND_SETPREF.equals(command) ||
+                (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command);
+    }
+
     @Override
     public void run() {
         Log.d(TAG, "ServerThread starting up on port " + serverSocket.getLocalPort());
@@ -47,20 +59,29 @@ class SmsServerThread extends Thread {
         while (!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
             try {
                 //region SetupServer
+                // make sure phone stays awake - does this even work?
+                Context context = ShexterService.instance().getApplicationContext();
+                PowerManager powerManager = ((PowerManager) context
+                        .getSystemService(POWER_SERVICE));
+
+                PowerManager.WakeLock wakeLock = null;
+                if(powerManager != null) {
+                     wakeLock = powerManager
+                            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, context.getString(R.string.app_name));
+                    wakeLock.acquire(5*60*1000);
+                }
+                else {
+                    Log.e(TAG, "PowerManager was null, could not acquire wakelock");
+                }
+
                 Log.d(TAG, "Ready to accept");
                 Socket socket = serverSocket.accept();
-                // make sure phone stays awake - does this even work?
-                Context context = SmsServerService.instance().getApplicationContext();
-                PowerManager.WakeLock wakeLock = ((PowerManager) context
-                        .getSystemService(POWER_SERVICE))
-                        .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                                context.getString(R.string.app_name));
-                wakeLock.acquire();
 
-                // print back to initSocket using this
+                // print back to client socket using this
                 PrintStream replyStream = new PrintStream(socket.getOutputStream(), false,
                         ServiceConstants.ENCODING);
                 //endregion
+
                 // Store the full request
                 Scanner scansAll;
                 String request;
@@ -77,21 +98,18 @@ class SmsServerThread extends Thread {
                     continue;
                 }
 
-                // Facilitates reading line-by-line
                 BufferedReader requestReader = new BufferedReader(new StringReader(request));
 
                 //The request protocol is command\ncontact\ncommand-specific-data
                 //so read the first line to get the command
                 String command = requestReader.readLine();
                 Log.d(TAG, "Received command: " + command);
+
                 //region GetContact
                 String contactError = null;
                 Contact contact = null;
-                // Determine if the command requires a contact.
-                if (COMMAND_READ.equals(command) || COMMAND_SEND.equals(command) ||
-                        COMMAND_SETPREF_LIST.equals(command) ||
-                        COMMAND_SETPREF.equals(command) ||
-                        (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command)) {
+
+                if (commandRequiresContact(command)) {
 
                     Log.d(TAG, "Getting contact name");
                     //second line for contact name
@@ -138,6 +156,9 @@ class SmsServerThread extends Thread {
                                 context.getString(R.string.app_name) + " has Contacts permission.";
                     }
                 }
+
+                // At this point, we check contactError to see if we can proceed
+
                 if (contactError != null) {
                     //if something has gone wrong already, don't do anything else
                     Log.d(TAG, "Sending error reply " + contactError);
@@ -145,19 +166,24 @@ class SmsServerThread extends Thread {
                 }
                 //endregion
                 else {
+                    // Everything went OK and we can continue to execute the user's command.
+
                     String response = CommandProcessor.process(command, oldRequest, contact,
                             requestReader);
                     Log.d(TAG, "Command successfully processed; replying.");
                     Utilities.sendReply(replyStream, response);
                 }
-                wakeLock.release();
-            } catch (IOException e) {
+                if(wakeLock != null) {
+                    wakeLock.release();
+                }
+            }
+            catch (IOException e) {
                 Log.e(TAG, "Socket error occurred.", e);
             }
         }
 
         Log.d(TAG, "Server loop exited. Interrupted? " + isInterrupted());
-        if(serverSocket != null) {
+        if (serverSocket != null) {
             try {
                 serverSocket.close();
                 Log.d(TAG, "Closed ServerSocket");
