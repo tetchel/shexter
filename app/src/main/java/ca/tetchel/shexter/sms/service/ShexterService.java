@@ -16,9 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.SmsReceiver;
-
-import static ca.tetchel.shexter.sms.ServiceConstants.PORT_MAX;
-import static ca.tetchel.shexter.sms.ServiceConstants.PORT_MIN;
+import ca.tetchel.shexter.sms.ServiceConstants;
 
 public class ShexterService extends Service {
 
@@ -48,8 +46,6 @@ public class ShexterService extends Service {
 
     /**
      * Access the singleton instance of this class for getting the context.
-     *
-     * @return The singleton instance.
      */
     public static ShexterService instance() {
         return INSTANCE;
@@ -64,18 +60,18 @@ public class ShexterService extends Service {
         // We have to open two ports. One for the connection init service, and one for the
         // main sms server service. The ports used then have to be passed to the MainActivity to
         // be displayed to the user.
-        AtomicInteger port = new AtomicInteger(PORT_MIN);
+        AtomicInteger port = new AtomicInteger(ServiceConstants.PORT_MIN);
         boolean success = openSocket(true, port);
         int initPort = port.get();
         if(!success) {
-            Log.e(TAG, "Failed to open init service socket!");
+            Log.e(TAG, "Failed to open init service socket! Port is " + initPort);
             // we can still try to open the main socket, I guess.
         }
 
         port.addAndGet(1);
         success = openSocket(false, port);
         if(!success) {
-            // TODO handle this better :D
+            // TODO handle this better
             Toast.makeText(getApplicationContext(),
                     "Failed to open service socket!", Toast.LENGTH_LONG)
                     .show();
@@ -119,7 +115,7 @@ public class ShexterService extends Service {
     private boolean openSocket(boolean isInitSocket, AtomicInteger port) {
         boolean success = false;
 
-        while(!success && port.get() <= PORT_MAX) {
+        while(!success && port.get() <= ServiceConstants.PORT_MAX) {
             try {
                 if(isInitSocket) {
                     initSocket = new DatagramSocket(port.get());

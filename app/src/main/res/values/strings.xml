@@ -1,7 +1,10 @@
 <resources>
     <string name="app_name">Shexter</string>
     <string name="action_settings">Settings</string>
-    <string name="preferred_contacts_file">preferred_contacts.ini</string>
+    <string name="trusted_hosts">Trusted Hosts</string>
+    <string name="refresh">Refresh</string>
+
+    <string name="preferred_contacts_prefs">preferred_contacts</string>
     <string name="preferred_contacts_prefix">contact-prefers-</string>
 
     <string name="ip_addr_error">Could not get IP Address!</string>
@@ -17,4 +20,7 @@
 
     <string name="your_ip_is">LAN IP Address:</string>
     <string name="port">Port:</string>
+    <string name="title_activity_trusted_hosts">Trusted Hosts</string>
+
+    <string name="your_trusted_hosts">Your Trusted Hosts</string>
 </resources>

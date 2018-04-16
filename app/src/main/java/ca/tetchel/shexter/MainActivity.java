@@ -1,5 +1,6 @@
 package ca.tetchel.shexter;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -12,11 +13,13 @@ import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,9 +32,10 @@ import java.util.List;
 
 import ca.tetchel.shexter.sms.service.ShexterService;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
 
-    private final String TAG = "Main";
+    private static final String
+            TAG = MainActivity.class.getSimpleName();
 
     // if the user has flagged 'never ask me again' about a permission
     private boolean neverAgain = false,
@@ -41,6 +45,8 @@ public class MainActivity extends Activity {
     private static final int
             PERMISSION_CODE = 1234,
             SETTINGS_ACTIVITY_CODE = 1234;
+
+    //private int servicePort = -1;
 
     // order must match the order of permissionCodes
     private static final String[] requiredPermissions = {
@@ -55,20 +61,23 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "Being created.");
+        requestWindowFeature(Window.FEATURE_ACTION_BAR);
         setContentView(R.layout.activity_main);
 
         checkAndGetPermissions();
 
         if(!ShexterService.isRunning()) {
-            Intent smsServerIntent = new Intent(this, ShexterService.class);
-            startService(smsServerIntent);
-            smsServerIntent = new Intent(this, ShexterService.class);
-            bindService(smsServerIntent, serviceConnection, BIND_AUTO_CREATE);
+            Intent shexterServiceIntent = new Intent(this, ShexterService.class);
+            startService(shexterServiceIntent);
+            //smsServerIntent = new Intent(this, ShexterService.class);
+            bindService(shexterServiceIntent, serviceConnection, BIND_AUTO_CREATE);
 
             Log.d(TAG, "ShexterService has (probably) been started.");
-        } else {
+        }
+        else {
             Log.d(TAG, "ShexterService is already running.");
         }
+
     }
 
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -78,6 +87,7 @@ public class MainActivity extends Activity {
             ShexterService.SmsServiceBinder binder = (ShexterService.SmsServiceBinder) iBinder;
             ShexterService boundService = binder.getService();
 
+            Log.d(TAG, "Service bound");
             setPortTextView(boundService.getMainPortNumber());
 
 //            boundService.setCallbacks(MainActivity.this);
@@ -92,20 +102,34 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d(TAG, "Starting up.");
+        Intent shexterServiceIntent = new Intent(this, ShexterService.class);
+        bindService(shexterServiceIntent, serviceConnection, BIND_AUTO_CREATE);
+        Log.d(TAG, "OnStart");
         needToUpdatePermissions = true;
-        setIPTextView();
     }
 
     @Override
-    protected void onResume() {
+    protected void onResume()  {
         super.onResume();
         Log.d(TAG, "Resuming");
+        setIPTextView();
         if(needToUpdatePermissions) {
             Log.d(TAG, "Need to update permissions");
             checkAndGetPermissions();
             needToUpdatePermissions = false;
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unbindService(serviceConnection);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "OnDestroy");
     }
 
     @Override
@@ -122,16 +146,21 @@ public class MainActivity extends Activity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Toast.makeText(this, "Not implemented lol", Toast.LENGTH_SHORT).show();
             return true;
         }
-//        else if(id == R.id.action_refresh) {
-//            updateIpAddress();
-//            Toast.makeText(this.getApplicationContext(), "Updated IP address.", Toast.LENGTH_SHORT)
-//                    .show();
-//            return true;
-//        }
+        else if(id == R.id.action_refresh) {
+            setIPTextView();
+            Toast.makeText(this, "Updated IP", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        else if(id == R.id.action_trustedhosts) {
+            // Toast.makeText(this, "Trusted hosts woo hoo", Toast.LENGTH_SHORT).show();
+            Intent trustedHostIntent = new Intent(this, TrustedHostsActivity.class);
+            startActivity(trustedHostIntent);
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -144,11 +173,9 @@ public class MainActivity extends Activity {
         ((TextView) findViewById(R.id.ipAddressTV)).setText(addressInfo);
     }
 
-    private void setPortTextView(int port) {
-        String portStr = "" + port;
-        if (port == -1) {
-            portStr = "Error!";
-        }
+    private void setPortTextView(int portNumber) {
+        // servicePort = portNumber;
+        String portStr = "" + portNumber;
 
         Log.d(TAG, "Setting port to " + portStr);
         String portInfo = getString(R.string.port) + ' ' + portStr;

@@ -44,7 +44,7 @@ public class Contact {
             return;
         }
         Context c = ShexterService.instance().getApplicationContext();
-        SharedPreferences sp = c.getSharedPreferences(c.getString(R.string.preferred_contacts_file),
+        SharedPreferences sp = c.getSharedPreferences(c.getString(R.string.preferred_contacts_prefs),
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = sp.edit();
         edit.putString(c.getString(R.string.preferred_contacts_prefix) + name, number);
@@ -73,7 +73,7 @@ public class Contact {
     private String checkPrefs() {
         Context c = ShexterService.instance().getApplicationContext();
         SharedPreferences prefs = c.getSharedPreferences(
-                c.getString(R.string.preferred_contacts_file),
+                c.getString(R.string.preferred_contacts_prefs),
                 Context.MODE_PRIVATE);
         return prefs.getString(c.getString(R.string.preferred_contacts_prefix) + name, null);
     }

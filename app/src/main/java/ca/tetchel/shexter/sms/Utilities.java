@@ -1,6 +1,8 @@
 package ca.tetchel.shexter.sms;
 
+import android.app.ActivityManager;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
@@ -489,4 +491,5 @@ public class Utilities {
         String response = header + '\n' + msg;
         replyStream.println(response);
     }
+
 }

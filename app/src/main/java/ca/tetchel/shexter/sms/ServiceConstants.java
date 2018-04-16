@@ -3,7 +3,7 @@ package ca.tetchel.shexter.sms;
 public class ServiceConstants {
 
    public static final int  PORT_MIN = 23456,
-                            PORT_MAX = 23461,
+                            PORT_MAX = 23460,
                             // Responses start with a length header of this many bytes
                             // so the client knows how much to recv
                             LENGTH_HEADER_LEN = 32;
@@ -18,8 +18,8 @@ public class ServiceConstants {
             COMMAND_READ = "read",
             COMMAND_UNREAD = "unread",
             COMMAND_SETPREF = "setpref",
-   // flag for a lone setpref request (ie, not one required by another command)
-           COMMAND_SETPREF_LIST = COMMAND_SETPREF + "-list",
+            // flag for a lone setpref request (ie, not one required by another command)
+            COMMAND_SETPREF_LIST = COMMAND_SETPREF + "-list",
             UNREAD_CONTACT_FLAG = "-contact",
             NUMBER_FLAG = "-number";
 
