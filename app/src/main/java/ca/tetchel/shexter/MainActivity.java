@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
     private void setIPTextView() {
         String ip = getIpAddress();
         Log.d(TAG, "Updating IP Address to " + ip);
-        String addressInfo = getString(R.string.your_ip_is) + '\n' + ip;
+        String addressInfo = getString(R.string.your_ip_is) + " " + ip;
 
         ((TextView) findViewById(R.id.ipAddressTV)).setText(addressInfo);
     }
