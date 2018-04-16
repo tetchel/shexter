@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms;
+package ca.tetchel.shexter.sms.util;
 
 import android.database.Cursor;
 import android.net.Uri;
@@ -14,16 +14,16 @@ import java.util.List;
 import java.util.Locale;
 
 import ca.tetchel.shexter.R;
-import ca.tetchel.shexter.sms.service.ShexterService;
-import ca.tetchel.shexter.sms.service.SmsSendThread;
+import ca.tetchel.shexter.sms.ShexterService;
+import ca.tetchel.shexter.sms.subservices.SmsSendThread;
 
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_CONTACTS;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_READ;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SEND;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SETPREF;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SETPREF_LIST;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_UNREAD;
-import static ca.tetchel.shexter.sms.ServiceConstants.SETPREF_REQUIRED;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_CONTACTS;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_READ;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF_LIST;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_UNREAD;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.SETPREF_REQUIRED;
 
 public class CommandProcessor {
 
@@ -85,7 +85,7 @@ public class CommandProcessor {
         else if (COMMAND_CONTACTS.equals(command)) {
             Log.d(TAG, "Contacts command.");
             try {
-                String allContacts = Utilities.getAllContacts(ShexterService.instance()
+                String allContacts = SmsUtilities.getAllContacts(ShexterService.instance()
                         .getContentResolver());
                 if (allContacts != null && !allContacts.isEmpty()) {
                     Log.d(TAG, "Retrieved contacts successfully.");
@@ -159,7 +159,7 @@ public class CommandProcessor {
         int outputWidth = Integer.parseInt(requestReader.readLine());
 
         try {
-            String convo = Utilities.getConversation(ShexterService.instance()
+            String convo = SmsUtilities.getConversation(ShexterService.instance()
                             .getContentResolver(),
                     contact, numberToRetrieve, outputWidth);
 
@@ -210,25 +210,26 @@ public class CommandProcessor {
                     try {
                         if(c.moveToFirst()) {
                             String displayName = c.getString(0);
-                            if(!displayName.isEmpty())
+                            if(!displayName.isEmpty()) {
                                 sender = displayName + ": ";
+                            }
                         }
                     }
                     catch (Exception e) {
                         Log.e(TAG, "Exception occurred getting contact name for sms.", e);
                     }
-                    finally{
+                    finally {
                         c.close();
                     }
                 }
 
                 long timestamp = sms.getTimestampMillis();
-                formattedMessages.add(Utilities.formatSms(sender, "", sms.getMessageBody(),
+                formattedMessages.add(SmsUtilities.formatSms(sender, "", sms.getMessageBody(),
                         timestamp, outputWidth));
                 dates.add(timestamp);
             }
 
-            String unread = Utilities.messagesIntoOutput(formattedMessages, dates);
+            String unread = SmsUtilities.messagesIntoOutput(formattedMessages, dates);
 
             if (!unread.isEmpty()) {
                 unread = "Unread Messages:\n" + unread;

@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms.service;
+package ca.tetchel.shexter.sms.subservices;
 
 import android.content.Context;
 import android.os.PowerManager;
@@ -15,42 +15,40 @@ import java.net.Socket;
 import java.util.Collections;
 import java.util.Scanner;
 
-import ca.tetchel.shexter.TrustedHostsUtilities;
+import ca.tetchel.shexter.sms.ShexterService;
+import ca.tetchel.shexter.sms.util.CommandProcessor;
+import ca.tetchel.shexter.sms.util.Contact;
+import ca.tetchel.shexter.sms.util.ServiceConstants;
+import ca.tetchel.shexter.sms.util.SmsUtilities;
+import ca.tetchel.shexter.trust.TrustedHostsUtilities;
 import ca.tetchel.shexter.R;
-import ca.tetchel.shexter.sms.CommandProcessor;
-import ca.tetchel.shexter.sms.Contact;
-import ca.tetchel.shexter.sms.ServiceConstants;
-import ca.tetchel.shexter.sms.Utilities;
 
 import static android.content.Context.POWER_SERVICE;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_READ;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SEND;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SETPREF;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_SETPREF_LIST;
-import static ca.tetchel.shexter.sms.ServiceConstants.COMMAND_UNREAD;
-import static ca.tetchel.shexter.sms.ServiceConstants.NUMBER_FLAG;
-import static ca.tetchel.shexter.sms.ServiceConstants.UNREAD_CONTACT_FLAG;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_READ;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF_LIST;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_UNREAD;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.NUMBER_FLAG;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.UNREAD_CONTACT_FLAG;
 
-class SmsServerThread extends Thread {
+public class SmsServerThread extends Thread {
 
     private static final String TAG = SmsServerThread.class.getSimpleName();
 
     private ServerSocket serverSocket;
 
-    SmsServerThread(ServerSocket serverSocket) {
+    public SmsServerThread(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
     }
 
     private String readFullRequest(InputStream requestStream) {
         Scanner scansAll;
         String request;
-        // Do not close this - it will close when the initSocket
-        // is closed in onDestroy
         // TODO use a length header. This will break if message starts with newline!
         scansAll = new Scanner(requestStream, ServiceConstants.ENCODING)
                 .useDelimiter("\n\n");
         request = scansAll.hasNext() ? scansAll.next() : "";
-
 
         return request;
     }
@@ -105,7 +103,7 @@ class SmsServerThread extends Thread {
                 }
 
                 if(!TrustedHostsUtilities.isHostTrusted(context, socket.getInetAddress())) {
-                    Utilities.sendReply(replyStream,
+                    SmsUtilities.sendReply(replyStream,
                             context.getString(R.string.app_name) +
                                     " rejected your request. " +
                                     "Check your phone to see if the app is " +
@@ -143,7 +141,7 @@ class SmsServerThread extends Thread {
                         }
                         else {
                             // get the contact's info from name
-                            contact = Utilities.getContactInfo(context.getContentResolver(),
+                            contact = SmsUtilities.getContactInfo(context.getContentResolver(),
                                     contactNameInput);
                         }
 
@@ -181,7 +179,7 @@ class SmsServerThread extends Thread {
                 if (contactError != null) {
                     //if something has gone wrong already, don't do anything else
                     Log.d(TAG, "Sending error reply " + contactError);
-                    Utilities.sendReply(replyStream, contactError);
+                    SmsUtilities.sendReply(replyStream, contactError);
                 }
                 else {
                     // Everything went OK and we can continue to execute the user's command.
@@ -189,7 +187,7 @@ class SmsServerThread extends Thread {
                     String response = CommandProcessor.process(command, oldRequest, contact,
                             requestReader);
                     Log.d(TAG, "Command successfully processed; replying.");
-                    Utilities.sendReply(replyStream, response);
+                    SmsUtilities.sendReply(replyStream, response);
                 }
                 if(wakeLock != null) {
                     wakeLock.release();

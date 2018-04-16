@@ -26,9 +26,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".sms.service.ShexterService" />
+        <service android:name=".sms.ShexterService" />
 
-        <receiver android:name=".BootCompletedReceiver">
+        <receiver android:name=".receiver.BootCompletedReceiver">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.ACTION_BOOT_COMPLETED" />
@@ -36,7 +36,7 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name=".SmsReceiver"
+            android:name=".receiver.SmsReceiver"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
@@ -44,7 +44,7 @@
         </receiver>
 
         <activity
-            android:name=".TrustedHostsActivity"
+            android:name=".trust.TrustedHostsActivity"
             android:label="@string/title_activity_trusted_hosts"
             android:parentActivityName=".MainActivity">
         </activity>

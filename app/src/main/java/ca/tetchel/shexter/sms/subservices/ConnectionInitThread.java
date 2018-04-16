@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms.service;
+package ca.tetchel.shexter.sms.subservices;
 
 import android.os.Build;
 import android.util.Log;
@@ -11,9 +11,10 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Locale;
 
-import ca.tetchel.shexter.sms.ServiceConstants;
+import ca.tetchel.shexter.sms.ShexterService;
+import ca.tetchel.shexter.sms.util.ServiceConstants;
 
-class ConnectionInitThread extends Thread {
+public class ConnectionInitThread extends Thread {
     private final String TAG = ConnectionInitThread.class.getSimpleName();
 
     private static final String DISCOVER_REQUEST = "shexter-discover",
@@ -23,7 +24,7 @@ class ConnectionInitThread extends Thread {
 
     private DatagramSocket socket;
 
-    ConnectionInitThread(DatagramSocket socket) {
+    public ConnectionInitThread(DatagramSocket socket) {
         this.socket = socket;
     }
 

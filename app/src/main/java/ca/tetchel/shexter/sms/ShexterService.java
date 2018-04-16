@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms.service;
+package ca.tetchel.shexter.sms;
 
 import android.app.ActivityManager;
 import android.app.Service;
@@ -15,8 +15,10 @@ import java.net.ServerSocket;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.tetchel.shexter.R;
-import ca.tetchel.shexter.SmsReceiver;
-import ca.tetchel.shexter.sms.ServiceConstants;
+import ca.tetchel.shexter.receiver.SmsReceiver;
+import ca.tetchel.shexter.sms.subservices.ConnectionInitThread;
+import ca.tetchel.shexter.sms.subservices.SmsServerThread;
+import ca.tetchel.shexter.sms.util.ServiceConstants;
 
 public class ShexterService extends Service {
 

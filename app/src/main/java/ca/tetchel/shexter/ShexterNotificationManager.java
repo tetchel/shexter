@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms.service;
+package ca.tetchel.shexter;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -10,8 +10,7 @@ import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import ca.tetchel.shexter.TrustedHostsActivity;
-import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
 public class ShexterNotificationManager {
 

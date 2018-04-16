@@ -1,4 +1,4 @@
-package ca.tetchel.shexter;
+package ca.tetchel.shexter.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

@@ -1,8 +1,7 @@
-package ca.tetchel.shexter;
+package ca.tetchel.shexter.trust;
 
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.app.Activity;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -10,7 +9,8 @@ import android.view.Menu;
 import android.view.Window;
 import android.widget.ListView;
 
-import ca.tetchel.shexter.sms.service.ShexterNotificationManager;
+import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.ShexterNotificationManager;
 
 public class TrustedHostsActivity extends AppCompatActivity {
 

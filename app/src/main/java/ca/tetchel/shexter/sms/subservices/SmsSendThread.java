@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms.service;
+package ca.tetchel.shexter.sms.subservices;
 
 import android.os.AsyncTask;
 import android.telephony.SmsManager;

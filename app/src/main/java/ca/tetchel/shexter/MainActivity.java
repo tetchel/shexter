@@ -1,7 +1,5 @@
 package ca.tetchel.shexter;
 
-import android.app.ActionBar;
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
@@ -30,7 +28,8 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 
-import ca.tetchel.shexter.sms.service.ShexterService;
+import ca.tetchel.shexter.sms.ShexterService;
+import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
 public class MainActivity extends AppCompatActivity {
 

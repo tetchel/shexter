@@ -1,8 +1,6 @@
-package ca.tetchel.shexter.sms;
+package ca.tetchel.shexter.sms.util;
 
-import android.app.ActivityManager;
 import android.content.ContentResolver;
-import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
@@ -22,20 +20,20 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import ca.tetchel.shexter.BuildConfig;
-import ca.tetchel.shexter.sms.service.ShexterService;
+import ca.tetchel.shexter.sms.ShexterService;
 
 /**
  * static utility methods to support the SMS code.
  */
-public class Utilities {
+public class SmsUtilities {
 
-    private static final String TAG = "Utilities";
+    private static final String TAG = SmsUtilities.class.getSimpleName();
 
     static String formatSms(String sender, String otherSender, String body, long time,
                                    int width) {
         StringBuilder messageBuilder = new StringBuilder();
 
-        String niceTime = '[' +  Utilities.unixTimeToTime(time) + "] ";
+        String niceTime = '[' +  SmsUtilities.unixTimeToTime(time) + "] ";
         messageBuilder.append(niceTime);
         messageBuilder.append(sender);
 
@@ -54,16 +52,19 @@ public class Utilities {
             if(i != 0) {
                 int numberOfSpacesToWrite = amountToIndent;
                 //if it starts with a space shift it over to the left
-                if(divided.get(i).startsWith(" "))
+                if(divided.get(i).startsWith(" ")) {
                     numberOfSpacesToWrite--;
-                for(int j = 0; j < numberOfSpacesToWrite; j++)
+                }
+                for(int j = 0; j < numberOfSpacesToWrite; j++) {
                     messageBuilder.append(' ');
+                }
             }
             //if it's the first line of the message and it needs more indentation, do it
             else if(amountToIndent > firstLineIndent) {
                 int numberOfSpacesToWrite = amountToIndent - firstLineIndent;
-                for(int j = 0; j < numberOfSpacesToWrite; j++)
+                for(int j = 0; j < numberOfSpacesToWrite; j++) {
                     messageBuilder.append(' ');
+                }
             }
             messageBuilder.append(divided.get(i));
         }
@@ -76,7 +77,7 @@ public class Utilities {
         //Generate and print a new date header each time the next message is from a different day
         String lastUsedDate = null;
         for(int i = 0; i < messages.size(); i++) {
-            String currentDate = Utilities.unixTimeToRelativeDate(dates.get(i));
+            String currentDate = SmsUtilities.unixTimeToRelativeDate(dates.get(i));
 
             if(lastUsedDate == null) {
                 //if Today is the first (and therefore only, there can't be texts in the future)
@@ -185,7 +186,7 @@ public class Utilities {
             sender += SENDER_SUFFIX;
             otherSender += SENDER_SUFFIX;
 
-            String message = Utilities.formatSms(sender, otherSender, body, time, outputWidth);
+            String message = SmsUtilities.formatSms(sender, otherSender, body, time, outputWidth);
 
             //date formatting is done below so store the time for that
             dates.add(time);
@@ -203,7 +204,7 @@ public class Utilities {
         Collections.reverse(messages);
         Collections.reverse(dates);
 
-        return Utilities.messagesIntoOutput(messages, dates);
+        return SmsUtilities.messagesIntoOutput(messages, dates);
     }
 
     /**
@@ -385,7 +386,7 @@ public class Utilities {
         return numbers;
     }
 
-    ////////// String/Date Utilities //////////
+    ////////// String/Date SmsUtilities //////////
 
     /**
      * Determine how old the message is and return a date label depending on the current date.
@@ -484,7 +485,7 @@ public class Utilities {
 
         //if msg.length() >= 10^32, the stream will get stuck. this _probably_ won't happen.
         if (header.length() < ServiceConstants.LENGTH_HEADER_LEN) {
-            header = Utilities.rightPad(header, ServiceConstants.LENGTH_HEADER_LEN);
+            header = SmsUtilities.rightPad(header, ServiceConstants.LENGTH_HEADER_LEN);
         }
 
         Log.d(TAG, "Sending with header: " + header);

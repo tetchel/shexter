@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms;
+package ca.tetchel.shexter.sms.util;
 
 public class ServiceConstants {
 

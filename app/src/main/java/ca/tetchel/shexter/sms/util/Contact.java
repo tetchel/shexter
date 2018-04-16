@@ -1,4 +1,4 @@
-package ca.tetchel.shexter.sms;
+package ca.tetchel.shexter.sms.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,7 +7,7 @@ import android.util.Log;
 import java.util.List;
 
 import ca.tetchel.shexter.R;
-import ca.tetchel.shexter.sms.service.ShexterService;
+import ca.tetchel.shexter.sms.ShexterService;
 
 /**
  * Data type class to hold info about a contact, and access preferred contact data when it's

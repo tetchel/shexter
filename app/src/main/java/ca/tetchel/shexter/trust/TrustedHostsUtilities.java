@@ -1,4 +1,4 @@
-package ca.tetchel.shexter;
+package ca.tetchel.shexter.trust;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -9,7 +9,7 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import ca.tetchel.shexter.sms.service.ShexterNotificationManager;
+import ca.tetchel.shexter.ShexterNotificationManager;
 
 public class TrustedHostsUtilities {
 

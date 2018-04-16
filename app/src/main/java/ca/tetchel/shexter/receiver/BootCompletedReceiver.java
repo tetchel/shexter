@@ -1,11 +1,11 @@
-package ca.tetchel.shexter;
+package ca.tetchel.shexter.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
-import ca.tetchel.shexter.sms.service.ShexterService;
+import ca.tetchel.shexter.sms.ShexterService;
 
 /**
  * Receives an Intent when the phone finishes booting which triggers starting the ShexterService.
