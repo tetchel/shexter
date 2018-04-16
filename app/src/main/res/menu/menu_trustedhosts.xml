@@ -3,4 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="ca.tetchel.shexter.trust.TrustedHostsActivity">
 
+    <item
+        android:id="@+id/action_remove_all_trusted"
+        android:orderInCategory="50"
+        android:icon="@drawable/ic_action_delete_all"
+        android:title="@string/remove_all"
+        app:showAsAction="ifRoom" />
 </menu>

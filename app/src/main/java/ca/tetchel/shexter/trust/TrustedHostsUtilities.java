@@ -61,6 +61,10 @@ public class TrustedHostsUtilities {
         writeTrustedHostsList(context, hosts);
         //return deleted;
     }
+
+    public static void deleteAllTrustedHosts(Context context) {
+        writeTrustedHostsList(context, new ArrayList<String>());
+    }
     
     public static List<String> getTrustedHostsList(Context context) {
         SharedPreferences sp = context.getSharedPreferences(TRUSTED_HOSTS_PREFSKEY, Context.MODE_PRIVATE);

@@ -6,6 +6,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.Window;
 import android.widget.ListView;
 
@@ -42,7 +43,14 @@ public class TrustedHostsActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onDestroy() {
+    protected void onResume() {
+        super.onResume();
+        Log.d(TAG, "Resume");
+        refreshHostsList();
+    }
+
+    @Override
+    protected void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Destroy");
         if(newHostDialog != null) {
@@ -55,6 +63,40 @@ public class TrustedHostsActivity extends AppCompatActivity {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_trustedhosts, menu);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        if (id == R.id.action_remove_all_trusted) {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+            alertBuilder.setTitle(getString(R.string.remove_all))
+                    .setMessage(getString(R.string.confirm_remove_all))
+                    .setPositiveButton(getString(R.string.remove_all),
+                            new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            TrustedHostsUtilities.deleteAllTrustedHosts(TrustedHostsActivity.this);
+                            // Redraw with no hosts
+                            recreate();
+                        }
+                    })
+                    .setNegativeButton(getString(R.string.cancel),
+                            new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialogInterface, int i) {
+                            // Do nothing
+                        }
+                    });
+            alertBuilder.show();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     public void refreshHostsList() {
@@ -74,15 +116,14 @@ public class TrustedHostsActivity extends AppCompatActivity {
             return;
         }
 
-        String msg = "Request to connect from " + hostname + " at " + hostAddr + '\n' +
-                "If you did not just try to connect to " + getString(R.string.app_name) +
-                " from your computer, REJECT it!";
+        String msg = getString(R.string.connect_request_dialog_msg,
+                hostname, hostAddr, getString(R.string.app_name));
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
-        builder .setTitle("Incoming connection")
+        builder .setTitle(getString(R.string.new_incoming_connection))
                 .setMessage(msg)
-                .setPositiveButton("Accept", new DialogInterface.OnClickListener() {
+                .setPositiveButton(getString(R.string.accept), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         TrustedHostsUtilities.addKnownHost(TrustedHostsActivity.this,
@@ -90,7 +131,7 @@ public class TrustedHostsActivity extends AppCompatActivity {
                         onAcceptOrRejectHost(true);
                     }
                 })
-                .setNegativeButton("Reject", new DialogInterface.OnClickListener() {
+                .setNegativeButton(getString(R.string.reject), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         onAcceptOrRejectHost(false);
