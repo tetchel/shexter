@@ -4,9 +4,6 @@
     <string name="trusted_hosts">Trusted Hosts</string>
     <string name="refresh">Refresh</string>
 
-    <string name="preferred_contacts_prefs">preferred_contacts</string>
-    <string name="preferred_contacts_prefix">contact-prefers-</string>
-
     <string name="ip_addr_error">Could not get IP Address!</string>
     <string name="port_error">Could not get broadcast listening port!</string>
     <string name="no_permissions">Required permissions are not granted!</string>
@@ -23,14 +20,15 @@
 
     <string name="title_activity_trusted_hosts">Trusted Hosts</string>
 
-    <string name="new_incoming_connection">New Incoming Connection</string>
-    <string name="connect_request_dialog_msg">Request to connect from <i>%1$s</i> at %2$s
-        \nIf you did not just try to connect to %3$s from your computer, <b>reject</b> it!
+    <string name="new_connection_request">New Connection Request</string>
+    <string name="incoming_request_from_hostname">Incoming connection from %1$s</string>
+    <string name="error_adding_new_host">There was an error trying to add the new host</string>
+    <string name="connect_request_dialog_msg">Request to connect from %1$s at %2$s
+        \nIf you did not just try to connect from your computer, REJECT it!
     </string>
     <string name="accept">Accept</string>
     <string name="reject"><b>Reject</b></string>
 
-    <string name="your_trusted_hosts">Your Trusted Hosts</string>
     <string name="remove">Remove</string>
     <string name="remove_all">Remove All</string>
     <string name="confirm_remove_all">Are you sure you want to remove ALL trusted hosts?</string>

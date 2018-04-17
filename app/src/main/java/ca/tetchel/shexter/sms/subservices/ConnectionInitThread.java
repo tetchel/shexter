@@ -28,6 +28,29 @@ public class ConnectionInitThread extends Thread {
         this.socket = socket;
     }
 
+    @Override
+    public void run() {
+        Log.d(TAG, "Init starting up on port " + socket.getLocalPort());
+
+        while(ShexterService.isRunning() && !socket.isClosed()) {
+            byte[] recvBuffer = new byte[BUFFSIZE];
+            DatagramPacket request = new DatagramPacket(recvBuffer, recvBuffer.length);
+            try {
+                Log.d(TAG, "Init ready to accept");
+                socket.receive(request);
+
+                onRequest(request);
+
+            } catch(UnsupportedEncodingException e) {
+                Log.e(TAG, "Exception decoding from " + ServiceConstants.ENCODING, e);
+            } catch (IOException e) {
+                Log.e(TAG, "Exception in the InitThread", e);
+            }
+        }
+
+        socket.close();
+    }
+
     private void onRequest(DatagramPacket request) throws IOException {
         String requestBody = new String(request.getData(),
                 ServiceConstants.ENCODING).trim();
@@ -46,8 +69,7 @@ public class ConnectionInitThread extends Thread {
 
         Log.d(TAG, "Init thread response:\n" + response);
 
-        byte[] responseBuffer = response.getBytes(
-                Charset.forName(ServiceConstants.ENCODING));
+        byte[] responseBuffer = response.getBytes(Charset.forName(ServiceConstants.ENCODING));
 
         if (responseBuffer.length > BUFFSIZE) {
             // might happen if phone manu/model is really long?
@@ -84,28 +106,5 @@ public class ConnectionInitThread extends Thread {
                 DISCOVER_CONFIRM,
                 Build.MANUFACTURER.toUpperCase(), Build.MODEL, Build.VERSION.RELEASE,
                 ShexterService.instance().getMainPortNumber());
-    }
-
-    @Override
-    public void run() {
-        Log.d(TAG, "Init starting up on port " + socket.getLocalPort());
-
-        while(ShexterService.isRunning() && !socket.isClosed()) {
-            byte[] recvBuffer = new byte[BUFFSIZE];
-            DatagramPacket request = new DatagramPacket(recvBuffer, recvBuffer.length);
-            try {
-                Log.d(TAG, "Init ready to accept");
-                socket.receive(request);
-
-                onRequest(request);
-
-            } catch(UnsupportedEncodingException e) {
-                Log.e(TAG, "Exception decoding from " + ServiceConstants.ENCODING, e);
-            } catch (IOException e) {
-                Log.e(TAG, "Exception in the InitThread", e);
-            }
-        }
-
-        socket.close();
     }
 }

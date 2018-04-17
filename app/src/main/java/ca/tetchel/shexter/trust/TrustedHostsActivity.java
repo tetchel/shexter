@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.ShexterNotificationManager;
@@ -30,12 +31,15 @@ public class TrustedHostsActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_ACTION_BAR);
         setContentView(R.layout.activity_trusted_hosts);
 
+        // These two keys are set when this activity is launched by a New Host notification
+        // from the ShexterNotificationManager
         String hostAddr = getIntent().getStringExtra(HOST_ADDR_INTENTKEY);
         String hostname = getIntent().getStringExtra(HOSTNAME_INTENTKEY);
         if (!(hostAddr == null && hostname == null)) {
             Log.d(TAG, "Host Addr: " + hostAddr + ", Hostname: " + hostname);
             onNewHost(hostAddr, hostname);
         } else {
+            // If they're not set, the user opened this activity normally.
             Log.d(TAG, "Launched without hostname extras");
         }
 
@@ -109,19 +113,25 @@ public class TrustedHostsActivity extends AppCompatActivity {
         hostsList.setAdapter(adapter);
     }
 
+    /**
+     * Display a dialog to the user asking if they trust a new connection, add the host if they want to,
+     * then finish this activity.
+     */
     private void onNewHost(final String hostAddr, final String hostname) {
         if(hostAddr == null || hostname == null) {
+            // I don't think this will ever happen.
+            Toast.makeText(this, getString(R.string.error_adding_new_host), Toast.LENGTH_LONG).show();
+
             Log.e(TAG, "Only one of hostaddr or hostname was null, which should not happen: "+
                     "HostAddr: " + hostAddr + ", Hostname: " + hostname);
             return;
         }
 
-        String msg = getString(R.string.connect_request_dialog_msg,
-                hostname, hostAddr, getString(R.string.app_name));
+        String msg = getString(R.string.connect_request_dialog_msg, hostname, hostAddr);
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
 
-        builder .setTitle(getString(R.string.new_incoming_connection))
+        alertBuilder .setTitle(getString(R.string.new_connection_request))
                 .setMessage(msg)
                 .setPositiveButton(getString(R.string.accept), new DialogInterface.OnClickListener() {
                     @Override
@@ -138,7 +148,7 @@ public class TrustedHostsActivity extends AppCompatActivity {
                     }
                 });
 
-        newHostDialog = builder.show();
+        newHostDialog = alertBuilder.show();
     }
 
     private void onAcceptOrRejectHost(boolean accepted) {
@@ -146,6 +156,4 @@ public class TrustedHostsActivity extends AppCompatActivity {
         ShexterNotificationManager.clearNewHostNotif(this);
         finish();
     }
-
-
 }

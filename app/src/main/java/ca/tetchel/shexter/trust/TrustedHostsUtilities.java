@@ -57,7 +57,8 @@ public class TrustedHostsUtilities {
      */
     public static void deleteTrustedHost(Context context, String trustedHostString) {
         List<String> hosts = getTrustedHostsList(context);
-        /*boolean deleted =*/ hosts.remove(trustedHostString);
+        /*boolean deleted =*/
+        hosts.remove(trustedHostString);
         writeTrustedHostsList(context, hosts);
         //return deleted;
     }

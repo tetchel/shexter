@@ -2,11 +2,11 @@ package ca.tetchel.shexter.sms.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import java.util.List;
 
-import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.sms.ShexterService;
 
 /**
@@ -14,7 +14,10 @@ import ca.tetchel.shexter.sms.ShexterService;
  * required.
  */
 public class Contact {
-    private static final String TAG = Contact.class.getSimpleName();
+    private static final String
+            TAG = Contact.class.getSimpleName(),
+            PREFERRED_NUM_PREFS = "preferred_contacts";
+            //PREFERRED_NUM_PREFIX = "contact-prefers-";
 
     private String name;
     // numbers includes the type, as returned from getNumberForContact
@@ -44,10 +47,9 @@ public class Contact {
             return;
         }
         Context c = ShexterService.instance().getApplicationContext();
-        SharedPreferences sp = c.getSharedPreferences(c.getString(R.string.preferred_contacts_prefs),
-                Context.MODE_PRIVATE);
+        SharedPreferences sp = c.getSharedPreferences(PREFERRED_NUM_PREFS, Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = sp.edit();
-        edit.putString(c.getString(R.string.preferred_contacts_prefix) + name, number);
+        edit.putString(name, number);
         Log.d(TAG, "Finished setting " + name + " pref to " + number);
         edit.apply();
     }
@@ -70,12 +72,11 @@ public class Contact {
      *
      * @return The preferred number if it is in the preferences, null otherwise.
      */
+    @Nullable
     private String checkPrefs() {
         Context c = ShexterService.instance().getApplicationContext();
-        SharedPreferences prefs = c.getSharedPreferences(
-                c.getString(R.string.preferred_contacts_prefs),
-                Context.MODE_PRIVATE);
-        return prefs.getString(c.getString(R.string.preferred_contacts_prefix) + name, null);
+        SharedPreferences prefs = c.getSharedPreferences(PREFERRED_NUM_PREFS, Context.MODE_PRIVATE);
+        return prefs.getString(name, null);
     }
 
     // Getters //
