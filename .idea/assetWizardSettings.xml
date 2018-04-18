@@ -23,7 +23,7 @@
                                           <PersistentState>
                                             <option name="values">
                                               <map>
-                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/action/ic_delete_forever_black_24dp.xml" />
+                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/device/ic_devices_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -33,8 +33,10 @@
                                   </option>
                                   <option name="values">
                                     <map>
-                                      <entry key="outputName" value="ic_action_delete_all" />
-                                      <entry key="theme" value="HOLO_DARK" />
+                                      <entry key="imageAsset" value="E:\Tim\Programs\shexter\shexter\app\src\main\res\img\ic_launcher_clear.png" />
+                                      <entry key="outputName" value="ic_action_trustedhosts_dark" />
+                                      <entry key="theme" value="CUSTOM" />
+                                      <entry key="themeColor" value="050505" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -45,11 +47,23 @@
                                 <PersistentState>
                                   <option name="children">
                                     <map>
+                                      <entry key="backgroundImage">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="scalingPercent" value="101" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
                                       <entry key="foregroundImage">
                                         <value>
                                           <PersistentState>
                                             <option name="values">
                                               <map>
+                                                <entry key="scalingPercent" value="109" />
                                                 <entry key="trimmed" value="true" />
                                               </map>
                                             </option>
@@ -60,10 +74,39 @@
                                   </option>
                                   <option name="values">
                                     <map>
+                                      <entry key="backgroundAssetType" value="COLOR" />
+                                      <entry key="backgroundColor" value="040002" />
                                       <entry key="backgroundLayerName" value="app_icon_bg" />
-                                      <entry key="foregroundImage" value="E:\Tim\Programs\shexter\shexter\app\src\main\res\mipmap-hdpi\ic_launcher.png" />
+                                      <entry key="foregroundImage" value="E:\Tim\Programs\shexter\shexter\app\src\main\res\img\ic_launcher_cropped.png" />
                                       <entry key="foregroundLayerName" value="app_icon_fg" />
                                       <entry key="outputName" value="app_icon" />
+                                    </map>
+                                  </option>
+                                </PersistentState>
+                              </value>
+                            </entry>
+                            <entry key="launcherLegacy">
+                              <value>
+                                <PersistentState>
+                                  <option name="children">
+                                    <map>
+                                      <entry key="clipartAsset">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/device/ic_devices_black_24dp.xml" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
+                                    </map>
+                                  </option>
+                                  <option name="values">
+                                    <map>
+                                      <entry key="imageAsset" value="E:\Tim\Programs\shexter\shexter\app\src\main\res\img\ic_launcher_cropped_blue.png" />
+                                      <entry key="outputName" value="trustedhosts_dark" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -82,6 +125,11 @@
                 </map>
               </option>
             </PersistentState>
+          </value>
+        </entry>
+        <entry key="vectorWizard">
+          <value>
+            <PersistentState />
           </value>
         </entry>
       </map>

@@ -106,6 +106,8 @@ public class TrustedHostsUtilities {
 
         if(!valid) {
             // Show user notification telling them to accept or reject the new connection
+            // NB: Sometimes getCanonicalHostname returns the IP address. This is its documented behaviour, which is too
+            // bad but I don't think it will happen once I stop messing with my router's DHCP
             ShexterNotificationManager.newHostNotification(context,
                     other.getHostAddress(), other.getCanonicalHostName());
         }

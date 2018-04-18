@@ -22,9 +22,9 @@ public class ShexterNotificationManager {
 
     public static void newHostNotification(Context context, String hostAddr, String hostname) {
         NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.drawable.ic_action_trustedhosts)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
-                        R.mipmap.ic_launcher))
+                        R.drawable.ic_action_trustedhosts_dark))
                 .setContentTitle(context.getString(R.string.new_connection_request))
                 .setContentText(context.getString(R.string.incoming_request_from_hostname, hostname))
                 .setDefaults(Notification.DEFAULT_ALL);

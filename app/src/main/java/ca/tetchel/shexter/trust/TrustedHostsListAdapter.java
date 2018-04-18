@@ -35,7 +35,7 @@ public class TrustedHostsListAdapter extends ArrayAdapter<String> {
         // TODO what is this warning?
         View rowView = inflater.inflate(R.layout.trusted_hosts_listitem, null, true);
         final TextView trustedHostTV = rowView.findViewById(R.id.trustedHostTV);
-        Button trustedHostBtn = rowView.findViewById(R.id.trustedHostRemoveBtn);
+        final Button trustedHostBtn = rowView.findViewById(R.id.trustedHostRemoveBtn);
 
         trustedHostTV.setText(trustedHosts.get(position));
         Log.d(TAG, "Set TrustedHostTV " + position + " to " + trustedHostTV.getText());
