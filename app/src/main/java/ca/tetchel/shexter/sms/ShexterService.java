@@ -24,6 +24,8 @@ public class ShexterService extends Service {
 
     private static final String TAG = ShexterService.class.getSimpleName();
 
+    public static final String ON_DESTROY_INTENTFILTER = "shexter-service-destroyed";
+
     // Binder used to communicate with bound activities
     private final IBinder binder = new SmsServiceBinder();
     // Callback methods implemented by bound activities
@@ -140,6 +142,10 @@ public class ShexterService extends Service {
     public void onDestroy() {
         super.onDestroy();
         Log.d(TAG, "Enter onDestroy");
+
+        // See ca.tetchel.shexter.receiver.ShexterServiceDestroyedReceiver
+        Intent broadcastDestroyIntent = new Intent(ON_DESTROY_INTENTFILTER);
+        sendBroadcast(broadcastDestroyIntent);
 
         /*
         if(wifiLock != null && wifiLock.isHeld()) {

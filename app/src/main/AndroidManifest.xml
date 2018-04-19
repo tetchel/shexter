@@ -28,6 +28,7 @@
         </activity>
 
         <service android:name=".sms.ShexterService" />
+        <service android:name=".sms.util.RingtonePlayingService" />
 
         <receiver android:name=".receiver.BootCompletedReceiver">
             <intent-filter>

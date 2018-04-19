@@ -3,10 +3,7 @@ package ca.tetchel.shexter.sms.util;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Vibrator;
 import android.provider.ContactsContract;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -262,24 +259,9 @@ public class CommandProcessor {
         Context appContext = ShexterService.instance().getApplicationContext();
 
         // Initialize the ringtone before calling startPlaying
-        Uri notifSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
-        Log.d(TAG, "Using ringtone at " + notifSound);
-        Ringtone ringtone = RingtoneManager.getRingtone(ShexterService.instance().getApplicationContext(), notifSound);
-
-        Vibrator vibrator = null;
-        Object vibratorService = appContext.getSystemService(Context.VIBRATOR_SERVICE);
-        if (vibratorService != null) {
-            vibrator = (Vibrator) vibratorService;
-        }
-        else {
-            Log.e(TAG, "Couldn't get vibrator service!");
-        }
-
-        RingCommandActivity.ringtone = ringtone;
-        RingCommandActivity.vibrator = vibrator;
         Intent ringIntent = new Intent(appContext, RingCommandActivity.class);
         appContext.startActivity(ringIntent);
 
-        return "Phone's ringing!";
+        return "Your phone is ringing!";
     }
 }

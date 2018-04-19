@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
+import android.widget.Toast;
 
 import ca.tetchel.shexter.sms.ShexterService;
 
@@ -18,6 +19,9 @@ public class BootCompletedReceiver extends BroadcastReceiver {
         if ("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())) {
             Intent pushIntent = new Intent(context, ShexterService.class);
             Log.d("BootReceiver", "Starting SMSServer on boot.");
+
+            Toast.makeText(context, "shexter started on boot", Toast.LENGTH_LONG).show();
+
             context.startService(pushIntent);
         }
     }

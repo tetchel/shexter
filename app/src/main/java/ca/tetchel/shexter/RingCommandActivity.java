@@ -3,7 +3,8 @@ package ca.tetchel.shexter;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
-import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.VibrationEffect;
@@ -12,16 +13,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
+import ca.tetchel.shexter.sms.util.RingtonePlayingService;
+
 public class RingCommandActivity extends AppCompatActivity {
 
     private static final String TAG = RingCommandActivity.class.getSimpleName();
 
     public static final String STOP_RINGING_INTENTKEY = "stop_ringing";
 
-    // These are set before this activity is created by the CommandProcessor
-    // ugly way to pass it but better than using Parcelable
-    public static Ringtone ringtone;
-    public static Vibrator vibrator;
+    private static Vibrator vibrator;
 
     private static final int RING_STREAM = AudioManager.STREAM_RING;
     // These are set by startPlaying right before maxing out the volume, and restored by stopPlaying
@@ -30,21 +30,29 @@ public class RingCommandActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "Being created.");
+        Log.d(TAG, "onCreate");
         setContentView(R.layout.activity_ringing);
+
+        if(vibrator == null) {
+            vibrator = getVibrator();
+        }
 
         startPlaying();
     }
 
+    private Vibrator getVibrator() {
+        Object vibratorService = getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibratorService != null) {
+            return (Vibrator) vibratorService;
+        }
+        else {
+            Log.e(TAG, "Couldn't get vibrator service!");
+            return null;
+        }
+    }
+
+
     private void startPlaying() {
-        if(ringtone == null) {
-            Log.e(TAG, "Requested start playing, but ringtone is null");
-            return;
-        }
-        else if(ringtone.isPlaying()) {
-            Log.i(TAG, "Requested start playing, but already playing");
-            return;
-        }
 
         // jack up the ringtone volume
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -58,17 +66,15 @@ public class RingCommandActivity extends AppCompatActivity {
             Log.e(TAG, "Couldn't get AudioManager!");
         }
 
-        ringtone.play();
+        Uri ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        Intent ringtoneIntent = new Intent(this, RingtonePlayingService.class);
+        ringtoneIntent.putExtra(RingtonePlayingService.RINGTONE_URI_INTENTKEY, ringtoneUri);
+        startService(ringtoneIntent);
         vibrate();
         ShexterNotificationManager.ringNotification(this);
     }
 
     private void stopPlaying() {
-        if(ringtone == null) {
-            Log.e(TAG, "Requested stop playing, but ringtone is null!");
-            return;
-        }
-
         // reset the ringtone volume
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         if(audioManager != null) {
@@ -83,10 +89,18 @@ public class RingCommandActivity extends AppCompatActivity {
             Log.e(TAG, "Couldn't get AudioManager 2!");
         }
 
-        ringtone.stop();
+        //stopCurrentRingtone();
+        stopService(new Intent(this, RingtonePlayingService.class));
+        RingtonePlayingService.destroyAll(this);
+
         stopVibrate();
         ShexterNotificationManager.clearRingNotif(this);
         // Toast.makeText(this, getString(R.string.ringing_stopped), Toast.LENGTH_SHORT).show();
+    }
+
+    private void stopCurrentRingtone() {
+        RingtoneManager ringMan = new RingtoneManager(getApplicationContext());
+        ringMan.stopPreviousRingtone();
     }
 
     private void vibrate() {
