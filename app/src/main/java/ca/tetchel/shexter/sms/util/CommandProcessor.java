@@ -24,6 +24,7 @@ import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_CONTACTS;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_READ;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_RING;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND_INITIALIZER;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF_LIST;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_UNREAD;
@@ -39,7 +40,16 @@ public class CommandProcessor {
     public static String process(String command, String originalRequest, Contact contact,
                                     BufferedReader requestReader)
             throws IOException {
-        if (COMMAND_SEND.equals(command)) {
+        if (COMMAND_SEND_INITIALIZER.equals((command))) {
+            // This command returns the name and number of the contact who will receive the message.
+            if (contact == null) {
+                return "No matching contact was found";
+            }
+            else {
+                return contact.name() + ", " + contact.preferred();
+            }
+        }
+        else if (COMMAND_SEND.equals(command)) {
             return sendCommand(contact, requestReader);
         }
         else if (COMMAND_READ.equals(command)) {
@@ -147,8 +157,9 @@ public class CommandProcessor {
             }
 
             Log.d(TAG, "Send command (probably) succeeded.");
-            return String.format(Locale.getDefault(), "Successfully sent %d message%s to %s%s.",
-                    numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
+            return String.format(Locale.getDefault(), "Successfully sent %d message%s to %s.",
+                    //numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
+                    numberSent, numberSent != 1 ? "s" : "", contact.name());
         } catch (SecurityException e) {
             Log.w(TAG, "No SMS Permission for send!");
             return "No SMS permission! Open the " + R.string.app_name +

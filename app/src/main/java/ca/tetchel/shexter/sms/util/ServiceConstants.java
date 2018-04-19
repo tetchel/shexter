@@ -15,6 +15,7 @@ public class ServiceConstants {
    // Command constants
    public static final String
             COMMAND_SEND = "send",
+            COMMAND_SEND_INITIALIZER = "send-init",
             COMMAND_READ = "read",
             COMMAND_UNREAD = "unread",
             COMMAND_SETPREF = "setpref",

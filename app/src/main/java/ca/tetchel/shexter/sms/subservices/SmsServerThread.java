@@ -15,17 +15,18 @@ import java.net.Socket;
 import java.util.Collections;
 import java.util.Scanner;
 
+import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.util.CommandProcessor;
 import ca.tetchel.shexter.sms.util.Contact;
 import ca.tetchel.shexter.sms.util.ServiceConstants;
 import ca.tetchel.shexter.sms.util.SmsUtilities;
 import ca.tetchel.shexter.trust.TrustedHostsUtilities;
-import ca.tetchel.shexter.R;
 
 import static android.content.Context.POWER_SERVICE;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_READ;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND_INITIALIZER;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF_LIST;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_UNREAD;
@@ -49,6 +50,9 @@ public class SmsServerThread extends Thread {
         scansAll = new Scanner(requestStream, ServiceConstants.ENCODING)
                 .useDelimiter("\n\n");
         request = scansAll.hasNext() ? scansAll.next() : "";
+        if(request.isEmpty()) {
+            Log.e(TAG, "Could not read request!");
+        }
 
         return request;
     }
@@ -56,6 +60,7 @@ public class SmsServerThread extends Thread {
     private boolean commandRequiresContact(String command) {
         return  COMMAND_READ.equals(command) ||
                 COMMAND_SEND.equals(command) ||
+                COMMAND_SEND_INITIALIZER.equals(command) ||
                 COMMAND_SETPREF_LIST.equals(command) ||
                 COMMAND_SETPREF.equals(command) ||
                 (COMMAND_UNREAD + UNREAD_CONTACT_FLAG).equals(command);
@@ -96,12 +101,6 @@ public class SmsServerThread extends Thread {
                 InetAddress other = socket.getInetAddress();
                 Log.d(TAG, "Accepted connection from " + other);
 
-                String request = readFullRequest(socket.getInputStream());
-                if(request.isEmpty()) {
-                    Log.e(TAG, "Received empty request!");
-                    continue;
-                }
-
                 if(!TrustedHostsUtilities.isHostTrusted(context, socket.getInetAddress())) {
                     SmsUtilities.sendReply(replyStream,
                             context.getString(R.string.app_name) +
@@ -111,7 +110,11 @@ public class SmsServerThread extends Thread {
                     continue;
                 }
 
-
+                String request = readFullRequest(socket.getInputStream());
+                if(request.isEmpty()) {
+                    Log.e(TAG, "Received empty request!");
+                    continue;
+                }
                 
                 // At this point, the user has approved the other host, so we proceed with
                 // command parsing and execution.
@@ -186,7 +189,7 @@ public class SmsServerThread extends Thread {
 
                     String response = CommandProcessor.process(command, oldRequest, contact,
                             requestReader);
-                    Log.d(TAG, "Command successfully processed; replying.");
+                    Log.d(TAG, "Command successfully processed; replying: " + response);
                     SmsUtilities.sendReply(replyStream, response);
                 }
                 if(wakeLock != null) {
