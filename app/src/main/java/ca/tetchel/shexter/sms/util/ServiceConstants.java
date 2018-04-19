@@ -18,6 +18,7 @@ public class ServiceConstants {
             COMMAND_READ = "read",
             COMMAND_UNREAD = "unread",
             COMMAND_SETPREF = "setpref",
+            COMMAND_RING = "ring",
             // flag for a lone setpref request (ie, not one required by another command)
             COMMAND_SETPREF_LIST = COMMAND_SETPREF + "-list",
             UNREAD_CONTACT_FLAG = "-contact",

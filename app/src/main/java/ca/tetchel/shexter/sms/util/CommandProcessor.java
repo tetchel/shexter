@@ -1,7 +1,12 @@
 package ca.tetchel.shexter.sms.util;
 
+import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
 import android.net.Uri;
+import android.os.Vibrator;
 import android.provider.ContactsContract;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -14,11 +19,13 @@ import java.util.List;
 import java.util.Locale;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.RingCommandActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.subservices.SmsSendThread;
 
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_CONTACTS;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_READ;
+import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_RING;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SETPREF_LIST;
@@ -100,6 +107,10 @@ public class CommandProcessor {
                 return "No Contacts permission! Open the " + R.string.app_name +
                         " app and give Contacts permission.";
             }
+        }
+        else if (COMMAND_RING.equals(command)) {
+            Log.d(TAG, "Ring command");
+            return ringCommand();
         }
         else {
             //should never happen
@@ -245,5 +256,30 @@ public class CommandProcessor {
             return "Could not retrieve messages: make sure " +
                     R.string.app_name + " has SMS permission.";
         }
+    }
+
+    private static String ringCommand() {
+        Context appContext = ShexterService.instance().getApplicationContext();
+
+        // Initialize the ringtone before calling startPlaying
+        Uri notifSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
+        Log.d(TAG, "Using ringtone at " + notifSound);
+        Ringtone ringtone = RingtoneManager.getRingtone(ShexterService.instance().getApplicationContext(), notifSound);
+
+        Vibrator vibrator = null;
+        Object vibratorService = appContext.getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibratorService != null) {
+            vibrator = (Vibrator) vibratorService;
+        }
+        else {
+            Log.e(TAG, "Couldn't get vibrator service!");
+        }
+
+        RingCommandActivity.ringtone = ringtone;
+        RingCommandActivity.vibrator = vibrator;
+        Intent ringIntent = new Intent(appContext, RingCommandActivity.class);
+        appContext.startActivity(ringIntent);
+
+        return "Phone's ringing!";
     }
 }

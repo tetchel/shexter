@@ -38,6 +38,10 @@ public class TrustedHostsActivity extends AppCompatActivity {
         if (!(hostAddr == null && hostname == null)) {
             Log.d(TAG, "Host Addr: " + hostAddr + ", Hostname: " + hostname);
             onNewHost(hostAddr, hostname);
+
+            // Remove the extras so that onNewHost is only triggered once
+            getIntent().removeExtra(HOST_ADDR_INTENTKEY);
+            getIntent().removeExtra(HOSTNAME_INTENTKEY);
         } else {
             // If they're not set, the user opened this activity normally.
             Log.d(TAG, "Launched without hostname extras");
