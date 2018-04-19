@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.util.RingtonePlayingService;
 
 public class RingCommandActivity extends AppCompatActivity {
@@ -70,6 +71,7 @@ public class RingCommandActivity extends AppCompatActivity {
         Intent ringtoneIntent = new Intent(this, RingtonePlayingService.class);
         ringtoneIntent.putExtra(RingtonePlayingService.RINGTONE_URI_INTENTKEY, ringtoneUri);
         startService(ringtoneIntent);
+
         vibrate();
         ShexterNotificationManager.ringNotification(this);
     }
@@ -125,17 +127,22 @@ public class RingCommandActivity extends AppCompatActivity {
     }
 
     public void onClickMute(View v) {
-        stopPlaying();
-        finish();
+        stopAndExit();
     }
 
     @Override
     protected void onNewIntent(Intent newIntent) {
         // To be run when the user clicks the Ringing notification
         if(newIntent.getBooleanExtra(STOP_RINGING_INTENTKEY, false)) {
-            stopPlaying();
-            finish();
+            stopAndExit();
         }
+    }
+
+    private void stopAndExit() {
+        stopPlaying();
+        //NavUtils.navigateUpFromSameTask(this);
+        startActivity(new Intent(this, MainActivity.class));
+        finish();
     }
 
     @Override

@@ -141,6 +141,7 @@ public class ShexterService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Toast.makeText(this, "Shexter destroyed", Toast.LENGTH_LONG).show();
         Log.d(TAG, "Enter onDestroy");
 
         // See ca.tetchel.shexter.receiver.ShexterServiceDestroyedReceiver

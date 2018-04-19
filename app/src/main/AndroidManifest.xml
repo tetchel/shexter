@@ -55,6 +55,7 @@
             android:name=".RingCommandActivity"
             android:label="@string/ringing"
             android:launchMode="singleTop"
+            android:noHistory="true"
             android:parentActivityName=".main.MainActivity"/>
     </application>
 
