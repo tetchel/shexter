@@ -287,7 +287,7 @@ public class SmsUtilities {
         try {
             query = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
                     projection, null, null,
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME+" ASC");
+                    "upper(" + ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + ") ASC");
         }
         catch (SecurityException e) {
             Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
