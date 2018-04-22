@@ -14,12 +14,14 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import ca.tetchel.shexter.main.MainActivity;
+
 /**
  * Receives Intents containing new SMS's, and signals to SMSServerService that there are new msgs.
  */
 public class SmsReceiver extends BroadcastReceiver {
 
-    private static final String TAG = "SmsReceiver";
+    private static final String TAG = MainActivity.MASTER_TAG + "SmsReceiver";
 
     private static List<SmsMessage> messages = new ArrayList<>();
 
@@ -52,7 +54,6 @@ public class SmsReceiver extends BroadcastReceiver {
                     msgs[0].getOriginatingAddress());
         }
         */
-//        Log.d(TAG, messages.size() + " messages are unread");
     }
 
     /**

@@ -18,7 +18,8 @@ import ca.tetchel.shexter.sms.util.RingtonePlayingService;
 
 public class RingCommandActivity extends AppCompatActivity {
 
-    private static final String TAG = RingCommandActivity.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + RingCommandActivity.class.getSimpleName();
 
     public static final String STOP_RINGING_INTENTKEY = "stop_ringing";
 

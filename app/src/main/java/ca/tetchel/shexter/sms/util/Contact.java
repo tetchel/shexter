@@ -7,6 +7,7 @@ import android.util.Log;
 
 import java.util.List;
 
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
 /**
@@ -15,7 +16,7 @@ import ca.tetchel.shexter.sms.ShexterService;
  */
 public class Contact {
     private static final String
-            TAG = Contact.class.getSimpleName(),
+            TAG = MainActivity.MASTER_TAG + Contact.class.getSimpleName(),
             PREFERRED_NUM_PREFS = "preferred_contacts";
             //PREFERRED_NUM_PREFIX = "contact-prefers-";
 

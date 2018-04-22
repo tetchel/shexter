@@ -30,12 +30,13 @@ import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String MASTER_TAG = "shexter_";
     private static final String
-            TAG = MainActivity.class.getSimpleName();
+            TAG = MASTER_TAG + MainActivity.class.getSimpleName();
 
     // if the user has flagged 'never ask me again' about a permission
     private boolean neverAgain = false,
-                    needToUpdatePermissions;
+            needToUpdatePermissions;
 
     // each permission has to have a unique 'code' to ID whether user accepted it or not
     private static final int
@@ -49,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
             // all sms permissions seem to be lumped into one
 //            android.Manifest.permission.READ_SMS,
 //            android.Manifest.permission.RECEIVE_SMS,
-            android.Manifest.permission.SEND_SMS };
+            android.Manifest.permission.SEND_SMS};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,15 +61,14 @@ public class MainActivity extends AppCompatActivity {
 
         checkAndGetPermissions();
 
-        if(!ShexterService.isRunning()) {
+        if (!ShexterService.isRunning()) {
             Intent shexterServiceIntent = new Intent(this, ShexterService.class);
             startService(shexterServiceIntent);
             //smsServerIntent = new Intent(this, ShexterService.class);
             bindService(shexterServiceIntent, serviceConnection, BIND_AUTO_CREATE);
 
             Log.d(TAG, "ShexterService has (probably) been started.");
-        }
-        else {
+        } else {
             Log.d(TAG, "ShexterService is already running.");
         }
 
@@ -103,11 +103,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume()  {
+    protected void onResume() {
         super.onResume();
         Log.d(TAG, "Resuming");
         setIPTextView();
-        if(needToUpdatePermissions) {
+        if (needToUpdatePermissions) {
             Log.d(TAG, "Need to update permissions");
             checkAndGetPermissions();
             needToUpdatePermissions = false;
@@ -143,13 +143,11 @@ public class MainActivity extends AppCompatActivity {
         if (id == R.id.action_settings) {
             Toast.makeText(this, "Not implemented lol", Toast.LENGTH_SHORT).show();
             return true;
-        }
-        else if(id == R.id.action_refresh) {
+        } else if (id == R.id.action_refresh) {
             setIPTextView();
             Toast.makeText(this, "Updated IP", Toast.LENGTH_SHORT).show();
             return true;
-        }
-        else if(id == R.id.action_trustedhosts) {
+        } else if (id == R.id.action_trustedhosts) {
             // Toast.makeText(this, "Trusted hosts woo hoo", Toast.LENGTH_SHORT).show();
             Intent trustedHostIntent = new Intent(this, TrustedHostsActivity.class);
             startActivity(trustedHostIntent);
@@ -179,10 +177,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClickPermissionsButton(View v) {
         needToUpdatePermissions = true;
-        if(!neverAgain) {
+        if (!neverAgain) {
             checkAndGetPermissions();
-        }
-        else {
+        } else {
             // open settings page
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package", getPackageName(), null);
@@ -193,9 +190,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void checkAndGetPermissions() {
         List<String> permissionsNeeded = new ArrayList<>(requiredPermissions.length);
-        for(String s : requiredPermissions) {
+        for (String s : requiredPermissions) {
             int status = ContextCompat.checkSelfPermission(this, s);
-            if(status != PackageManager.PERMISSION_GRANTED) {
+            if (status != PackageManager.PERMISSION_GRANTED) {
                 Log.d(TAG, "Require permission: " + s);
                 permissionsNeeded.add(s);
             }
@@ -206,8 +203,7 @@ public class MainActivity extends AppCompatActivity {
             String[] perms = permissionsNeeded.toArray(new String[0]);
             ActivityCompat.requestPermissions(this, perms, PERMISSION_CODE);
             allGood = false;
-        }
-        else {
+        } else {
             allGood = true;
         }
         showOrHidePermissionsRequired(!allGood);
@@ -216,12 +212,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
-        if(grantResults.length == 0) {
+        if (grantResults.length == 0) {
             showOrHidePermissionsRequired(true);
         }
 
         boolean allGood = true;
-        for(int i = 0; i < permissions.length; i++) {
+        for (int i = 0; i < permissions.length; i++) {
             Log.d(TAG, "Permission " + permissions[i] + " status " + grantResults[i]);
 
             if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
@@ -231,12 +227,11 @@ public class MainActivity extends AppCompatActivity {
                 if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[i])) {
                     // they can NOT be asked again
                     neverAgain = true;
-                }
-                else {
+                } else {
                     // they can be asked again
                     // technically contacts permission is optional if they use -n flag always
                     Toast.makeText(getApplicationContext(), getString(R.string.app_name) +
-                            " cannot function without Contacts and SMS permissions.",
+                                    " cannot function without Contacts and SMS permissions.",
                             Toast.LENGTH_SHORT).show();
                 }
             }

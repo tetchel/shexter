@@ -15,6 +15,7 @@ import java.net.ServerSocket;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.receiver.SmsReceiver;
 import ca.tetchel.shexter.sms.subservices.ConnectionInitThread;
 import ca.tetchel.shexter.sms.subservices.SmsServerThread;
@@ -22,7 +23,8 @@ import ca.tetchel.shexter.sms.util.ServiceConstants;
 
 public class ShexterService extends Service {
 
-    private static final String TAG = ShexterService.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + ShexterService.class.getSimpleName();
 
     public static final String ON_DESTROY_INTENTFILTER = "shexter-service-destroyed";
 
@@ -144,7 +146,7 @@ public class ShexterService extends Service {
         Toast.makeText(this, "Shexter destroyed", Toast.LENGTH_LONG).show();
         Log.d(TAG, "Enter onDestroy");
 
-        // See ca.tetchel.shexter.receiver.ShexterServiceDestroyedReceiver
+        // See ca.tetchel.shexter.receiver.ServiceDestroyedReceiever
         Intent broadcastDestroyIntent = new Intent(ON_DESTROY_INTENTFILTER);
         sendBroadcast(broadcastDestroyIntent);
 

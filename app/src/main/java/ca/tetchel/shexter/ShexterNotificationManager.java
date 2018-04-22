@@ -11,11 +11,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
 public class ShexterNotificationManager {
 
-    private static final String TAG = ShexterNotificationManager.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + ShexterNotificationManager.class.getSimpleName();
 
     private static final int
             NEW_HOST_NOTIF_ID = 1234,

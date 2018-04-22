@@ -10,7 +10,7 @@ import java.util.Enumeration;
 // Static utilities to support the MainActivity
 class MainUtil {
 
-    private static final String TAG = MainUtil.class.getSimpleName();
+    private static final String TAG = MainActivity.MASTER_TAG + MainUtil.class.getSimpleName();
 
     public static String getIpAddress() {
         try {

@@ -12,10 +12,12 @@ import android.widget.TextView;
 import java.util.List;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.main.MainActivity;
 
 public class TrustedHostsListAdapter extends ArrayAdapter<String> {
 
-    private static final String TAG = TrustedHostsListAdapter.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + TrustedHostsListAdapter.class.getSimpleName();
 
     private final TrustedHostsActivity activity;
     private final List<String> trustedHosts;

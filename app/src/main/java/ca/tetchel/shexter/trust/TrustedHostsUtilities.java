@@ -10,10 +10,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ca.tetchel.shexter.ShexterNotificationManager;
+import ca.tetchel.shexter.main.MainActivity;
 
 public class TrustedHostsUtilities {
 
-    private static final String TAG = TrustedHostsUtilities.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + TrustedHostsUtilities.class.getSimpleName();
     
     private static final String TRUSTED_HOSTS_PREFSKEY = "trusted_hosts";
 

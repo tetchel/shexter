@@ -6,14 +6,16 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
 /**
  * Receives an Intent when the shexter service is destroyed
  */
-public class ShexterServiceDestroyedReceiver extends BroadcastReceiver {
+public class ServiceDestroyedReceiever extends BroadcastReceiver {
 
-    private static final String TAG = ShexterServiceDestroyedReceiver.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + ServiceDestroyedReceiever.class.getSimpleName();
 
     @Override
     public void onReceive(Context context, Intent intent) {

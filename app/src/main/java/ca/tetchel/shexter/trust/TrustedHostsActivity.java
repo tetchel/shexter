@@ -13,10 +13,12 @@ import android.widget.Toast;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.ShexterNotificationManager;
+import ca.tetchel.shexter.main.MainActivity;
 
 public class TrustedHostsActivity extends AppCompatActivity {
 
-    private static final String TAG = TrustedHostsActivity.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + TrustedHostsActivity.class.getSimpleName();
 
     public static final String
             HOST_ADDR_INTENTKEY = "hostAddr",

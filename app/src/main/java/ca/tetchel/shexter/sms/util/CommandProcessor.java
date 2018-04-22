@@ -17,6 +17,7 @@ import java.util.Locale;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.RingCommandActivity;
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.subservices.SmsSendThread;
 
@@ -32,7 +33,8 @@ import static ca.tetchel.shexter.sms.util.ServiceConstants.SETPREF_REQUIRED;
 
 public class CommandProcessor {
 
-    private static final String TAG = CommandProcessor.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + CommandProcessor.class.getSimpleName();
 
     /**
      * @return The response to be returned to the client.

@@ -13,9 +13,12 @@ import android.util.Log;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import ca.tetchel.shexter.main.MainActivity;
+
 public class RingtonePlayingService extends Service {
 
-    private static final String TAG = RingtonePlayingService.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + RingtonePlayingService.class.getSimpleName();
 
     public static final String RINGTONE_URI_INTENTKEY = "ringtone-uri";
 

@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Scanner;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.util.CommandProcessor;
 import ca.tetchel.shexter.sms.util.Contact;
@@ -35,7 +36,8 @@ import static ca.tetchel.shexter.sms.util.ServiceConstants.UNREAD_CONTACT_FLAG;
 
 public class SmsServerThread extends Thread {
 
-    private static final String TAG = SmsServerThread.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + SmsServerThread.class.getSimpleName();
 
     private ServerSocket serverSocket;
 

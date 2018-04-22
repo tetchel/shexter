@@ -11,11 +11,13 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Locale;
 
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.util.ServiceConstants;
 
 public class ConnectionInitThread extends Thread {
-    private final String TAG = ConnectionInitThread.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + ConnectionInitThread.class.getSimpleName();
 
     private static final String DISCOVER_REQUEST = "shexter-discover",
                                 DISCOVER_CONFIRM = "shexter-confirm";

@@ -6,11 +6,14 @@ import android.util.Log;
 
 import java.util.ArrayList;
 
+import ca.tetchel.shexter.main.MainActivity;
+
 /**
  * Accepts a message and a phone number, and sends the message. Returns number sent.
  */
 public class SmsSendThread extends AsyncTask<String, Void, Integer> {
-    private static final String TAG = SmsSendThread.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + SmsSendThread.class.getSimpleName();
 
     @Override
     protected Integer doInBackground(String... params) {

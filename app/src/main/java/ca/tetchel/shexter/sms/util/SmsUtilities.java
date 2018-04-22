@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import ca.tetchel.shexter.BuildConfig;
+import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
 /**
@@ -27,7 +28,8 @@ import ca.tetchel.shexter.sms.ShexterService;
  */
 public class SmsUtilities {
 
-    private static final String TAG = SmsUtilities.class.getSimpleName();
+    private static final String
+            TAG = MainActivity.MASTER_TAG + SmsUtilities.class.getSimpleName();
 
     static String formatSms(String sender, String otherSender, String body, long time,
                                    int width) {
