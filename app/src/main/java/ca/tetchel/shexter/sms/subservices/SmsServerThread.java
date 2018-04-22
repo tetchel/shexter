@@ -1,7 +1,6 @@
 package ca.tetchel.shexter.sms.subservices;
 
 import android.content.Context;
-import android.os.PowerManager;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -24,7 +23,6 @@ import ca.tetchel.shexter.sms.util.ServiceConstants;
 import ca.tetchel.shexter.sms.util.SmsUtilities;
 import ca.tetchel.shexter.trust.TrustedHostsUtilities;
 
-import static android.content.Context.POWER_SERVICE;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_READ;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND;
 import static ca.tetchel.shexter.sms.util.ServiceConstants.COMMAND_SEND_INITIALIZER;
@@ -79,6 +77,8 @@ public class SmsServerThread extends Thread {
                 
                 // make sure phone stays awake - does this even work?
                 Context appContext = ShexterService.instance().getApplicationContext();
+
+                /*
                 PowerManager powerManager = ((PowerManager) appContext
                         .getSystemService(POWER_SERVICE));
 
@@ -91,7 +91,7 @@ public class SmsServerThread extends Thread {
                 }
                 else {
                     Log.e(TAG, "PowerManager was null, could not acquire wakelock");
-                }
+                }*/
 
                 Log.d(TAG, "Ready to accept");
                 Socket socket = serverSocket.accept();
@@ -194,9 +194,11 @@ public class SmsServerThread extends Thread {
                     Log.d(TAG, "Command successfully processed; replying: " + response);
                     SmsUtilities.sendReply(replyStream, response);
                 }
+
+                /*
                 if(wakeLock != null) {
                     wakeLock.release();
-                }
+                }*/
             }
             catch (IOException e) {
                 Log.e(TAG, "Socket error occurred.", e);
