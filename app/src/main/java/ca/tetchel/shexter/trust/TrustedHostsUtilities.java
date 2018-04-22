@@ -32,6 +32,7 @@ public class TrustedHostsUtilities {
         trustedHosts.add(nameAndAddr);
         writeTrustedHostsList(context, trustedHosts);
 
+        Log.d(TAG, "Added trusted host " + nameAndAddr);
         Toast.makeText(context, "Added trusted host:\n" + nameAndAddr, Toast.LENGTH_LONG)
                 .show();
     }
@@ -40,6 +41,7 @@ public class TrustedHostsUtilities {
         List<String> trustedHosts = getTrustedHostsList(context);
 
         String toLookFor = hostnameAddrToPrefsEntry(hostname, hostAddr);
+        Log.d(TAG, "Checking if host is trusted " + toLookFor);
         for(String host : trustedHosts) {
             if (host.equals(toLookFor)) {
                 return true;
@@ -53,21 +55,25 @@ public class TrustedHostsUtilities {
     }
 
     /**
-     * @param trustedHostString In the format retunred by hostnameAddrToPrefsEntry
+     * @param trustedHostString In the format returned by hostnameAddrToPrefsEntry
      */
     public static void deleteTrustedHost(Context context, String trustedHostString) {
         List<String> hosts = getTrustedHostsList(context);
         /*boolean deleted =*/
         hosts.remove(trustedHostString);
+        Log.d(TAG, "Deleted trusted host " + trustedHostString);
         writeTrustedHostsList(context, hosts);
         //return deleted;
     }
 
     public static void deleteAllTrustedHosts(Context context) {
+        Log.d(TAG, "CLEARING trusted hosts list");
         writeTrustedHostsList(context, new ArrayList<String>());
     }
     
     public static List<String> getTrustedHostsList(Context context) {
+        Log.d(TAG, "GetTrustedHostsList");
+
         SharedPreferences sp = context.getSharedPreferences(TRUSTED_HOSTS_PREFSKEY, Context.MODE_PRIVATE);
         String currentTrusted = sp.getString(TRUSTED_HOSTS_PREFSKEY, "");
 
@@ -78,6 +84,7 @@ public class TrustedHostsUtilities {
                 trustedHosts.add(hostTrimmed);
             }
         }
+
 
         return trustedHosts;
     }
@@ -105,11 +112,15 @@ public class TrustedHostsUtilities {
         boolean valid = isHostTrusted(context, other.getCanonicalHostName(), other.getHostAddress());
 
         if(!valid) {
+            Log.d(TAG, "Host " + other.getCanonicalHostName() + " is NOT trusted");
             // Show user notification telling them to accept or reject the new connection
             // NB: Sometimes getCanonicalHostname returns the IP address. This is its documented behaviour, which is too
             // bad but I don't think it will happen once I stop messing with my router's DHCP
             ShexterNotificationManager.newHostNotification(context,
                     other.getHostAddress(), other.getCanonicalHostName());
+        }
+        else {
+            Log.d(TAG, "Host " + other.getCanonicalHostName() + " is trusted already");
         }
 
         return valid;

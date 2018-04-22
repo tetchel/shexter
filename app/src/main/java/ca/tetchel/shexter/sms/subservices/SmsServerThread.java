@@ -76,15 +76,15 @@ public class SmsServerThread extends Thread {
             try {
                 
                 // make sure phone stays awake - does this even work?
-                Context context = ShexterService.instance().getApplicationContext();
-                PowerManager powerManager = ((PowerManager) context
+                Context appContext = ShexterService.instance().getApplicationContext();
+                PowerManager powerManager = ((PowerManager) appContext
                         .getSystemService(POWER_SERVICE));
 
                 PowerManager.WakeLock wakeLock = null;
                 if(powerManager != null) {
                      wakeLock = powerManager
                             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
-                                    context.getString(R.string.app_name));
+                                    appContext.getString(R.string.app_name));
                     wakeLock.acquire(5*60*1000);
                 }
                 else {
@@ -101,12 +101,12 @@ public class SmsServerThread extends Thread {
                 InetAddress other = socket.getInetAddress();
                 Log.d(TAG, "Accepted connection from " + other);
 
-                if(!TrustedHostsUtilities.isHostTrusted(context, socket.getInetAddress())) {
+                if(!TrustedHostsUtilities.isHostTrusted(appContext, socket.getInetAddress())) {
+                    Log.i(TAG, "Rejected request from " + socket.getInetAddress());
                     SmsUtilities.sendReply(replyStream,
-                            context.getString(R.string.app_name) +
+                            "Your phone was found, but " + appContext.getString(R.string.app_name) +
                                     " rejected your request. " +
-                                    "Check your phone to see if the app is " +
-                                    "trying to obtain your approval to connect.");
+                                    "Approve the connection using the notification on your phone");
                     continue;
                 }
 
@@ -144,7 +144,7 @@ public class SmsServerThread extends Thread {
                         }
                         else {
                             // get the contact's info from name
-                            contact = SmsUtilities.getContactInfo(context.getContentResolver(),
+                            contact = SmsUtilities.getContactInfo(appContext.getContentResolver(),
                                     contactNameInput);
                         }
 
@@ -173,7 +173,7 @@ public class SmsServerThread extends Thread {
                         }
                     } catch (SecurityException e) {
                         contactError = "Could not retrieve contact info: make sure " +
-                                context.getString(R.string.app_name) + " has Contacts permission.";
+                                appContext.getString(R.string.app_name) + " has Contacts permission.";
                     }
                 }
 

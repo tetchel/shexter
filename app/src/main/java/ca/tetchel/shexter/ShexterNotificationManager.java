@@ -24,12 +24,16 @@ public class ShexterNotificationManager {
     private static final String CHANNEL_ID = "shexter";
 
     public static void newHostNotification(Context context, String hostAddr, String hostname) {
+        Log.i(TAG, "Showing new host notification for " + hostAddr + ", " + hostname);
+
         NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_action_trustedhosts)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
                         R.drawable.ic_action_trustedhosts_dark))
                 .setContentTitle(context.getString(R.string.new_connection_request))
                 .setContentText(context.getString(R.string.incoming_request_from_hostname, hostname))
+                .setOnlyAlertOnce(true)
+                .setLights(context.getResources().getColor(R.color.colorPrimary), 200, 400)
                 .setDefaults(Notification.DEFAULT_ALL);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -47,6 +51,8 @@ public class ShexterNotificationManager {
         PendingIntent notifIntent = PendingIntent.getActivity(context,
                 0, approvalIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+        Log.d(TAG, "Built PendingIntent with extras: " + approvalIntent.getExtras());
+
         notifBuilder.setContentIntent(notifIntent);
 
         //builder.setOngoing(true);
@@ -57,17 +63,20 @@ public class ShexterNotificationManager {
     }
 
     public static void clearNewHostNotif(Context context) {
+        Log.i(TAG, "Clearing new host notification");
         cancelNotif(context, NEW_HOST_NOTIF_ID);
     }
 
     public static void ringNotification(Context context) {
+        Log.i(TAG, "Showing ring notification");
+
         NotificationCompat.Builder notifBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_action_trustedhosts)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
                         R.drawable.ic_action_volume_loud_dark))
                 .setContentTitle(context.getString(R.string.ringing))
                 .setContentText(context.getString(R.string.tap_to_silence))
-                //.setLights(context.getResources().getColor(R.color.colorPrimary), 300, 100)
+                .setLights(context.getResources().getColor(R.color.colorPrimary), 300, 100)
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setOngoing(true);
 
@@ -92,6 +101,7 @@ public class ShexterNotificationManager {
     }
 
     public static void clearRingNotif(Context context) {
+        Log.i(TAG, "Clearing ring notification");
         cancelNotif(context, RINGING_NOTIF_ID);
     }
 

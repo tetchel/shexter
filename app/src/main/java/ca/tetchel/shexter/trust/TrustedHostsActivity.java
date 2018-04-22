@@ -122,6 +122,7 @@ public class TrustedHostsActivity extends AppCompatActivity {
      * then finish this activity.
      */
     private void onNewHost(final String hostAddr, final String hostname) {
+        Log.d(TAG, "OnNewHost");
         if(hostAddr == null || hostname == null) {
             // I don't think this will ever happen.
             Toast.makeText(this, getString(R.string.error_adding_new_host), Toast.LENGTH_LONG).show();
@@ -153,6 +154,7 @@ public class TrustedHostsActivity extends AppCompatActivity {
                 });
 
         newHostDialog = alertBuilder.show();
+        Log.d(TAG, "Showed new host dialog");
     }
 
     private void onAcceptOrRejectHost(boolean accepted) {
