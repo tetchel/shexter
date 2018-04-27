@@ -42,7 +42,7 @@ class MainUtil {
 
                 if (address.isSiteLocalAddress() && !address.isLoopbackAddress()) {
                     String hostAddr = address.getHostAddress();
-                    
+
                     // just take the first ipv4 address, I guess?
                     if(addrResult == null && address instanceof Inet4Address) {
                         Log.d(TAG, "Saving address: " + hostAddr);

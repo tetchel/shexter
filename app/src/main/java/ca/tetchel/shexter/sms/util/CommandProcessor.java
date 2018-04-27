@@ -1,5 +1,6 @@
 package ca.tetchel.shexter.sms.util;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -17,6 +18,7 @@ import java.util.Locale;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.RingCommandActivity;
+import ca.tetchel.shexter.ShexterNotificationManager;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.subservices.SmsSendThread;
@@ -271,10 +273,15 @@ public class CommandProcessor {
     private static String ringCommand() {
         Context appContext = ShexterService.instance().getApplicationContext();
 
-        // Initialize the ringtone before calling startPlaying
-        Intent ringIntent = new Intent(appContext, RingCommandActivity.class);
-        appContext.startActivity(ringIntent);
+        NotificationManager nm = ShexterNotificationManager.tryGetNotifManager(appContext);
+        if(nm == null || (MainActivity.isDndPermissionRequired() && !nm.isNotificationPolicyAccessGranted())) {
+            return appContext.getString(R.string.phone_ringing_failure_response);
+        }
+        else {
+            Intent ringIntent = new Intent(appContext, RingCommandActivity.class);
+            appContext.startActivity(ringIntent);
 
-        return "Your phone is ringing!";
+            return appContext.getString(R.string.phone_ringing_response);
+        }
     }
 }

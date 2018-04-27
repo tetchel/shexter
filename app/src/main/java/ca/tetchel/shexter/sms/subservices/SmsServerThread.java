@@ -105,10 +105,7 @@ public class SmsServerThread extends Thread {
 
                 if(!TrustedHostsUtilities.isHostTrusted(appContext, socket.getInetAddress())) {
                     Log.i(TAG, "Rejected request from " + socket.getInetAddress());
-                    SmsUtilities.sendReply(replyStream,
-                            "Your phone was found, but " + appContext.getString(R.string.app_name) +
-                                    " rejected your request. " +
-                                    "Approve the connection using the notification on your phone");
+                    SmsUtilities.sendReply(replyStream, appContext.getString(R.string.unknown_host_rejected_response));
                     continue;
                 }
 
@@ -208,8 +205,10 @@ public class SmsServerThread extends Thread {
         Log.d(TAG, "Server loop exited. Interrupted? " + isInterrupted());
         if (serverSocket != null) {
             try {
-                serverSocket.close();
-                Log.d(TAG, "Closed ServerSocket");
+                if(!serverSocket.isClosed()) {
+                    serverSocket.close();
+                    Log.d(TAG, "Closed ServerSocket");
+                }
             } catch (IOException e) {
                 Log.e(TAG, "Exception closing ServerSocket in finally block", e);
             }

@@ -1,10 +1,16 @@
 package ca.tetchel.shexter.main;
 
+import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.content.ComponentName;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.provider.Settings;
@@ -32,20 +38,20 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String MASTER_TAG = "shexter_";
     private static final String
-            TAG = MASTER_TAG + MainActivity.class.getSimpleName();
+            TAG = MASTER_TAG + MainActivity.class.getSimpleName(),
+            NEVER_DND_AGAIN_PREFSKEY = "never-ask-dnd";
 
     // if the user has flagged 'never ask me again' about a permission
-    private boolean neverAgain = false,
+    private boolean
+            neverAskPermsAgain = false,
             needToUpdatePermissions;
 
-    // each permission has to have a unique 'code' to ID whether user accepted it or not
     private static final int
             PERMISSION_CODE = 1234,
-            SETTINGS_ACTIVITY_CODE = 1234;
+            SETTINGS_ACTIVITY_CODE = 1234,
+            NOTIF_POLICY_ACTIVITY_CODE = 1235;
 
-    // order must match the order of permissionCodes
     private static final String[] requiredPermissions = {
-            android.Manifest.permission.INTERNET,
             android.Manifest.permission.READ_CONTACTS,
             // all sms permissions seem to be lumped into one
 //            android.Manifest.permission.READ_SMS,
@@ -175,14 +181,9 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.portTV)).setText(portInfo);
     }
 
-    /*
-    public void onClickKillService(View v) {
-        stopService(new Intent(this, ShexterService.class));
-    }*/
-
     public void onClickPermissionsButton(View v) {
         needToUpdatePermissions = true;
-        if (!neverAgain) {
+        if (!neverAskPermsAgain) {
             checkAndGetPermissions();
         } else {
             // open settings page
@@ -211,7 +212,109 @@ public class MainActivity extends AppCompatActivity {
         } else {
             allGood = true;
         }
+
         showOrHidePermissionsRequired(!allGood);
+    }
+
+    // TODO All of this permissions stuff should be moved into a Settings activity or similar.
+
+    /**
+     *  On API 23 and up, need to request permission to change volume settings. This is required for the Ring command.
+     */
+    public static boolean isDndPermissionRequired() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
+    }
+
+    /**
+     * On API 23 and up, need to request permission to change volume settings. This is required for the Ring command.
+     * @return
+     *      true if the permission is still required, meaning ring command will not work.
+     *      false if permission is already given or not required.
+     */
+    private boolean needRequestDndPermission() {
+        SharedPreferences sp = getPreferences(Context.MODE_PRIVATE);
+        boolean neverAskDndAgain = sp.getBoolean(NEVER_DND_AGAIN_PREFSKEY, false);
+        Log.d(TAG, "NeverAskDndAgain=" + neverAskDndAgain);
+
+        if (!isDndPermissionRequired() || neverAskDndAgain) {
+            Log.d(TAG, "Not showing DnD permission button");
+            return false;
+        }
+
+        Object nmObj = getSystemService(Context.NOTIFICATION_SERVICE);
+        if(nmObj == null) {
+            // will this ever happen?
+            String noNmMsg = "Couldn't get Notification service";
+            Log.e(TAG, noNmMsg);
+            Toast.makeText(this, noNmMsg, Toast.LENGTH_LONG).show();
+            return true;
+        }
+
+        // ignore this error, API version is checked by isDndPermissionRequired
+        boolean granted = ((NotificationManager) nmObj).isNotificationPolicyAccessGranted();
+        return !granted;
+    }
+
+    public void onClickGrantDndSettings(View v) {
+        // https://stackoverflow.com/questions/43123650/android-request-access-notification-policy-and-mute-phone
+
+        // This button should never show up on API < 23
+        if(isDndPermissionRequired()) {
+            startActivityForResult(new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS),
+                    NOTIF_POLICY_ACTIVITY_CODE);
+        }
+        else {
+            // if this happens, it is a bug
+            Toast.makeText(this, "This permission is not required on your version of Android",
+                    Toast.LENGTH_LONG).show();
+        }
+    }
+
+    public void onClickPermsMoreInfo(View v) {
+        AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
+        adBuilder
+                .setTitle(getString(R.string.more_info_dialog_title))
+                .setMessage(getString(R.string.more_info_dialog_text))
+                .setPositiveButton(getString(R.string.ok),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                // nada
+                            }
+                        })
+                .setNegativeButton(getString(R.string.not_using_ring_cmd),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                onNeverAskDndAgain();
+                            }
+                        });
+        adBuilder.show();
+    }
+
+    private void onNeverAskDndAgain() {
+        AlertDialog.Builder adBuilder = new AlertDialog.Builder(this);
+        adBuilder
+                .setTitle(R.string.denying_dnd_perm_dialog_title)
+                .setMessage(R.string.denying_dnd_perm_dialog_text)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Log.d(TAG, "User never wants to be asked about DnD permission again");
+
+                        SharedPreferences.Editor ed = getPreferences(Context.MODE_PRIVATE).edit();
+                        ed.putBoolean(NEVER_DND_AGAIN_PREFSKEY, true);
+                        ed.apply();
+                        checkAndGetPermissions();
+                    }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        // nada
+                    }
+                });
+        adBuilder.show();
     }
 
     @Override
@@ -231,10 +334,9 @@ public class MainActivity extends AppCompatActivity {
                 // technically, contacts is optional (could use --number)
                 if (!ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[i])) {
                     // they can NOT be asked again
-                    neverAgain = true;
+                    neverAskPermsAgain = true;
                 } else {
                     // they can be asked again
-                    // technically contacts permission is optional if they use -n flag always
                     Toast.makeText(getApplicationContext(), getString(R.string.app_name) +
                                     " cannot function without Contacts and SMS permissions.",
                             Toast.LENGTH_SHORT).show();
@@ -244,13 +346,24 @@ public class MainActivity extends AppCompatActivity {
         showOrHidePermissionsRequired(!allGood);
     }
 
-    private void showOrHidePermissionsRequired(boolean show) {
-        Log.d(TAG, "Showing that showing permissions are required: " + show);
-        int visibility = show ? View.VISIBLE : View.GONE;
-        findViewById(R.id.noPermissionsTV).setVisibility(visibility);
-        findViewById(R.id.permissionsButton).setVisibility(visibility);
+    private void showOrHidePermissionsRequired(boolean showSmsContacts) {
+        Log.d(TAG, "Showing that SMS/Contacts permissions are required: " + showSmsContacts);
+
+        boolean showDnd = needRequestDndPermission();
+        Log.d(TAG, "Showing that DnD permissions are required: " + showDnd);
+
+        boolean showingAny = showSmsContacts || showDnd;
+        findViewById(R.id.noPermissionsTV).setVisibility(booleanToVisiblity(showingAny));
+        findViewById(R.id.permsMoreInfoBtn).setVisibility(booleanToVisiblity(showingAny));
+
+        findViewById(R.id.permsSmsContactBtn).setVisibility(booleanToVisiblity(showSmsContacts));
+        findViewById(R.id.permsDnDBtn).setVisibility(booleanToVisiblity(showDnd));
 
         // refresh the view by invalidating it
         (((ViewGroup) this.findViewById(android.R.id.content)).getChildAt(0)).invalidate();
+    }
+
+    private static int booleanToVisiblity(boolean b) {
+        return b ? View.VISIBLE : View.GONE;
     }
 }

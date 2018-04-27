@@ -85,7 +85,8 @@ public class TrustedHostsActivity extends AppCompatActivity {
 
         if (id == R.id.action_remove_all_trusted) {
             AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
-            alertBuilder.setTitle(getString(R.string.remove_all))
+            alertBuilder
+                    .setTitle(getString(R.string.remove_all))
                     .setMessage(getString(R.string.confirm_remove_all))
                     .setPositiveButton(getString(R.string.remove_all),
                             new DialogInterface.OnClickListener() {

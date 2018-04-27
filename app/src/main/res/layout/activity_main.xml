@@ -4,48 +4,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:layout_margin="10dp"
+    android:fitsSystemWindows="true"
     tools:context="ca.tetchel.shexter.main.MainActivity">
 
     <TextView
-        android:id="@+id/noPermissionsTV"
-        android:layout_width="wrap_content"
+        android:id="@+id/ipAddressTV"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/permissionsButton"
-        android:layout_alignParentEnd="true"
-        android:layout_alignParentRight="true"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginStart="8dp"
-        android:text="@string/no_permissions"
-        android:textAlignment="center"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:text="@string/ip_addr_error"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textColor="@android:color/holo_red_dark"
-        android:visibility="visible"
-        app:layout_constraintBottom_toTopOf="@+id/permissionsButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <Button
-        android:id="@+id/permissionsButton"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginStart="8dp"
-        android:onClick="onClickPermissionsButton"
-        android:text="@string/grant"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -60,18 +31,96 @@
         android:layout_marginTop="8dp"
         android:text="@string/port_error"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        app:layout_constraintTop_toBottomOf="@+id/ipAddressTV"
-        tools:layout_editor_absoluteX="0dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ipAddressTV" />
 
     <TextView
-        android:id="@+id/ipAddressTV"
+        android:id="@+id/noPermissionsTV"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/permsSmsContactBtn"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="@string/no_permissions"
+        android:textAlignment="center"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="@android:color/holo_red_dark"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.85" />
+
+    <TableLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:text="@string/ip_addr_error"
-        android:textAppearance="?android:attr/textAppearanceLarge" />
+        app:layout_constraintTop_toBottomOf="@+id/noPermissionsTV">
+
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <Button
+                android:id="@+id/permsSmsContactBtn"
+                style="?android:attr/buttonStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_centerHorizontal="true"
+                android:layout_marginBottom="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_weight="1"
+                android:onClick="onClickPermissionsButton"
+                android:text="@string/grant_sms_contacts"
+                android:visibility="visible"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/noPermissionsTV" />
+
+            <Button
+                android:id="@+id/permsDnDBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_weight="1"
+                android:onClick="onClickGrantDndSettings"
+                android:text="@string/grant_dnd"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/permsMoreInfoBtn"
+                app:layout_constraintStart_toEndOf="@+id/permsSmsContactBtn"
+                app:layout_constraintTop_toBottomOf="@+id/noPermissionsTV" />
+
+            <Button
+                android:id="@+id/permsMoreInfoBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginTop="8dp"
+                android:layout_weight="1"
+                android:onClick="onClickPermsMoreInfo"
+                android:text="@string/more_info"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/noPermissionsTV" />
+        </TableRow>
+
+    </TableLayout>
 
     <!--Button
         android:id="@+id/killServiceBtn"

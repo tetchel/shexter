@@ -1,6 +1,7 @@
 package ca.tetchel.shexter;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -25,6 +26,8 @@ public class ShexterNotificationManager {
 
     private static final String CHANNEL_ID = "shexter";
 
+    private static NotificationChannel shexterNotifChannel;
+
     public static void newHostNotification(Context context, String hostAddr, String hostname) {
         Log.i(TAG, "Showing new host notification for " + hostAddr + ", " + hostname);
 
@@ -37,6 +40,12 @@ public class ShexterNotificationManager {
                 .setOnlyAlertOnce(true)
                 .setLights(context.getResources().getColor(R.color.colorPrimary), 200, 400)
                 .setDefaults(Notification.DEFAULT_ALL);
+
+        createNotifChannel(context);
+        // will be skipped on old api
+        if (shexterNotifChannel != null) {
+            notifBuilder.setChannelId(CHANNEL_ID);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             notifBuilder.setPriority(NotificationManager.IMPORTANCE_MAX);
@@ -64,6 +73,19 @@ public class ShexterNotificationManager {
         }
     }
 
+    private static void createNotifChannel(Context context) {
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return;
+        }
+
+        shexterNotifChannel = new NotificationChannel(CHANNEL_ID, CHANNEL_ID,
+                NotificationManager.IMPORTANCE_HIGH);
+        NotificationManager nm = tryGetNotifManager(context);
+        if(nm != null) {
+            nm.createNotificationChannel(shexterNotifChannel);
+        }
+    }
+
     public static void clearNewHostNotif(Context context) {
         Log.i(TAG, "Clearing new host notification");
         cancelNotif(context, NEW_HOST_NOTIF_ID);
@@ -81,6 +103,12 @@ public class ShexterNotificationManager {
                 .setLights(context.getResources().getColor(R.color.colorPrimary), 300, 100)
                 .setDefaults(Notification.DEFAULT_ALL)
                 .setOngoing(true);
+
+        createNotifChannel(context);
+        // will be skipped on old api
+        if (shexterNotifChannel != null) {
+            notifBuilder.setChannelId(CHANNEL_ID);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             notifBuilder.setPriority(NotificationManager.IMPORTANCE_MAX);
@@ -115,7 +143,7 @@ public class ShexterNotificationManager {
     }
 
     @Nullable
-    private static NotificationManager tryGetNotifManager(Context context) {
+    public static NotificationManager tryGetNotifManager(Context context) {
         NotificationManager notificationManager = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
 
