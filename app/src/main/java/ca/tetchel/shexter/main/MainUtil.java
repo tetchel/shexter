@@ -29,7 +29,7 @@ class MainUtil {
 
         Log.d(TAG, "Got network interfaces:");
 
-        String addr = null;
+        String addrResult = null;
         boolean foundIpv6 = false;
         while (ifaces.hasMoreElements()) {
             NetworkInterface iface = ifaces.nextElement();
@@ -42,10 +42,13 @@ class MainUtil {
 
                 if (address.isSiteLocalAddress() && !address.isLoopbackAddress()) {
                     String hostAddr = address.getHostAddress();
+                    
                     // just take the first ipv4 address, I guess?
-                    if(addr == null && address instanceof Inet4Address) {
+                    if(addrResult == null && address instanceof Inet4Address) {
                         Log.d(TAG, "Saving address: " + hostAddr);
-                        addr = address.getHostAddress();
+
+                        // Could return here, but I like logging all the possible addresses
+                        addrResult = hostAddr;
                     }
                     else {
                         Log.d(TAG, "Rejected IPv6 address: " + hostAddr);
@@ -56,9 +59,9 @@ class MainUtil {
             }
         }
 
-        if(addr != null) {
+        if(addrResult != null) {
             // it worked
-            return addr;
+            return addrResult;
         }
         // it did not work
         else if (foundIpv6) {
