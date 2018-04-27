@@ -1,6 +1,7 @@
 package ca.tetchel.shexter.trust;
 
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -162,6 +163,9 @@ public class TrustedHostsActivity extends AppCompatActivity {
     private void onAcceptOrRejectHost(boolean accepted) {
         Log.d(TAG, "User " + (accepted ? "accepted" : "rejected") + " incoming connection");
         ShexterNotificationManager.clearNewHostNotif(this);
+        // start the main activity, then finish this one, so that if user exits then
+        // resumes the app, it doesn't prompt them again.
+        startActivity(new Intent(this, MainActivity.class));
         finish();
     }
 }

@@ -31,6 +31,12 @@ public class TrustedHostsUtilities {
         String nameAndAddr = hostnameAddrToPrefsEntry(hostname, hostAddr);
 
         List<String> trustedHosts = getTrustedHostsList(context);
+        if(trustedHosts.contains(nameAndAddr)) {
+            // shouldn't happen because the add-host stuff
+            // should not be executed if it's already trusted
+            Toast.makeText(context, "That host is already trusted", Toast.LENGTH_LONG).show();
+            return;
+        }
         trustedHosts.add(nameAndAddr);
         writeTrustedHostsList(context, trustedHosts);
 
