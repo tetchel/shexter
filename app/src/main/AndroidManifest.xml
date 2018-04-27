@@ -37,11 +37,18 @@
                 <action android:name="android.intent.action.QUICKBOOT_POWERON" />
             </intent-filter>
         </receiver>
+
         <receiver
             android:name=".receiver.SmsReceiver"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".receiver.ServiceDestroyedReceiever">
+            <intent-filter>
+                <action android:name="shexter-service-destroyed" />
             </intent-filter>
         </receiver>
 

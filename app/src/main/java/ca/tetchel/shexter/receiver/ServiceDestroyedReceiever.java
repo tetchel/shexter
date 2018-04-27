@@ -17,13 +17,20 @@ public class ServiceDestroyedReceiever extends BroadcastReceiver {
     private static final String
             TAG = MainActivity.MASTER_TAG + ServiceDestroyedReceiever.class.getSimpleName();
 
+    public ServiceDestroyedReceiever() {
+        Log.d(TAG, "Starting up");
+    }
+
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Received an intent: " + intent.getAction());
-        if (ShexterService.ON_DESTROY_INTENTFILTER.equals(intent.getAction())) {
+        if (ShexterService.ON_DESTROY_INTENTFILTER.equals(intent.getAction()) &&
+                !ShexterService.isRunning()) {
+
             Intent serviceIntent = new Intent(context, ShexterService.class);
             Log.d(TAG, "restarting service");
 
+            // TODO remove
             Toast.makeText(context, "shexter restarted", Toast.LENGTH_LONG).show();
 
             context.startService(serviceIntent);

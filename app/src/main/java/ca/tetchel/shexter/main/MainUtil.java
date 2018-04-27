@@ -13,6 +13,10 @@ class MainUtil {
 
     private static final String TAG = MainActivity.MASTER_TAG + MainUtil.class.getSimpleName();
 
+    /**
+     * Get the LAN IP address of this device.
+     * Whatever this returns will be displayed directly to the user.
+     */
     public static String getIpAddress() {
         Enumeration<NetworkInterface> ifaces;
         try {

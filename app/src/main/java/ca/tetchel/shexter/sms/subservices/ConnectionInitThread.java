@@ -50,7 +50,9 @@ public class ConnectionInitThread extends Thread {
             }
         }
 
-        socket.close();
+        if(!socket.isClosed()) {
+            socket.close();
+        }
     }
 
     private void onRequest(DatagramPacket request) throws IOException {

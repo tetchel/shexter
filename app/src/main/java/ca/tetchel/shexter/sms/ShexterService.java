@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.main.MainActivity;
+import ca.tetchel.shexter.receiver.ServiceDestroyedReceiever;
 import ca.tetchel.shexter.receiver.SmsReceiver;
 import ca.tetchel.shexter.sms.subservices.ConnectionInitThread;
 import ca.tetchel.shexter.sms.subservices.SmsServerThread;
@@ -26,6 +27,7 @@ public class ShexterService extends Service {
     private static final String
             TAG = MainActivity.MASTER_TAG + ShexterService.class.getSimpleName();
 
+    // Must match manifest
     public static final String ON_DESTROY_INTENTFILTER = "shexter-service-destroyed";
 
     // Binder used to communicate with bound activities
@@ -99,6 +101,8 @@ public class ShexterService extends Service {
         serverThread.start();
         initThread.start();
         receiver = new SmsReceiver();
+        // is this necessary?
+        new ServiceDestroyedReceiever();
 
         /*
         WifiManager wifiManager = (WifiManager) getApplicationContext()
@@ -149,6 +153,7 @@ public class ShexterService extends Service {
         // See ca.tetchel.shexter.receiver.ServiceDestroyedReceiever
         Intent broadcastDestroyIntent = new Intent(ON_DESTROY_INTENTFILTER);
         sendBroadcast(broadcastDestroyIntent);
+        Log.d(TAG, "Broadcasted destruction with filter: " + ON_DESTROY_INTENTFILTER);
 
         /*
         if(wifiLock != null && wifiLock.isHeld()) {

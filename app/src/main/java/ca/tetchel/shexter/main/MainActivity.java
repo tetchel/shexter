@@ -175,6 +175,11 @@ public class MainActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.portTV)).setText(portInfo);
     }
 
+    /*
+    public void onClickKillService(View v) {
+        stopService(new Intent(this, ShexterService.class));
+    }*/
+
     public void onClickPermissionsButton(View v) {
         needToUpdatePermissions = true;
         if (!neverAgain) {

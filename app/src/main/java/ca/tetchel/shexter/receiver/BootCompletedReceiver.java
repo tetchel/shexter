@@ -21,13 +21,17 @@ public class BootCompletedReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d(TAG, "Received an intent: " + intent.getAction());
-        if ("android.intent.action.BOOT_COMPLETED".equals(intent.getAction())) {
-            Intent pushIntent = new Intent(context, ShexterService.class);
-            Log.d(TAG, "Starting SMSServer on boot.");
-
-            Toast.makeText(context, "shexter started on boot", Toast.LENGTH_LONG).show();
-
-            context.startService(pushIntent);
+        if(!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) {
+            return;
         }
+        if(ShexterService.isRunning()) {
+            return;
+        }
+        Intent pushIntent = new Intent(context, ShexterService.class);
+        Log.d(TAG, "Starting SMSServer on boot.");
+
+        Toast.makeText(context, "shexter started on boot", Toast.LENGTH_LONG).show();
+
+        context.startService(pushIntent);
     }
 }
