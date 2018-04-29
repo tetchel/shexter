@@ -100,12 +100,12 @@ public class TrustedHostsUtilities {
     private static void writeTrustedHostsList(Context context, List<String> trustedHosts) {
         SharedPreferences sp = context.getSharedPreferences(TRUSTED_HOSTS_PREFSKEY, Context.MODE_PRIVATE);
         SharedPreferences.Editor edit = sp.edit();
-        StringBuilder prefs = new StringBuilder();
+        StringBuilder hostsAsPref = new StringBuilder();
         for(String host : trustedHosts) {
-            prefs.append(host).append('\n');
+            hostsAsPref.append(host).append('\n');
         }
-        Log.d(TAG, "Writing trusted hosts: " + prefs.toString());
-        edit.putString(TRUSTED_HOSTS_PREFSKEY, prefs.toString());
+        Log.d(TAG, "Writing trusted hosts: " + hostsAsPref.toString());
+        edit.putString(TRUSTED_HOSTS_PREFSKEY, hostsAsPref.toString());
 
         edit.apply();
     }

@@ -165,9 +165,8 @@ public class CommandProcessor {
                     //numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
                     numberSent, numberSent != 1 ? "s" : "", contact.name());
         } catch (SecurityException e) {
-            Log.w(TAG, "No SMS Permission for send!");
-            return "No SMS permission! Open the " + R.string.app_name +
-                    " app and give SMS permission.";
+            Log.w(TAG, "No SMS Permission for send!", e);
+            return "No SMS permission! Open the app and give SMS permission.";
         } catch (Exception e) {
             Log.e(TAG, "Exception from sendThread", e);
             return "Unexpected exception in the SMS send thread; " +
@@ -203,9 +202,8 @@ public class CommandProcessor {
             }
 
         } catch (SecurityException e) {
-            Log.w(TAG, "No SMS permission for reading.");
-            return "No SMS permission! Open the " + R.string.app_name +
-                    " app and give SMS permission.";
+            Log.w(TAG, "No SMS permission for reading.", e);
+            return "No SMS permission! Open the app and give SMS permission.";
         }
     }
 

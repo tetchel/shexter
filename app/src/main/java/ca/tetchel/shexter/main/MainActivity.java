@@ -54,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String[] requiredPermissions = {
             android.Manifest.permission.READ_CONTACTS,
             // all sms permissions seem to be lumped into one
-//            android.Manifest.permission.READ_SMS,
-//            android.Manifest.permission.RECEIVE_SMS,
+            android.Manifest.permission.READ_SMS,
+            android.Manifest.permission.RECEIVE_SMS,
             android.Manifest.permission.SEND_SMS};
 
     @Override
