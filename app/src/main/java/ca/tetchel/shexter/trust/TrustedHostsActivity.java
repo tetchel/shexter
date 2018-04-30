@@ -165,11 +165,11 @@ public class TrustedHostsActivity extends AppCompatActivity {
     private void onAcceptOrRejectHost(boolean accepted, String hostAddr, String hostname) {
         Log.d(TAG, "User " + (accepted ? "accepted" : "rejected") + " incoming connection");
         if(accepted) {
-            EventLogger.log(getString(R.string.event_new_trusted_host_title),
+            EventLogger.log(getApplicationContext(), getString(R.string.event_new_trusted_host_title),
                     getString(R.string.event_new_trusted_host_detail, hostname, hostAddr));
         }
         else {
-            EventLogger.log(getString(R.string.event_rejected_trusted_host_title),
+            EventLogger.log(getApplicationContext(), getString(R.string.event_rejected_trusted_host_title),
                     getString(R.string.event_rejected_trusted_host_detail, hostname, hostAddr));
         }
 

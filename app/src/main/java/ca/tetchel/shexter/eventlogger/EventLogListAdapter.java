@@ -12,12 +12,11 @@ import java.util.List;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.main.MainActivity;
-import ca.tetchel.shexter.trust.TrustedHostsListAdapter;
 
 public class EventLogListAdapter extends ArrayAdapter<EventLogger.Event> {
 
     private static final String
-            TAG = MainActivity.MASTER_TAG + TrustedHostsListAdapter.class.getSimpleName();
+            TAG = MainActivity.MASTER_TAG + EventLogListAdapter.class.getSimpleName();
 
     private final EventLogActivity activity;
     private final List<EventLogger.Event> events;
@@ -46,7 +45,14 @@ public class EventLogListAdapter extends ArrayAdapter<EventLogger.Event> {
         if(current.isError) {
             eventTitleTV.setTextColor(activity.getResources().getColor(R.color.colorError));
         }
-        eventDetailTV.setText(current.detail);
+
+        if(current.detail.isEmpty()) {
+            eventDetailTV.setVisibility(View.GONE);
+        }
+        else {
+            eventDetailTV.setText(current.detail);
+        }
+
         eventDateTV.setText(current.time24Hr);
 
         return rowView;

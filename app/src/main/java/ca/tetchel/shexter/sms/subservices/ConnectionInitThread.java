@@ -1,5 +1,6 @@
 package ca.tetchel.shexter.sms.subservices;
 
+import android.content.Context;
 import android.os.Build;
 import android.util.Log;
 
@@ -35,6 +36,7 @@ public class ConnectionInitThread extends Thread {
     public void run() {
         Log.d(TAG, "Init starting up on port " + socket.getLocalPort());
 
+        Context context = ShexterService.instance().getApplicationContext();
         while(ShexterService.isRunning() && !socket.isClosed()) {
             byte[] recvBuffer = new byte[BUFFSIZE];
             DatagramPacket request = new DatagramPacket(recvBuffer, recvBuffer.length);
@@ -46,10 +48,10 @@ public class ConnectionInitThread extends Thread {
 
             } catch(UnsupportedEncodingException e) {
                 Log.e(TAG, "Exception decoding from " + ServiceConstants.ENCODING, e);
-                EventLogger.logError(e);
+                EventLogger.logError(context, e);
             } catch (IOException e) {
                 Log.e(TAG, "Exception in the InitThread", e);
-                EventLogger.logError(e);
+                EventLogger.logError(context, e);
             }
         }
 
@@ -98,7 +100,7 @@ public class ConnectionInitThread extends Thread {
 
         } catch(NumberFormatException e) {
             Log.e(TAG, "Malformed request; second line is not a number: " + requestBody, e);
-            EventLogger.logError(e);
+            EventLogger.logError(ShexterService.instance().getApplicationContext(), e);
         }
     }
 

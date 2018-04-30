@@ -72,7 +72,7 @@ public class EventLogActivity extends AppCompatActivity {
                             new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialogInterface, int i) {
-                                    EventLogger.clearEvents();
+                                    EventLogger.clearEvents(EventLogActivity.this);
                                     // Redraw with no events
                                     recreate();
                                 }
@@ -95,7 +95,7 @@ public class EventLogActivity extends AppCompatActivity {
         Log.d(TAG, "Refresh event list");
         final ListView eventsList = findViewById(R.id.trustedHostsLV);
 
-        List<EventLogger.Event> events = EventLogger.getEvents();
+        List<EventLogger.Event> events = EventLogger.getEvents(this);
 
         EventLogListAdapter adapter = new EventLogListAdapter(this, events);
         eventsList.setAdapter(adapter);

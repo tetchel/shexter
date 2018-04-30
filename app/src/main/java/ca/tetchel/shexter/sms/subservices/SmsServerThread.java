@@ -71,14 +71,14 @@ public class SmsServerThread extends Thread {
     public void run() {
         Log.d(TAG, "ServerThread starting up on port " + serverSocket.getLocalPort());
 
+        Context appContext = ShexterService.instance().getApplicationContext();
+
         // used to track previous command when setpref is used.
         String oldRequest = null;
         while (!Thread.currentThread().isInterrupted() && !serverSocket.isClosed()) {
             try {
-                
-                // make sure phone stays awake - does this even work?
-                Context appContext = ShexterService.instance().getApplicationContext();
 
+                // make sure phone stays awake - does this even work?
                 /*
                 PowerManager powerManager = ((PowerManager) appContext
                         .getSystemService(POWER_SERVICE));
@@ -96,6 +96,9 @@ public class SmsServerThread extends Thread {
 
                 Log.d(TAG, "Ready to accept");
                 Socket socket = serverSocket.accept();
+                if("".equals("")) {
+                    throw new IOException("hey bro");
+                }
 
                 // print back to client socket using this
                 PrintStream replyStream = new PrintStream(socket.getOutputStream(), false,
@@ -125,7 +128,7 @@ public class SmsServerThread extends Thread {
                 String command = requestReader.readLine();
                 Log.d(TAG, "Received command: " + command);
 
-                EventLogger.log(appContext.getString(R.string.event_command_received),
+                EventLogger.log(appContext, appContext.getString(R.string.event_command_received),
                         appContext.getString(R.string.event_command_received_detail,
                                 command, socket.getInetAddress().getHostAddress()));
 
@@ -147,8 +150,7 @@ public class SmsServerThread extends Thread {
                         }
                         else {
                             // get the contact's info from name
-                            contact = SmsUtilities.getContactInfo(appContext.getContentResolver(),
-                                    contactNameInput);
+                            contact = SmsUtilities.getContactInfo(appContext, contactNameInput);
                         }
 
                         if (contact == null) {
@@ -175,7 +177,7 @@ public class SmsServerThread extends Thread {
                             command = COMMAND_SETPREF_LIST;
                         }
                     } catch (SecurityException e) {
-                        EventLogger.logError(e);
+                        EventLogger.logError(appContext, e);
                         contactError = "Could not retrieve contact info: make sure the app has Contacts permission.";
                     }
                 }
@@ -203,7 +205,7 @@ public class SmsServerThread extends Thread {
             }
             catch (IOException e) {
                 Log.e(TAG, "Socket error occurred.", e);
-                EventLogger.logError(e);
+                EventLogger.logError(appContext, e);
             }
         }
 
@@ -216,7 +218,7 @@ public class SmsServerThread extends Thread {
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Exception closing ServerSocket in finally block", e);
-                EventLogger.logError(e);
+                EventLogger.logError(appContext, e);
             }
         }
     }

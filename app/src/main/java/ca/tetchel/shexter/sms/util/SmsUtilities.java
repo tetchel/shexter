@@ -1,6 +1,7 @@
 package ca.tetchel.shexter.sms.util;
 
 import android.content.ContentResolver;
+import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
@@ -214,13 +215,15 @@ public class SmsUtilities {
      * Accepts contact name (case insensitive), returns:
      * @return Contact data object with the contact's name and numbers.
      */
-    public static Contact getContactInfo(ContentResolver contentResolver, String name)
+    public static Contact getContactInfo(Context context, String name)
             throws SecurityException {
         String selection = ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
                 " like'%" + name + "%'";
         String[] projection = new String[] {
                 ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
                 ContactsContract.Contacts._ID,};
+
+        ContentResolver contentResolver = context.getContentResolver();
         Cursor query;
         try {
             query = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
@@ -228,7 +231,7 @@ public class SmsUtilities {
         }
         catch (SecurityException e) {
             Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
-            EventLogger.logError(e);
+            EventLogger.logError(context, e);
             throw(e);
         }
 
@@ -280,13 +283,14 @@ public class SmsUtilities {
      * @return A formatted string
      * @throws SecurityException If there's no Contacts permission.
      */
-    static String getAllContacts(ContentResolver contentResolver) throws SecurityException {
+    static String getAllContacts(Context context) throws SecurityException {
         // could be expanded to start with an input / match a regex
         String[] projection = new String[]{
                 ContactsContract.Contacts._ID,
                 ContactsContract.Contacts.HAS_PHONE_NUMBER,
                 ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME };
 
+        ContentResolver contentResolver = context.getContentResolver();
         Cursor query;
         try {
             query = contentResolver.query(ContactsContract.Contacts.CONTENT_URI,
@@ -295,7 +299,7 @@ public class SmsUtilities {
         }
         catch (SecurityException e) {
             Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
-            EventLogger.logError(e);
+            EventLogger.logError(context, e);
             throw(e);
         }
 

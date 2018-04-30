@@ -11,26 +11,27 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import ca.tetchel.shexter.sms.ShexterService;
-
 public class EventLogger {
 
     private static final int MAX_SIZE = 1000;
 
+    private static boolean hasLoadedEvents = false;
     private static List<Event> events = new ArrayList<>();
 
-    public static List<Event> getEvents() {
-        if(events.isEmpty()) {
-            events = loadEvents();
+    public static List<Event> getEvents(Context context) {
+        if(!hasLoadedEvents) {
+            events = loadEvents(context);
+            hasLoadedEvents = true;
+
             // EventLogger.logError("Test Exception", new Exception("lalala"));
-            // Might still be empty!
         }
         return events;
     }
 
-    public static void clearEvents() {
+    public static void clearEvents(Context context) {
+        Log.d(TAG, "Clearing EventLog");
         events.clear();
-        onAnyEvent();
+        writeEvents(context);
     }
 
     static class Event {
@@ -70,34 +71,33 @@ public class EventLogger {
         }
     }
 
-    public static void log(String title) {
-        events.add(new Event(title, "", false));
-        onAnyEvent();
+    public static void log(Context context, String title) {
+        newEvent(context, new Event(title, "", false));
     }
 
-    public static void log(String title, String detail) {
-        events.add(new Event(title, detail, false));
-        onAnyEvent();
+    public static void log(Context context, String title, String detail) {
+        newEvent(context, new Event(title, detail, false));
     }
 
-    public static void logError(String title) {
-        events.add(new Event(title, "", true));
-        onAnyEvent();
+    public static void logError(Context context, String title) {
+        newEvent(context, new Event(title, "", true));
     }
 
-    public static void logError(String title, String detail) {
-        events.add(new Event(title, detail, true));
-        onAnyEvent();
+    public static void logError(Context context, String title, String detail) {
+        newEvent(context, new Event(title, detail, true));
     }
 
-    public static void logError(String title, Exception e) {
-        events.add(new Event(title, getStackTraceAsString(e), true));
-        onAnyEvent();
+    public static void logError(Context context, String title, Exception e) {
+        newEvent(context, new Event(title, getStackTraceAsString(e), true));
     }
 
-    public static void logError(Exception e) {
-        events.add(new Event("Error occurred!", getStackTraceAsString(e), true));
-        onAnyEvent();
+    public static void logError(Context context, Exception e) {
+        newEvent(context, new Event("Error", getStackTraceAsString(e), true));
+    }
+
+    private static void newEvent(Context context, Event event) {
+        events.add(event);
+        writeEvents(context);
     }
 
     private static String getStackTraceAsString(Exception e) {
@@ -106,9 +106,11 @@ public class EventLogger {
         }
 
         StringBuilder resultBuilder = new StringBuilder();
+        resultBuilder.append(e.toString()).append('\n');
+
         for (StackTraceElement ste : e.getStackTrace()) {
             // Filter by pertinent method calls only
-            if(ste.getClassName().startsWith("ca.tetchel.shexter")) {
+            if(ste.getClassName().startsWith("ca.tetchel")) {
                 resultBuilder.append(ste.toString()).append('\n');
             }
         }
@@ -122,22 +124,20 @@ public class EventLogger {
     private static final String
             TAG = EventLogger.class.getSimpleName(),
             PREFSKEY = "eventlogger-prefs",
-            DELIMITER = "----- EventEnd ----";
+            DELIMITER = "----- EventEnd ----\n";
 
     private static final int EXPECTED_NO_FIELDS = 4;
 
     /**
-     * Call this to write the event log to memory after any event is logged.
+     * Call this to write the event log to sharedprefs after any event is logged.
      */
-    private static void onAnyEvent() {
+    private static void writeEvents(Context context) {
         while(events.size() > MAX_SIZE) {
             // Remove oldest event
             events.remove(0);
         }
 
-        SharedPreferences.Editor editor = ShexterService.instance().getApplicationContext()
-                .getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE)
-                .edit();
+        SharedPreferences.Editor editor = context.getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE).edit();
 
         StringBuilder logBuilder = new StringBuilder();
         for(Event event : events) {
@@ -150,29 +150,33 @@ public class EventLogger {
         editor.apply();
     }
 
-    private static List<Event> loadEvents() {
+    private static List<Event> loadEvents(Context context) {
+        Log.d(TAG, "Loading events");
         List<Event> events = new ArrayList<>();
 
-        SharedPreferences sp = ShexterService.instance().getApplicationContext()
-                .getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE);
         String eventsPref = sp.getString(PREFSKEY, "");
 
-        if(!eventsPref.isEmpty()) {
-            for(String eventStr : eventsPref.split(DELIMITER)) {
-                String[] lines = eventStr.split("\n");
-                if(lines.length < EXPECTED_NO_FIELDS) {
-                    Log.w(TAG, "Received malformed event " + eventStr);
-                    continue;
-                }
-                String  title = lines[0],
-                        detail = lines[1],
-                        time24Hr = lines[2];
-
-                boolean isError = Boolean.parseBoolean(lines[lines.length-1]);
-                Log.d(TAG, "Loaded event " + title + " isError " + isError);
-                events.add(new Event(title, detail, time24Hr, isError));
-            }
+        if(eventsPref.isEmpty()) {
+            Log.d(TAG, "Loaded empty EventLog");
+            return events;
         }
+
+        for(String eventStr : eventsPref.split(DELIMITER)) {
+            String[] lines = eventStr.split("\n");
+            if(lines.length < EXPECTED_NO_FIELDS) {
+                Log.w(TAG, "Received malformed event " + eventStr);
+                continue;
+            }
+            String  title = lines[0],
+                    detail = lines[1],
+                    time24Hr = lines[2];
+
+            boolean isError = Boolean.parseBoolean(lines[lines.length-1]);
+            Log.d(TAG, "Loaded event " + title + " isError " + isError);
+            events.add(new Event(title, detail, time24Hr, isError));
+        }
+
         return events;
     }
 }

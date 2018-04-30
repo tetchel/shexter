@@ -150,7 +150,7 @@ public class ShexterNotificationManager {
 
         if(notificationManager == null) {
             Log.e(TAG, "Unable to get notification manager!!");
-            EventLogger.logError("Failed to get NotificationManager");
+            EventLogger.logError(context, "Failed to get NotificationManager");
         }
         return notificationManager;
     }

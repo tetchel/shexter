@@ -84,7 +84,7 @@ public class CommandProcessor {
                 listBuilder.append("\nCurrent: ")
                         .append(contact.preferred());
             }
-            EventLogger.log(context.getString(R.string.event_command_succeeded),
+            EventLogger.log(context, context.getString(R.string.event_command_succeeded),
                     context.getString(R.string.event_setpref_list, contact.name()));
             return listBuilder.toString();
         }
@@ -104,7 +104,7 @@ public class CommandProcessor {
             if(COMMAND_SETPREF.equals(originalCommand)) {
                 Log.d(TAG, "Regular setpref success.");
                 String resp = context.getString(R.string.event_setpref, contact.name(), contact.preferred());
-                EventLogger.log(context.getString(R.string.event_command_succeeded), resp);
+                EventLogger.log(context, context.getString(R.string.event_command_succeeded), resp);
                 return resp;
             }
             else {
@@ -117,20 +117,20 @@ public class CommandProcessor {
             Log.d(TAG, "Contacts command.");
             try {
                 String allContacts = SmsUtilities.getAllContacts(ShexterService.instance()
-                        .getContentResolver());
+                        .getApplicationContext());
                 if (allContacts != null && !allContacts.isEmpty()) {
-                    EventLogger.log(context.getString(R.string.event_contacts, allContacts.length()));
+                    EventLogger.log(context, context.getString(R.string.event_contacts, allContacts.length()));
                     Log.d(TAG, "Retrieved contacts successfully.");
                     return allContacts;
                 }
                 else {
-                    EventLogger.log(context.getString(R.string.event_contacts, 0));
+                    EventLogger.log(context, context.getString(R.string.event_contacts, 0));
                     Log.d(TAG, "Retrieved NO contacts!");
                     return "An error occurred getting contacts, or you have no contacts!";
                 }
             } catch (SecurityException e) {
                 Log.w(TAG, "No contacts permission for Contacts command!");
-                EventLogger.logError(context.getString(R.string.event_command_failed), e);
+                EventLogger.logError(context, context.getString(R.string.event_command_failed), e);
                 return "No Contacts permission! Open the app and give Contacts permission.";
             }
         }
@@ -139,7 +139,7 @@ public class CommandProcessor {
             return ringCommand(context);
         }
         else {
-            EventLogger.logError(context.getString(R.string.event_unknown_command, command));
+            EventLogger.logError(context, context.getString(R.string.event_unknown_command, command));
             //should never happen
             return "'" + command + "' is a not a recognized command. " +
                     "Please report this issue on GitHub.";
@@ -182,16 +182,16 @@ public class CommandProcessor {
                     //numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
                     numberSent, numberSent != 1 ? "s" : "", contact.name());
 
-            EventLogger.log(context.getString(R.string.event_command_succeeded), response);
+            EventLogger.log(context, context.getString(R.string.event_command_succeeded), response);
 
             return response;
         } catch (SecurityException e) {
             Log.w(TAG, "No SMS Permission for send!", e);
-            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            EventLogger.logError(context, context.getString(R.string.event_command_failed), e);
             return "No Send SMS permission! Open the app and give SMS permission.";
         } catch (Exception e) {
             Log.e(TAG, "Exception from sendThread", e);
-            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            EventLogger.logError(context, context.getString(R.string.event_command_failed), e);
             return "Unexpected exception in the SMS send thread; " +
                     "please report this issue on GitHub.";
         }
@@ -213,7 +213,7 @@ public class CommandProcessor {
                         .removeMessagesFromNumber(contact.preferred());
                 Log.d(TAG, "Responded with convo.");
 
-                EventLogger.log(context.getString(R.string.event_command_succeeded),
+                EventLogger.log(context, context.getString(R.string.event_command_succeeded),
                         context.getString(R.string.event_read_messages, contact.name()));
 
                 return convo;
@@ -230,7 +230,7 @@ public class CommandProcessor {
 
         } catch (SecurityException e) {
             Log.w(TAG, "No Read SMS permission!", e);
-            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            EventLogger.logError(context, context.getString(R.string.event_command_failed), e);
             return "No Read SMS permission! Open the app and give SMS permission.";
         }
     }
@@ -266,7 +266,7 @@ public class CommandProcessor {
                     }
                     catch (Exception e) {
                         Log.e(TAG, "Exception occurred getting contact name for sms.", e);
-                        EventLogger.logError(e);
+                        EventLogger.logError(context, e);
                     }
                     finally {
                         c.close();
@@ -281,7 +281,7 @@ public class CommandProcessor {
 
             String unread = SmsUtilities.messagesIntoOutput(formattedMessages, dates);
 
-            EventLogger.log(context.getString(R.string.event_command_succeeded),
+            EventLogger.log(context, context.getString(R.string.event_command_succeeded),
                     context.getString(R.string.event_unread));
 
             if (!unread.isEmpty()) {
@@ -295,7 +295,7 @@ public class CommandProcessor {
             }
         } catch (SecurityException e) {
             Log.w(TAG, "No SMS permission for reading.");
-            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            EventLogger.logError(context, context.getString(R.string.event_command_failed), e);
             return "No Read SMS permission! Open the app and give SMS permission.";
         }
     }
@@ -305,14 +305,14 @@ public class CommandProcessor {
         NotificationManager nm = ShexterNotificationManager.tryGetNotifManager(context);
 
         if(nm == null || (MainActivity.isDndPermissionRequired() && !nm.isNotificationPolicyAccessGranted())) {
-            EventLogger.logError(context.getString(R.string.event_command_failed),
+            EventLogger.logError(context, context.getString(R.string.event_command_failed),
                     context.getString(R.string.event_no_ring_perm));
             return context.getString(R.string.phone_ringing_failure_response);
         }
         else {
             Intent ringIntent = new Intent(context, RingCommandActivity.class);
             context.startActivity(ringIntent);
-            EventLogger.log(context.getString(R.string.event_command_succeeded),
+            EventLogger.log(context, context.getString(R.string.event_command_succeeded),
                     context.getString(R.string.event_ring));
 
             return context.getString(R.string.phone_ringing_response);

@@ -119,6 +119,7 @@ public class ShexterService extends Service {
         */
 
         Log.d(TAG, getString(R.string.app_name) + " service started.");
+        EventLogger.log(getApplicationContext(), "Service started");
 
         return START_STICKY;
     }
@@ -139,7 +140,7 @@ public class ShexterService extends Service {
             } catch (IOException e) {
                 Log.w(TAG, "Exception opening socket: isInit: " + isInitSocket + " Port is " +
                                 port.get(), e);
-                EventLogger.logError(e);
+                EventLogger.logError(getApplicationContext(), e);
                 port.addAndGet(1);
             }
         }
@@ -149,7 +150,7 @@ public class ShexterService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Toast.makeText(this, "Shexter destroyed", Toast.LENGTH_LONG).show();
+        EventLogger.log(getApplicationContext(), "Service stopped");
         Log.d(TAG, "Enter onDestroy");
 
         // See ca.tetchel.shexter.receiver.ServiceDestroyedReceiever
@@ -171,11 +172,11 @@ public class ShexterService extends Service {
             }
             else {
                 Log.w(TAG, "ServerSocket was not open!");
-                EventLogger.logError("ServerSocket was not open!");
+                EventLogger.logError(getApplicationContext(), "ServerSocket was not open!");
             }
         } catch (IOException e) {
             Log.e(TAG, "Exception closing ServerSocket", e);
-            EventLogger.logError(e);
+            EventLogger.logError(getApplicationContext(), e);
         }
 
         initThread.interrupt();
@@ -185,7 +186,7 @@ public class ShexterService extends Service {
         }
         else {
             Log.w(TAG, "InitSocket was not open!");
-            EventLogger.logError("InitSocket was not open!");
+            EventLogger.logError(getApplicationContext(), "InitSocket was not open!");
         }
 
         Log.d(TAG, getString(R.string.app_name) + " service stopped.");
@@ -205,7 +206,7 @@ public class ShexterService extends Service {
 
         if(manager == null) {
             Log.e(TAG, "Couldn't get ActivityManager!");
-            EventLogger.logError("Couldn't get ActivityManager!");
+            EventLogger.logError(instance.getApplicationContext(), "Couldn't get ActivityManager!");
             return false;
         }
 
