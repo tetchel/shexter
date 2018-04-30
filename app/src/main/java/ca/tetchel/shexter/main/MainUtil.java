@@ -2,6 +2,8 @@ package ca.tetchel.shexter.main;
 
 import android.util.Log;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -70,5 +72,15 @@ class MainUtil {
         else {
             return "Could not get any IP address!";
         }
+    }
+
+    public static String stackTraceToString(Exception e) {
+        if(e == null) {
+            return "null exception";
+        }
+
+        StringWriter sw = new StringWriter();
+        e.printStackTrace(new PrintWriter(sw));
+        return sw.toString();
     }
 }

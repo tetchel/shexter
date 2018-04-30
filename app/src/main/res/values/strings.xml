@@ -16,6 +16,12 @@
     <string name="grant_dnd">Ringer</string>
     <string name="more_info">More Info</string>
 
+    <string name="service_started">&appName; Service started</string>
+    <string name="service_stopped">&appName; Service stopped</string>
+    <string name="service_already_running">&appName; Service already running</string>
+
+    <string name="error_opening_socket">Error opening &appName; ServerSocket</string>
+
     <string name="more_info_dialog_title">Permissions info</string>
     <string name="more_info_dialog_text">&appName; requires SMS and Contacts permissions to operate.
         \n\nTo use the Ring command, the app must be able to change Do Not Disturb settings so that

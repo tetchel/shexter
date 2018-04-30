@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
             TAG = MASTER_TAG + MainActivity.class.getSimpleName(),
             NEVER_DND_AGAIN_PREFSKEY = "never-ask-dnd";
 
-    // if the user has flagged 'never ask me again' about a permission
     private boolean
             neverAskPermsAgain = false,
             needToUpdatePermissions;
@@ -53,10 +52,10 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String[] requiredPermissions = {
             android.Manifest.permission.READ_CONTACTS,
-            // all sms permissions seem to be lumped into one
             android.Manifest.permission.READ_SMS,
             android.Manifest.permission.RECEIVE_SMS,
-            android.Manifest.permission.SEND_SMS};
+            android.Manifest.permission.SEND_SMS
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +74,8 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "ShexterService has (probably) been started.");
         } else {
+            Toast.makeText(this, getString(R.string.service_already_running),
+                    Toast.LENGTH_SHORT).show();
             Log.d(TAG, "ShexterService is already running.");
         }
 
@@ -89,6 +90,13 @@ public class MainActivity extends AppCompatActivity {
 
             Log.d(TAG, "Service bound");
             setPortTextView(boundService.getMainPortNumber());
+
+            Exception serviceException = boundService.getSocketException();
+            if(serviceException != null) {
+                // oh noes
+                TextView errorView = findViewById(R.id.socketExceptionTV);
+                errorView.setText(MainUtil.stackTraceToString(serviceException));
+            }
 
 //            boundService.setCallbacks(MainActivity.this);
         }

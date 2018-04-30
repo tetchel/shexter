@@ -49,6 +49,8 @@ public class ShexterService extends Service {
     // Register to receive new SMS intents
     private SmsReceiver receiver;
 
+    private Exception socketException;
+
     // Probably should remove this
 //    WifiManager.WifiLock wifiLock;
 
@@ -94,12 +96,35 @@ public class ShexterService extends Service {
                     port.get());
         }
 
-        // TODO move this logic to the Thread classes?
         serverThread = new SmsServerThread(serverSocket);
         initThread = new ConnectionInitThread(initSocket);
 
         serverThread.start();
+
+        // Wait two seconds for the server thread to be ready, if it's not, check for an error
+        int timer = 2000;
+        final int tick = 100;
+        while(serverThread.socketIsClosed() && timer > 0) {
+            timer -= tick;
+            try {
+                Thread.sleep(tick);
+            } catch (InterruptedException e) {
+                Log.e(TAG, "Interrupted while waiting for serverSocket", e);
+            }
+        }
+        Log.d(TAG, "Finished waiting for serversocket, timer=" + timer);
+        if(serverThread.socketIsClosed()) {
+            // massive failure ;(
+            socketException = serverThread.getSocketException();
+
+            Toast.makeText(getApplicationContext(), getString(R.string.error_opening_socket),
+                    Toast.LENGTH_LONG).show();
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         initThread.start();
+
         receiver = new SmsReceiver();
         // is this necessary?
         new ServiceDestroyedReceiever();
@@ -118,6 +143,8 @@ public class ShexterService extends Service {
         */
 
         Log.d(TAG, getString(R.string.app_name) + " service started.");
+        Toast.makeText(getApplicationContext(), getString(R.string.service_started),
+                Toast.LENGTH_LONG).show();
 
         return START_STICKY;
     }
@@ -147,10 +174,13 @@ public class ShexterService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Toast.makeText(this, "Shexter destroyed", Toast.LENGTH_LONG).show();
+        Toast.makeText(this, getString(R.string.service_stopped), Toast.LENGTH_LONG).show();
         Log.d(TAG, "Enter onDestroy");
 
         // See ca.tetchel.shexter.receiver.ServiceDestroyedReceiever
+        // Apparently services can be killed without onDestroy executing. To work around this
+        // I would have to add a timer which checks periodically to see if the service is running,
+        // and if not, restart it - Which would require a whole other service ?!
         Intent broadcastDestroyIntent = new Intent(ON_DESTROY_INTENTFILTER);
         sendBroadcast(broadcastDestroyIntent);
         Log.d(TAG, "Broadcasted destruction with filter: " + ON_DESTROY_INTENTFILTER);
@@ -218,6 +248,10 @@ public class ShexterService extends Service {
             return -1;
         }
         return serverSocket.getLocalPort();
+    }
+
+    public Exception getSocketException() {
+        return socketException;
     }
 
     public SmsReceiver getSmsReceiver() {

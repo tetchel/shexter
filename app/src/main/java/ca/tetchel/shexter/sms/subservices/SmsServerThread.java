@@ -39,6 +39,8 @@ public class SmsServerThread extends Thread {
 
     private ServerSocket serverSocket;
 
+    private Exception socketException;
+
     public SmsServerThread(ServerSocket serverSocket) {
         this.serverSocket = serverSocket;
     }
@@ -94,6 +96,10 @@ public class SmsServerThread extends Thread {
                 }*/
 
                 Log.d(TAG, "Ready to accept");
+                if("".equals("")) {
+                    serverSocket.close();
+                    throw new IOException("Test exception haha lol");
+                }
                 Socket socket = serverSocket.accept();
 
                 // print back to client socket using this
@@ -199,6 +205,7 @@ public class SmsServerThread extends Thread {
             }
             catch (IOException e) {
                 Log.e(TAG, "Socket error occurred.", e);
+                socketException = e;
             }
         }
 
@@ -211,7 +218,16 @@ public class SmsServerThread extends Thread {
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Exception closing ServerSocket in finally block", e);
+                socketException = e;
             }
         }
+    }
+
+    public boolean socketIsClosed() {
+        return serverSocket == null || serverSocket.isClosed();
+    }
+
+    public Exception getSocketException() {
+        return socketException;
     }
 }
