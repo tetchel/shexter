@@ -96,9 +96,6 @@ public class SmsServerThread extends Thread {
 
                 Log.d(TAG, "Ready to accept");
                 Socket socket = serverSocket.accept();
-                if("".equals("")) {
-                    throw new IOException("hey bro");
-                }
 
                 // print back to client socket using this
                 PrintStream replyStream = new PrintStream(socket.getOutputStream(), false,

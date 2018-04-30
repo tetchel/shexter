@@ -19,12 +19,9 @@ public class EventLogger {
     private static List<Event> events = new ArrayList<>();
 
     public static List<Event> getEvents(Context context) {
-        if(!hasLoadedEvents) {
-            events = loadEvents(context);
-            hasLoadedEvents = true;
-
-            // EventLogger.logError("Test Exception", new Exception("lalala"));
-        }
+        Log.d(TAG, "GetEvents");
+        loadEvents(context);
+        // EventLogger.logError("Test Exception", new Exception("lalala"));
         return events;
     }
 
@@ -38,7 +35,6 @@ public class EventLogger {
         public final String title;
         public final String detail;
 
-        // YAGNI
         // public final Date datetime;
         public final String time24Hr;
 
@@ -54,6 +50,7 @@ public class EventLogger {
 
             // this.datetime = Calendar.getInstance().getTime();
             this.time24Hr = get24HrTime(Calendar.getInstance().getTime());
+            checkValid();
         }
 
         /**
@@ -62,12 +59,28 @@ public class EventLogger {
         private Event(String title, String detail, String time24Hr, boolean isError) {
             this.title = title;
             this.detail = detail;
-            this.isError = isError;
             this.time24Hr = time24Hr;
+            this.isError = isError;
+            checkValid();
         }
 
         private static String get24HrTime(Date date) {
             return DF_24Hr.format(date);
+        }
+
+        /**
+         * Only the 'detail' field may contain newlines
+         */
+        private void checkValid() {
+            String forbidden = "\n";
+            if(title.contains(forbidden) || time24Hr.contains(forbidden)) {
+                Log.e(TAG, "Invalid event: " + toString());
+            }
+        }
+
+        @Override
+        public String toString() {
+            return String.format("Event isError: %b at %s - Title: %s, Detail: %s", isError, time24Hr, title, detail);
         }
     }
 
@@ -124,7 +137,7 @@ public class EventLogger {
     private static final String
             TAG = EventLogger.class.getSimpleName(),
             PREFSKEY = "eventlogger-prefs",
-            DELIMITER = "----- EventEnd ----\n";
+            DELIMITER = "-_EventEnd_-\n";
 
     private static final int EXPECTED_NO_FIELDS = 4;
 
@@ -132,34 +145,48 @@ public class EventLogger {
      * Call this to write the event log to sharedprefs after any event is logged.
      */
     private static void writeEvents(Context context) {
+        Log.d(TAG, "WriteEvents");
+        if(!hasLoadedEvents) {
+            loadEvents(context);
+            hasLoadedEvents = true;
+        }
+
         while(events.size() > MAX_SIZE) {
             // Remove oldest event
             events.remove(0);
+            Log.d(TAG, "Too many events; deleted one");
         }
 
         SharedPreferences.Editor editor = context.getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE).edit();
 
         StringBuilder logBuilder = new StringBuilder();
         for(Event event : events) {
-            String eventStr = String.format("%s\n%s\n%s\n%b",
-                    event.title, event.detail, event.time24Hr, event.isError);
+            String eventStr = String.format("%s\n%s\n%b\n%s",
+                    event.title, event.time24Hr, event.isError, event.detail);
             logBuilder.append(eventStr).append(DELIMITER);
         }
-        Log.d(TAG, "Saving event log: " + logBuilder.toString());
+        Log.d(TAG, "Saving event log: \"" + logBuilder.toString() + "\"");
         editor.putString(PREFSKEY, logBuilder.toString());
         editor.apply();
     }
 
-    private static List<Event> loadEvents(Context context) {
-        Log.d(TAG, "Loading events");
-        List<Event> events = new ArrayList<>();
+    private static void loadEvents(Context context) {
+        Log.d(TAG, "LoadEvents");
+        if(hasLoadedEvents) {
+            Log.d(TAG, "Already loaded events");
+            return;
+        }
+
+        Log.d(TAG, "Haven't loaded events, doing it now");
+        hasLoadedEvents = true;
+        events = new ArrayList<>();
 
         SharedPreferences sp = context.getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE);
         String eventsPref = sp.getString(PREFSKEY, "");
 
         if(eventsPref.isEmpty()) {
             Log.d(TAG, "Loaded empty EventLog");
-            return events;
+            return;
         }
 
         for(String eventStr : eventsPref.split(DELIMITER)) {
@@ -169,14 +196,18 @@ public class EventLogger {
                 continue;
             }
             String  title = lines[0],
-                    detail = lines[1],
-                    time24Hr = lines[2];
+                    time24Hr = lines[1];
+            boolean isError = Boolean.parseBoolean(lines[2]);
 
-            boolean isError = Boolean.parseBoolean(lines[lines.length-1]);
-            Log.d(TAG, "Loaded event " + title + " isError " + isError);
-            events.add(new Event(title, detail, time24Hr, isError));
+            // the details field is the rest of the eventStr
+            StringBuilder detailBuilder = new StringBuilder();
+            for(int i = 3; i < lines.length; i++) {
+                detailBuilder.append(lines[i]).append('\n');
+            }
+
+            Event e = new Event(title, detailBuilder.toString(), time24Hr, isError);
+            Log.d(TAG, "Loaded event " + e.toString());
+            events.add(e);
         }
-
-        return events;
     }
 }

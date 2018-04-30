@@ -99,6 +99,9 @@ public class EventLogActivity extends AppCompatActivity {
 
         EventLogListAdapter adapter = new EventLogListAdapter(this, events);
         eventsList.setAdapter(adapter);
+        // scroll to bottom
+        // eventsList.smoothScrollToPosition(events.size() - 1);
+        eventsList.setSelection(events.size() - 1);
     }
 
 }
