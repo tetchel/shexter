@@ -4,14 +4,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
-import android.widget.Toast;
 
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
 /**
  * Receives an Intent when the phone finishes booting which triggers starting the ShexterService.
- * TODO need a way to stop/start the service (from UI)
  */
 public class BootCompletedReceiver extends BroadcastReceiver {
 
@@ -25,12 +23,11 @@ public class BootCompletedReceiver extends BroadcastReceiver {
             return;
         }
         if(ShexterService.isRunning()) {
+            Log.d(TAG, "Not starting on boot because it's already running somehow");
             return;
         }
         Intent pushIntent = new Intent(context, ShexterService.class);
-        Log.d(TAG, "Starting SMSServer on boot.");
-
-        Toast.makeText(context, "shexter started on boot", Toast.LENGTH_LONG).show();
+        Log.d(TAG, "Starting ShexterService on boot.");
 
         context.startService(pushIntent);
     }

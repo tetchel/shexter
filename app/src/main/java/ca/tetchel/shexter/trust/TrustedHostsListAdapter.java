@@ -22,10 +22,10 @@ public class TrustedHostsListAdapter extends ArrayAdapter<String> {
     private final TrustedHostsActivity activity;
     private final List<String> trustedHosts;
 
-    public TrustedHostsListAdapter(TrustedHostsActivity activity_, List<String> trustedHosts_) {
-        super(activity_, R.layout.trusted_hosts_listitem, trustedHosts_);
-        activity = activity_;
-        trustedHosts = trustedHosts_;
+    public TrustedHostsListAdapter(TrustedHostsActivity activity, List<String> trustedHosts) {
+        super(activity, R.layout.trusted_hosts_listitem, trustedHosts);
+        this.activity = activity;
+        this.trustedHosts = trustedHosts;
     }
 
     @NonNull
