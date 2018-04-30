@@ -35,14 +35,19 @@ public class EventLogListAdapter extends ArrayAdapter<EventLogger.Event> {
 
         LayoutInflater inflater = activity.getLayoutInflater();
         // TODO what is this warning?
-        View rowView = inflater.inflate(R.layout.trusted_hosts_listitem, null, true);
+        View rowView = inflater.inflate(R.layout.eventlog_listitem, null, true);
+
         final TextView eventTitleTV = rowView.findViewById(R.id.eventTitleTV);
         final TextView eventDetailTV = rowView.findViewById(R.id.eventDetailTV);
+        final TextView eventDateTV = rowView.findViewById(R.id.eventDateTV);
 
         EventLogger.Event current = events.get(position);
         eventTitleTV.setText(current.title);
+        if(current.isError) {
+            eventTitleTV.setTextColor(activity.getResources().getColor(R.color.colorError));
+        }
         eventDetailTV.setText(current.detail);
-
+        eventDateTV.setText(current.time24Hr);
 
         return rowView;
     }

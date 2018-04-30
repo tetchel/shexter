@@ -7,6 +7,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Window;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.main.MainActivity;
@@ -16,14 +17,13 @@ public class EventLogActivity extends AppCompatActivity {
     private static final String
             TAG = MainActivity.MASTER_TAG + EventLogActivity.class.getSimpleName();
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d(TAG, "OnCreate");
         requestWindowFeature(Window.FEATURE_ACTION_BAR);
-        setContentView(R.layout.activity_trusted_hosts);
-
+        setContentView(R.layout.activity_eventlog);
+        
         refreshEventList();
     }
 
@@ -43,7 +43,7 @@ public class EventLogActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_trustedhosts, menu);
+        getMenuInflater().inflate(R.menu.menu_eventlog, menu);
         return true;
     }
 
@@ -53,6 +53,13 @@ public class EventLogActivity extends AppCompatActivity {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+
+        if(id == R.id.action_refresh) {
+            refreshEventList();
+            Toast.makeText(this, getString(R.string.updated_eventlog), Toast.LENGTH_SHORT).show();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 

@@ -11,6 +11,13 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/action_eventlog"
+        android:orderInCategory="50"
+        android:icon="@drawable/ic_action_eventlog"
+        android:title="@string/event_log"
+        app:showAsAction="ifRoom" />
+
+    <item
         android:id="@+id/action_refresh"
         android:orderInCategory="50"
         android:icon="@drawable/ic_action_refresh"

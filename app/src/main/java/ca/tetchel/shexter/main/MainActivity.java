@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.eventlogger.EventLogActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
@@ -157,6 +158,10 @@ public class MainActivity extends AppCompatActivity {
             // Toast.makeText(this, "Trusted hosts woo hoo", Toast.LENGTH_SHORT).show();
             Intent trustedHostIntent = new Intent(this, TrustedHostsActivity.class);
             startActivity(trustedHostIntent);
+            return true;
+        }
+        else if (id == R.id.action_eventlog) {
+            startActivity(new Intent(this, EventLogActivity.class));
             return true;
         }
 

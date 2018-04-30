@@ -1,7 +1,5 @@
 package ca.tetchel.shexter.eventlogger;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -18,6 +16,7 @@ public class EventLogger {
         public final String title;
         public final String detail;
         public final Date datetime;
+        public final String time24Hr;
 
         public final boolean isError;
 
@@ -28,7 +27,8 @@ public class EventLogger {
             this.detail = detail;
             this.isError = isError;
 
-            datetime = Calendar.getInstance().getTime();
+            this.datetime = Calendar.getInstance().getTime();
+            this.time24Hr = get24HrTime(datetime);
         }
 
         private Event(String title, Exception e) {
@@ -48,7 +48,7 @@ public class EventLogger {
         events.add(new Event(title, detail, true));
     }
 
-    public static void logError(String title, String detail, Exception e) {
+    public static void logError(String title, Exception e) {
         events.add(new Event(title, e));
     }
 
@@ -57,8 +57,15 @@ public class EventLogger {
             return "null exception";
         }
 
-        StringWriter sw = new StringWriter();
-        e.printStackTrace(new PrintWriter(sw));
-        return sw.toString();
+        StringBuilder resultBuilder = new StringBuilder();
+        for (StackTraceElement ste : e.getStackTrace()) {
+            if(ste.getClassName().startsWith("ca.tetchel.shexter")) {
+                resultBuilder.append(ste.toString()).append('\n');
+            }
+        }
+        String result = resultBuilder.toString();
+        // remove final newline
+        result = result.substring(0, result.length() - 1);
+        return result;
     }
 }

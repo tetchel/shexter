@@ -60,6 +60,12 @@
         </activity>
 
         <activity
+            android:name=".eventlogger.EventLogActivity"
+            android:label="@string/event_log"
+            android:parentActivityName=".main.MainActivity">
+        </activity>
+
+        <activity
             android:name=".RingCommandActivity"
             android:label="@string/ringing"
             android:launchMode="singleTop"

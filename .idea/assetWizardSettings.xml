@@ -23,7 +23,7 @@
                                           <PersistentState>
                                             <option name="values">
                                               <map>
-                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/av/ic_volume_off_black_24dp.xml" />
+                                                <entry key="url" value="jar:file:/C:/Program%20Files/Android/Android%20Studio/plugins/android/lib/android.jar!/images/material_design_icons/notification/ic_event_note_black_24dp.xml" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -34,7 +34,7 @@
                                   <option name="values">
                                     <map>
                                       <entry key="imageAsset" value="E:\Tim\Programs\shexter\shexter\app\src\main\res\img\ic_launcher_clear.png" />
-                                      <entry key="outputName" value="ic_action_volume_mute" />
+                                      <entry key="outputName" value="ic_action_eventlog" />
                                       <entry key="theme" value="HOLO_DARK" />
                                       <entry key="themeColor" value="050505" />
                                     </map>
