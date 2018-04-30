@@ -12,6 +12,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
@@ -149,6 +150,7 @@ public class ShexterNotificationManager {
 
         if(notificationManager == null) {
             Log.e(TAG, "Unable to get notification manager!!");
+            EventLogger.logError("Failed to get NotificationManager");
         }
         return notificationManager;
     }

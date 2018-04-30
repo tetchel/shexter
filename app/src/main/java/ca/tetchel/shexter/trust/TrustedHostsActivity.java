@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.ShexterNotificationManager;
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 
 public class TrustedHostsActivity extends AppCompatActivity {
@@ -147,13 +148,13 @@ public class TrustedHostsActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int which) {
                         TrustedHostsUtilities.addKnownHost(TrustedHostsActivity.this,
                                 hostAddr, hostname);
-                        onAcceptOrRejectHost(true);
+                        onAcceptOrRejectHost(true, hostAddr, hostname);
                     }
                 })
                 .setNegativeButton(getString(R.string.reject), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        onAcceptOrRejectHost(false);
+                        onAcceptOrRejectHost(false, hostAddr, hostname);
                     }
                 });
 
@@ -161,8 +162,17 @@ public class TrustedHostsActivity extends AppCompatActivity {
         Log.d(TAG, "Showed new host dialog");
     }
 
-    private void onAcceptOrRejectHost(boolean accepted) {
+    private void onAcceptOrRejectHost(boolean accepted, String hostAddr, String hostname) {
         Log.d(TAG, "User " + (accepted ? "accepted" : "rejected") + " incoming connection");
+        if(accepted) {
+            EventLogger.log(getString(R.string.event_new_trusted_host_title),
+                    getString(R.string.event_new_trusted_host_detail, hostname, hostAddr));
+        }
+        else {
+            EventLogger.log(getString(R.string.event_rejected_trusted_host_title),
+                    getString(R.string.event_rejected_trusted_host_detail, hostname, hostAddr));
+        }
+
         ShexterNotificationManager.clearNewHostNotif(this);
         // start the main activity, then finish this one, so that if user exits then
         // resumes the app, it doesn't prompt them again.

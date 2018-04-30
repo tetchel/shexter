@@ -1,6 +1,8 @@
 package ca.tetchel.shexter.eventlogger;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -8,6 +10,8 @@ import android.view.MenuItem;
 import android.view.Window;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import java.util.List;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.main.MainActivity;
@@ -23,7 +27,7 @@ public class EventLogActivity extends AppCompatActivity {
         Log.d(TAG, "OnCreate");
         requestWindowFeature(Window.FEATURE_ACTION_BAR);
         setContentView(R.layout.activity_eventlog);
-        
+
         refreshEventList();
     }
 
@@ -59,6 +63,30 @@ public class EventLogActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.updated_eventlog), Toast.LENGTH_SHORT).show();
             return true;
         }
+        else if(id == R.id.action_remove_all_events) {
+            AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+            alertBuilder
+                    .setTitle(getString(R.string.clear_eventlog))
+                    .setMessage(getString(R.string.confirm_clear_eventlog))
+                    .setPositiveButton(getString(R.string.remove_all),
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    EventLogger.clearEvents();
+                                    // Redraw with no events
+                                    recreate();
+                                }
+                            })
+                    .setNegativeButton(getString(R.string.cancel),
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    // Do nothing
+                                }
+                            });
+            alertBuilder.show();
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -66,7 +94,10 @@ public class EventLogActivity extends AppCompatActivity {
     public void refreshEventList() {
         Log.d(TAG, "Refresh event list");
         final ListView eventsList = findViewById(R.id.trustedHostsLV);
-        EventLogListAdapter adapter = new EventLogListAdapter(this, EventLogger.getEvents());
+
+        List<EventLogger.Event> events = EventLogger.getEvents();
+
+        EventLogListAdapter adapter = new EventLogListAdapter(this, events);
         eventsList.setAdapter(adapter);
     }
 

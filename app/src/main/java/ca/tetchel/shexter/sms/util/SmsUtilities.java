@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import ca.tetchel.shexter.BuildConfig;
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
@@ -227,10 +228,11 @@ public class SmsUtilities {
         }
         catch (SecurityException e) {
             Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
+            EventLogger.logError(e);
             throw(e);
         }
 
-        Contact result = null;
+        Contact result;
         try {
             if (query != null) {
                 int nameCol = query.getColumnIndex(
@@ -293,6 +295,7 @@ public class SmsUtilities {
         }
         catch (SecurityException e) {
             Log.w(TAG, "No 'Contacts' permission, cannot proceed.");
+            EventLogger.logError(e);
             throw(e);
         }
 

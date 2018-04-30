@@ -14,11 +14,11 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import ca.tetchel.shexter.R;
 import ca.tetchel.shexter.RingCommandActivity;
 import ca.tetchel.shexter.ShexterNotificationManager;
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.subservices.SmsSendThread;
@@ -41,9 +41,10 @@ public class CommandProcessor {
     /**
      * @return The response to be returned to the client.
      */
-    public static String process(String command, String originalRequest, Contact contact,
-                                    BufferedReader requestReader)
+    public static String process(Context context, String command, String originalRequest,
+                                 Contact contact, BufferedReader requestReader)
             throws IOException {
+
         if (COMMAND_SEND_INITIALIZER.equals((command))) {
             // This command returns the name and number of the contact who will receive the message.
             if (contact == null) {
@@ -54,27 +55,38 @@ public class CommandProcessor {
             }
         }
         else if (COMMAND_SEND.equals(command)) {
-            return sendCommand(contact, requestReader);
+            return sendCommand(context, contact, requestReader);
         }
         else if (COMMAND_READ.equals(command)) {
-            return readCommand(contact, requestReader);
+            return readCommand(context, contact, requestReader);
         }
         else if (COMMAND_UNREAD.equals(command)) {
             // Unread for a particular contact would need to be passed here
-            return unreadCommand(requestReader);
+            return unreadCommand(context, requestReader);
         }
         else if (COMMAND_SETPREF_LIST.equals(command)) {
             Log.d(TAG, "SetPrefList");
             // respond to client with list of numbers to select from.
-            String list = SETPREF_REQUIRED + '\n';
-            list += contact.name() + " has " + contact.count() + " numbers: ";
+            StringBuilder listBuilder = new StringBuilder();
+            listBuilder.append(SETPREF_REQUIRED).append('\n');
+            listBuilder.append(contact.name())
+                    .append(" has ")
+                    .append(contact.count())
+                    .append(" numbers: ");
+
             for (int i = 0; i < contact.count(); i++) {
-                list += "\n" + (i + 1) + ": " + contact.numbers().get(i);
+                listBuilder.append('\n')
+                        .append(i + 1)
+                        .append(": ")
+                        .append(contact.numbers().get(i));
             }
             if (contact.hasPreferred()) {
-                list += "\nCurrent: " + contact.preferred();
+                listBuilder.append("\nCurrent: ")
+                        .append(contact.preferred());
             }
-            return list;
+            EventLogger.log(context.getString(R.string.event_command_succeeded),
+                    context.getString(R.string.event_setpref_list, contact.name()));
+            return listBuilder.toString();
         }
         else if (COMMAND_SETPREF.equals(command)) {
             Log.d(TAG, "SetPrefCommand");
@@ -91,13 +103,14 @@ public class CommandProcessor {
 
             if(COMMAND_SETPREF.equals(originalCommand)) {
                 Log.d(TAG, "Regular setpref success.");
-                return "Changed " + contact.name() + "'s preferred number to: " +
-                        contact.preferred();
+                String resp = context.getString(R.string.event_setpref, contact.name(), contact.preferred());
+                EventLogger.log(context.getString(R.string.event_command_succeeded), resp);
+                return resp;
             }
             else {
                 Log.d(TAG, "SetPref success; now running original command.");
                 // still need to perform the original command
-                return process(originalCommand, "", contact, originalRequestReader);
+                return process(context, originalCommand, "", contact, originalRequestReader);
             }
         }
         else if (COMMAND_CONTACTS.equals(command)) {
@@ -106,31 +119,34 @@ public class CommandProcessor {
                 String allContacts = SmsUtilities.getAllContacts(ShexterService.instance()
                         .getContentResolver());
                 if (allContacts != null && !allContacts.isEmpty()) {
+                    EventLogger.log(context.getString(R.string.event_contacts, allContacts.length()));
                     Log.d(TAG, "Retrieved contacts successfully.");
                     return allContacts;
                 }
                 else {
+                    EventLogger.log(context.getString(R.string.event_contacts, 0));
                     Log.d(TAG, "Retrieved NO contacts!");
                     return "An error occurred getting contacts, or you have no contacts!";
                 }
             } catch (SecurityException e) {
                 Log.w(TAG, "No contacts permission for Contacts command!");
-                return "No Contacts permission! Open the " + R.string.app_name +
-                        " app and give Contacts permission.";
+                EventLogger.logError(context.getString(R.string.event_command_failed), e);
+                return "No Contacts permission! Open the app and give Contacts permission.";
             }
         }
         else if (COMMAND_RING.equals(command)) {
             Log.d(TAG, "Ring command");
-            return ringCommand();
+            return ringCommand(context);
         }
         else {
+            EventLogger.logError(context.getString(R.string.event_unknown_command, command));
             //should never happen
             return "'" + command + "' is a not a recognized command. " +
                     "Please report this issue on GitHub.";
         }
     }
 
-    private static String sendCommand(Contact contact, BufferedReader requestReader)
+    private static String sendCommand(Context context, Contact contact, BufferedReader requestReader)
             throws IOException {
         Log.d(TAG, "SendCommand");
         StringBuilder msgBodyBuilder = new StringBuilder();
@@ -154,27 +170,34 @@ public class CommandProcessor {
             Integer numberSent = (new SmsSendThread().execute(contact.preferred(), messageInput))
                     .get();
 
+            /*
             String preferred = "";
             if(!contact.name().equals(contact.preferred())) {
                 // Don't display the preferred twice in the -n case.
                 preferred = ", " + contact.preferred();
-            }
+            }*/
 
             Log.d(TAG, "Send command (probably) succeeded.");
-            return String.format(Locale.getDefault(), "Successfully sent %d message%s to %s.",
+            String response = context.getString(R.string.event_sent_messages,
                     //numberSent, numberSent != 1 ? "s" : "", contact.name(), preferred);
                     numberSent, numberSent != 1 ? "s" : "", contact.name());
+
+            EventLogger.log(context.getString(R.string.event_command_succeeded), response);
+
+            return response;
         } catch (SecurityException e) {
             Log.w(TAG, "No SMS Permission for send!", e);
-            return "No SMS permission! Open the app and give SMS permission.";
+            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            return "No Send SMS permission! Open the app and give SMS permission.";
         } catch (Exception e) {
             Log.e(TAG, "Exception from sendThread", e);
+            EventLogger.logError(context.getString(R.string.event_command_failed), e);
             return "Unexpected exception in the SMS send thread; " +
                     "please report this issue on GitHub.";
         }
     }
 
-    private static String readCommand(Contact contact, BufferedReader requestReader)
+    private static String readCommand(Context context, Contact contact, BufferedReader requestReader)
             throws IOException {
         Log.d(TAG, "Enter ReadCommand");
         int numberToRetrieve = Integer.parseInt(requestReader.readLine());
@@ -189,6 +212,10 @@ public class CommandProcessor {
                 ShexterService.instance().getSmsReceiver()
                         .removeMessagesFromNumber(contact.preferred());
                 Log.d(TAG, "Responded with convo.");
+
+                EventLogger.log(context.getString(R.string.event_command_succeeded),
+                        context.getString(R.string.event_read_messages, contact.name()));
+
                 return convo;
             }
             else {
@@ -202,12 +229,13 @@ public class CommandProcessor {
             }
 
         } catch (SecurityException e) {
-            Log.w(TAG, "No SMS permission for reading.", e);
-            return "No SMS permission! Open the app and give SMS permission.";
+            Log.w(TAG, "No Read SMS permission!", e);
+            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            return "No Read SMS permission! Open the app and give SMS permission.";
         }
     }
 
-    private static String unreadCommand(BufferedReader requestReader)
+    private static String unreadCommand(Context context, BufferedReader requestReader)
             throws IOException {
         Log.d(TAG, "UnreadCommand");
         int outputWidth = Integer.parseInt(requestReader.readLine());
@@ -238,6 +266,7 @@ public class CommandProcessor {
                     }
                     catch (Exception e) {
                         Log.e(TAG, "Exception occurred getting contact name for sms.", e);
+                        EventLogger.logError(e);
                     }
                     finally {
                         c.close();
@@ -252,6 +281,9 @@ public class CommandProcessor {
 
             String unread = SmsUtilities.messagesIntoOutput(formattedMessages, dates);
 
+            EventLogger.log(context.getString(R.string.event_command_succeeded),
+                    context.getString(R.string.event_unread));
+
             if (!unread.isEmpty()) {
                 unread = "Unread Messages:\n" + unread;
                 Log.d(TAG, "Replying with unread messages.");
@@ -263,23 +295,27 @@ public class CommandProcessor {
             }
         } catch (SecurityException e) {
             Log.w(TAG, "No SMS permission for reading.");
-            return "Could not retrieve messages: make sure " +
-                    R.string.app_name + " has SMS permission.";
+            EventLogger.logError(context.getString(R.string.event_command_failed), e);
+            return "No Read SMS permission! Open the app and give SMS permission.";
         }
     }
 
-    private static String ringCommand() {
-        Context appContext = ShexterService.instance().getApplicationContext();
+    private static String ringCommand(Context context) {
 
-        NotificationManager nm = ShexterNotificationManager.tryGetNotifManager(appContext);
+        NotificationManager nm = ShexterNotificationManager.tryGetNotifManager(context);
+
         if(nm == null || (MainActivity.isDndPermissionRequired() && !nm.isNotificationPolicyAccessGranted())) {
-            return appContext.getString(R.string.phone_ringing_failure_response);
+            EventLogger.logError(context.getString(R.string.event_command_failed),
+                    context.getString(R.string.event_no_ring_perm));
+            return context.getString(R.string.phone_ringing_failure_response);
         }
         else {
-            Intent ringIntent = new Intent(appContext, RingCommandActivity.class);
-            appContext.startActivity(ringIntent);
+            Intent ringIntent = new Intent(context, RingCommandActivity.class);
+            context.startActivity(ringIntent);
+            EventLogger.log(context.getString(R.string.event_command_succeeded),
+                    context.getString(R.string.event_ring));
 
-            return appContext.getString(R.string.phone_ringing_response);
+            return context.getString(R.string.phone_ringing_response);
         }
     }
 }

@@ -15,6 +15,7 @@ import java.net.ServerSocket;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.receiver.ServiceDestroyedReceiever;
 import ca.tetchel.shexter.receiver.SmsReceiver;
@@ -138,6 +139,7 @@ public class ShexterService extends Service {
             } catch (IOException e) {
                 Log.w(TAG, "Exception opening socket: isInit: " + isInitSocket + " Port is " +
                                 port.get(), e);
+                EventLogger.logError(e);
                 port.addAndGet(1);
             }
         }
@@ -169,9 +171,11 @@ public class ShexterService extends Service {
             }
             else {
                 Log.w(TAG, "ServerSocket was not open!");
+                EventLogger.logError("ServerSocket was not open!");
             }
         } catch (IOException e) {
             Log.e(TAG, "Exception closing ServerSocket", e);
+            EventLogger.logError(e);
         }
 
         initThread.interrupt();
@@ -181,6 +185,7 @@ public class ShexterService extends Service {
         }
         else {
             Log.w(TAG, "InitSocket was not open!");
+            EventLogger.logError("InitSocket was not open!");
         }
 
         Log.d(TAG, getString(R.string.app_name) + " service stopped.");
@@ -200,6 +205,7 @@ public class ShexterService extends Service {
 
         if(manager == null) {
             Log.e(TAG, "Couldn't get ActivityManager!");
+            EventLogger.logError("Couldn't get ActivityManager!");
             return false;
         }
 

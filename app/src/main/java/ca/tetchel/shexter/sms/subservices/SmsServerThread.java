@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.Scanner;
 
 import ca.tetchel.shexter.R;
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.util.CommandProcessor;
@@ -124,7 +125,10 @@ public class SmsServerThread extends Thread {
                 String command = requestReader.readLine();
                 Log.d(TAG, "Received command: " + command);
 
-                
+                EventLogger.log(appContext.getString(R.string.event_command_received),
+                        appContext.getString(R.string.event_command_received_detail,
+                                command, socket.getInetAddress().getHostAddress()));
+
                 String contactError = null;
                 Contact contact = null;
 
@@ -171,8 +175,8 @@ public class SmsServerThread extends Thread {
                             command = COMMAND_SETPREF_LIST;
                         }
                     } catch (SecurityException e) {
-                        contactError = "Could not retrieve contact info: make sure " +
-                                appContext.getString(R.string.app_name) + " has Contacts permission.";
+                        EventLogger.logError(e);
+                        contactError = "Could not retrieve contact info: make sure the app has Contacts permission.";
                     }
                 }
 
@@ -186,8 +190,8 @@ public class SmsServerThread extends Thread {
                 else {
                     // Everything went OK and we can continue to execute the user's command.
 
-                    String response = CommandProcessor.process(command, oldRequest, contact,
-                            requestReader);
+                    String response = CommandProcessor.process(appContext, command, oldRequest,
+                            contact, requestReader);
                     Log.d(TAG, "Command successfully processed; replying: " + response);
                     SmsUtilities.sendReply(replyStream, response);
                 }
@@ -199,6 +203,7 @@ public class SmsServerThread extends Thread {
             }
             catch (IOException e) {
                 Log.e(TAG, "Socket error occurred.", e);
+                EventLogger.logError(e);
             }
         }
 
@@ -211,6 +216,7 @@ public class SmsServerThread extends Thread {
                 }
             } catch (IOException e) {
                 Log.e(TAG, "Exception closing ServerSocket in finally block", e);
+                EventLogger.logError(e);
             }
         }
     }

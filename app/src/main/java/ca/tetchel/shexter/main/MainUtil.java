@@ -8,6 +8,8 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
 
+import ca.tetchel.shexter.eventlogger.EventLogger;
+
 // Static utilities to support the MainActivity
 class MainUtil {
 
@@ -24,6 +26,7 @@ class MainUtil {
         }
         catch (SocketException e) {
             Log.e(TAG, "Error getting IP address", e);
+            EventLogger.logError(e);
             return "Error: " + e.toString();
         }
 

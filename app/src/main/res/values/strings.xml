@@ -5,12 +5,16 @@
 ]>
 <resources>
     <string name="app_name">&appName;</string>
+
+    <!-- ActionBar Buttons -->
     <string name="action_settings">Settings</string>
     <string name="trusted_hosts">Trusted Hosts</string>
     <string name="event_log">Event Log</string>
     <string name="refresh">Refresh</string>
 
-    <string name="updated_eventlog">Refreshed events</string>
+    <!-- MainActivity UI -->
+    <string name="your_ip_is">LAN IP Address:</string>
+    <string name="port">Port:</string>
 
     <string name="ip_addr_error">Could not get IP Address!</string>
     <string name="port_error">Could not get service port!</string>
@@ -19,12 +23,7 @@
     <string name="grant_dnd">Ringer</string>
     <string name="more_info">More Info</string>
 
-    <string name="service_started">&appName; Service started</string>
-    <string name="service_stopped">&appName; Service stopped</string>
-    <string name="service_already_running">&appName; Service already running</string>
-
-    <string name="error_opening_socket">Error opening &appName; ServerSocket</string>
-
+    <!-- Permission More Info / Denying Permissions -->
     <string name="more_info_dialog_title">Permissions info</string>
     <string name="more_info_dialog_text">&appName; requires SMS and Contacts permissions to operate.
         \n\nTo use the Ring command, the app must be able to change Do Not Disturb settings so that
@@ -36,22 +35,26 @@
     <string name="denying_dnd_perm_dialog_text">If you press OK, You WILL NOT be able to use the Ring command.
         \nYou can still grant do-not-disturb permission manually through your phone\'s Settings.</string>
 
+    <!-- Service Status Toasts -->
+    <string name="service_started">&appName; Service started</string>
+    <string name="service_stopped">&appName; Service stopped</string>
+    <string name="service_already_running">&appName; Service already running</string>
+    <string name="error_opening_socket">Error opening &appName; ServerSocket</string>
+
+    <!--
     <string name="send_succeeded">Send succeeded</string>
     <string name="send_failed_generic">Unknown error</string>
     <string name="send_failed_noservice">No cell service</string>
     <string name="send_failed_nullpdu">PDU was null</string>
     <string name="send_failed_noradio">Cell radio is off</string>
-
-    <string name="your_ip_is">LAN IP Address:</string>
-    <string name="port">Port:</string>
-
-    <string name="title_activity_trusted_hosts">Trusted Hosts</string>
+    -->
 
     <string name="unknown_host_rejected_response">
         Your phone was found, but &appName; rejected your request.
         Approve the connection using the notification on your phone.
     </string>
 
+    <!-- Trusted Hosts Activity -->
     <string name="new_connection_request">New Connection Request</string>
     <string name="incoming_request_from_hostname">Incoming connection from %1$s</string>
     <string name="error_adding_new_host">There was an error trying to add the new host</string>
@@ -66,6 +69,7 @@
     <string name="confirm_remove_all">Are you sure you want to remove ALL trusted hosts?</string>
     <string name="cancel">Cancel</string>
 
+    <!-- Ringing activity -->
     <string name="phone_ringing_response">Your phone is ringing!</string>
     <string name="phone_ringing_failure_response">
         You have not granted the necessary permissions for the Ring command!
@@ -74,6 +78,34 @@
     <string name="ringing">Ringing!</string>
     <string name="tap_to_silence">Tap to silence</string>
     <string name="ringing_stopped">Ringing stopped</string>
+
+    <!-- EventLog activity -->
+    <string name="updated_eventlog">Refreshed events</string>
+    <string name="no_events_yet">No events yet!</string>
+    <string name="clear_eventlog">Clear Event Log</string>
+    <string name="confirm_clear_eventlog">Are you sure you want to clear the event log?</string>
+
+    <!-- Events -->
+    <string name="event_new_trusted_host_title">New Trusted Host</string>
+    <string name="event_new_trusted_host_detail">Added trusted host: %1$s at %2$s</string>
+    <string name="event_rejected_trusted_host_title">Rejected Incoming Connection</string>
+    <string name="event_rejected_trusted_host_detail">Rejected incoming connection from: %1$s at %2$s</string>
+
+    <string name="event_command_received">Received Command</string>
+    <string name="event_command_received_detail">Received %1$s command from %2$s</string>
+    <string name="event_unknown_command">Received Unknown Command %1$s</string>
+
+    <string name="event_command_succeeded">Command Succeeded</string>
+    <string name="event_command_failed">Command Failed</string>
+
+    <string name="event_sent_messages">Sent %1$d message%2$s to %3$s</string>
+    <string name="event_read_messages">Read message(s) from %1$s</string>
+    <string name="event_unread">Checked unread messages</string>
+    <string name="event_no_ring_perm">Ring command failed due to lack of Do Not Disturb permission</string>
+    <string name="event_ring">Ringing phone</string>
+    <string name="event_contacts">Retrieved %1$d contacts</string>
+    <string name="event_setpref_list">SetPref List for %1$s</string>
+    <string name="event_setpref">Changed %1$s\'s preferred number to: $2%s</string>
 
 
 </resources>

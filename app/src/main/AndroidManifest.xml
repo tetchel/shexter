@@ -55,7 +55,7 @@
 
         <activity
             android:name=".trust.TrustedHostsActivity"
-            android:label="@string/title_activity_trusted_hosts"
+            android:label="@string/trusted_hosts"
             android:parentActivityName=".main.MainActivity">
         </activity>
 

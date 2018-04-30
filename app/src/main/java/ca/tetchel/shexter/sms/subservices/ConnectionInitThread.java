@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Locale;
 
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 import ca.tetchel.shexter.sms.util.ServiceConstants;
@@ -45,8 +46,10 @@ public class ConnectionInitThread extends Thread {
 
             } catch(UnsupportedEncodingException e) {
                 Log.e(TAG, "Exception decoding from " + ServiceConstants.ENCODING, e);
+                EventLogger.logError(e);
             } catch (IOException e) {
                 Log.e(TAG, "Exception in the InitThread", e);
+                EventLogger.logError(e);
             }
         }
 
@@ -95,6 +98,7 @@ public class ConnectionInitThread extends Thread {
 
         } catch(NumberFormatException e) {
             Log.e(TAG, "Malformed request; second line is not a number: " + requestBody, e);
+            EventLogger.logError(e);
         }
     }
 

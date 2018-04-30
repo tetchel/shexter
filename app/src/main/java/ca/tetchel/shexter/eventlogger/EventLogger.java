@@ -1,5 +1,7 @@
 package ca.tetchel.shexter.eventlogger;
 
+import android.annotation.SuppressLint;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -11,6 +13,9 @@ public class EventLogger {
     private static List<Event> events = new ArrayList<>();
 
     public static List<Event> getEvents() { return events; }
+    public static void clearEvents() {
+        events.clear();
+    }
 
     static class Event {
         public final String title;
@@ -20,6 +25,7 @@ public class EventLogger {
 
         public final boolean isError;
 
+        @SuppressLint("SimpleDateFormat")
         private static final SimpleDateFormat DF_24Hr = new SimpleDateFormat("HH:mm:ss");
 
         private Event(String title, String detail, boolean isError) {
@@ -35,17 +41,29 @@ public class EventLogger {
             this(title, getStackTraceAsString(e), true);
         }
 
-        public static String get24HrTime(Date date) {
+        private static String get24HrTime(Date date) {
             return DF_24Hr.format(date);
         }
+    }
+
+    public static void log(String title) {
+        events.add(new Event(title, "", false));
     }
 
     public static void log(String title, String detail) {
         events.add(new Event(title, detail, false));
     }
 
+    public static void logError(String title) {
+        events.add(new Event(title, "", true));
+    }
+
     public static void logError(String title, String detail) {
         events.add(new Event(title, detail, true));
+    }
+
+    public static void logError(Exception e) {
+        events.add(new Event("Error occurred!", e));
     }
 
     public static void logError(String title, Exception e) {
