@@ -1,5 +1,8 @@
 package ca.tetchel.shexter.eventlogger;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -7,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -40,7 +44,7 @@ public class EventLogListAdapter extends ArrayAdapter<EventLogger.Event> {
         final TextView eventDetailTV = rowView.findViewById(R.id.eventDetailTV);
         final TextView eventDateTV = rowView.findViewById(R.id.eventDateTV);
 
-        EventLogger.Event current = events.get(position);
+        final EventLogger.Event current = events.get(position);
         eventTitleTV.setText(current.title);
         if(current.isError) {
             eventTitleTV.setTextColor(activity.getResources().getColor(R.color.colorError));
@@ -51,6 +55,24 @@ public class EventLogListAdapter extends ArrayAdapter<EventLogger.Event> {
         }
         else {
             eventDetailTV.setText(current.detail);
+            eventDetailTV.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View view) {
+                    ClipboardManager clipboardManager = (ClipboardManager) activity.getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("EventLog Detail", current.detail);
+
+                    if(clipboardManager != null) {
+                        clipboardManager.setPrimaryClip(clip);
+                        Toast.makeText(activity, activity.getString(R.string.copied),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    else {
+                        Toast.makeText(activity, activity.getString(R.string.failed_clipboard),
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+            });
         }
 
         eventDateTV.setText(current.time24Hr);

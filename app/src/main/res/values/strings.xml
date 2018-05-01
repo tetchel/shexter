@@ -84,6 +84,8 @@
     <string name="no_events_yet">No events yet!</string>
     <string name="clear_eventlog">Clear Event Log</string>
     <string name="confirm_clear_eventlog">Are you sure you want to clear the event log?</string>
+    <string name="copied">Copied</string>
+    <string name="failed_clipboard">Copy failed; could not access clipboard</string>
 
     <!-- Events -->
     <string name="event_new_trusted_host_title">New Trusted Host</string>
