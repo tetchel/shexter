@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
@@ -28,6 +29,7 @@ public class BootCompletedReceiver extends BroadcastReceiver {
         }
         Intent pushIntent = new Intent(context, ShexterService.class);
         Log.d(TAG, "Starting ShexterService on boot.");
+        EventLogger.log(context, "Started service on boot");
 
         context.startService(pushIntent);
     }

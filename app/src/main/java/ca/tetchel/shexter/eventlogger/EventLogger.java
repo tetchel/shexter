@@ -36,12 +36,12 @@ public class EventLogger {
         public final String detail;
 
         // public final Date datetime;
-        public final String time24Hr;
+        public final String timestamp;
 
         public final boolean isError;
 
         @SuppressLint("SimpleDateFormat")
-        private static final SimpleDateFormat DF_24Hr = new SimpleDateFormat("HH:mm:ss");
+        private static final SimpleDateFormat DATEFORMAT = new SimpleDateFormat("MM/dd HH:mm:ss");
 
         private Event(String title, String detail, boolean isError) {
             this.title = title;
@@ -49,7 +49,7 @@ public class EventLogger {
             this.isError = isError;
 
             // this.datetime = Calendar.getInstance().getTime();
-            this.time24Hr = get24HrTime(Calendar.getInstance().getTime());
+            this.timestamp = DATEFORMAT.format(Calendar.getInstance().getTime());
             checkValid();
         }
 
@@ -59,13 +59,9 @@ public class EventLogger {
         private Event(String title, String detail, String time24Hr, boolean isError) {
             this.title = title;
             this.detail = detail;
-            this.time24Hr = time24Hr;
+            this.timestamp = time24Hr;
             this.isError = isError;
             checkValid();
-        }
-
-        private static String get24HrTime(Date date) {
-            return DF_24Hr.format(date);
         }
 
         /**
@@ -73,14 +69,14 @@ public class EventLogger {
          */
         private void checkValid() {
             String forbidden = "\n";
-            if(title.contains(forbidden) || time24Hr.contains(forbidden)) {
+            if(title.contains(forbidden) || timestamp.contains(forbidden)) {
                 Log.e(TAG, "Invalid event: " + toString());
             }
         }
 
         @Override
         public String toString() {
-            return String.format("Event isError: %b at %s - Title: %s, Detail: %s", isError, time24Hr, title, detail);
+            return String.format("Event isError: %b at %s - Title: %s, Detail: %s", isError, timestamp, title, detail);
         }
     }
 
@@ -162,7 +158,7 @@ public class EventLogger {
         StringBuilder logBuilder = new StringBuilder();
         for(Event event : events) {
             String eventStr = String.format("%s\n%s\n%b\n%s",
-                    event.title, event.time24Hr, event.isError, event.detail);
+                    event.title, event.timestamp, event.isError, event.detail);
             logBuilder.append(eventStr).append(DELIMITER);
         }
         Log.d(TAG, "Saving event log: \"" + logBuilder.toString() + "\"");

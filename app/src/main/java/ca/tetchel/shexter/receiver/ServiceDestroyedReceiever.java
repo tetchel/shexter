@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import ca.tetchel.shexter.eventlogger.EventLogger;
 import ca.tetchel.shexter.main.MainActivity;
 import ca.tetchel.shexter.sms.ShexterService;
 
@@ -28,6 +29,7 @@ public class ServiceDestroyedReceiever extends BroadcastReceiver {
 
             Intent serviceIntent = new Intent(context, ShexterService.class);
             Log.d(TAG, "restarting service");
+            EventLogger.log(context, "Restarted service");
 
             context.startService(serviceIntent);
         }

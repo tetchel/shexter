@@ -75,7 +75,7 @@ public class EventLogListAdapter extends ArrayAdapter<EventLogger.Event> {
             });
         }
 
-        eventDateTV.setText(current.time24Hr);
+        eventDateTV.setText(current.timestamp);
 
         return rowView;
     }
