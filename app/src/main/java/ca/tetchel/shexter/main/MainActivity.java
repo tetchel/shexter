@@ -37,7 +37,9 @@ import ca.tetchel.shexter.trust.TrustedHostsActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String MASTER_TAG = "shexter_";
+    public static final String MASTER_TAG = "shexter_",
+            FINISH_IMMEDIATELY_INTENTKEY = "finish-immediately";
+
     private static final String
             TAG = MASTER_TAG + MainActivity.class.getSimpleName(),
             NEVER_DND_AGAIN_PREFSKEY = "never-ask-dnd";
@@ -66,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
         requestWindowFeature(Window.FEATURE_ACTION_BAR);
         setContentView(R.layout.activity_main);
 
+        CatchAllExceptionsThreadStarter.start(this);
+
         checkAndGetPermissions();
 
         if (!ShexterService.isRunning()) {
@@ -79,6 +83,11 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "ShexterService is already running.");
         }
 
+        /*
+        if(getIntent().getBooleanExtra(FINISH_IMMEDIATELY_INTENTKEY, false)) {
+            Log.d(TAG, "Finishing immediately");
+            finish();
+        }*/
     }
 
     private ServiceConnection serviceConnection = new ServiceConnection() {

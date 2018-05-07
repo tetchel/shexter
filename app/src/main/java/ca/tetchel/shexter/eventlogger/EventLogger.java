@@ -50,7 +50,6 @@ public class EventLogger {
 
             // this.datetime = Calendar.getInstance().getTime();
             this.timestamp = DATEFORMAT.format(Calendar.getInstance().getTime());
-            checkValid();
         }
 
         /**
@@ -61,17 +60,18 @@ public class EventLogger {
             this.detail = detail;
             this.timestamp = time24Hr;
             this.isError = isError;
-            checkValid();
         }
 
         /**
          * Only the 'detail' field may contain newlines
          */
-        private void checkValid() {
+        public boolean isValid() {
             String forbidden = "\n";
             if(title.contains(forbidden) || timestamp.contains(forbidden)) {
                 Log.e(TAG, "Invalid event: " + toString());
+                return false;
             }
+            return true;
         }
 
         @Override
@@ -96,28 +96,31 @@ public class EventLogger {
         newEvent(context, new Event(title, detail, true));
     }
 
-    public static void logError(Context context, String title, Exception e) {
-        newEvent(context, new Event(title, getStackTraceAsString(e), true));
+    public static void logError(Context context, String title, Throwable t) {
+        newEvent(context, new Event(title, getStackTraceAsString(t), true));
     }
 
-    public static void logError(Context context, Exception e) {
-        newEvent(context, new Event("Error", getStackTraceAsString(e), true));
+    public static void logError(Context context, Throwable t) {
+        newEvent(context, new Event("Error", getStackTraceAsString(t), true));
     }
 
     private static void newEvent(Context context, Event event) {
-        events.add(event);
-        writeEvents(context);
+        if(event.isValid()) {
+            events.add(event);
+            Log.d(TAG, "New event: " + event.title);
+            writeEvents(context);
+        }
     }
 
-    private static String getStackTraceAsString(Exception e) {
-        if(e == null) {
+    private static String getStackTraceAsString(Throwable t) {
+        if(t == null) {
             return "null exception";
         }
 
         StringBuilder resultBuilder = new StringBuilder();
-        resultBuilder.append(e.toString()).append('\n');
+        resultBuilder.append(t.toString()).append('\n');
 
-        for (StackTraceElement ste : e.getStackTrace()) {
+        for (StackTraceElement ste : t.getStackTrace()) {
             // Filter by pertinent method calls only
             if(ste.getClassName().startsWith("ca.tetchel")) {
                 resultBuilder.append(ste.toString()).append('\n');
@@ -161,7 +164,10 @@ public class EventLogger {
                     event.title, event.timestamp, event.isError, event.detail);
             logBuilder.append(eventStr).append(DELIMITER);
         }
-        Log.d(TAG, "Saving event log: \"" + logBuilder.toString() + "\"");
+
+        Log.d(TAG, "Saving event log");
+
+        // Log.d(TAG, "Saving event log: \"" + logBuilder.toString() + "\"");
         editor.putString(PREFSKEY, logBuilder.toString());
         editor.apply();
     }
@@ -175,7 +181,6 @@ public class EventLogger {
 
         Log.d(TAG, "Haven't loaded events, doing it now");
         hasLoadedEvents = true;
-        events = new ArrayList<>();
 
         SharedPreferences sp = context.getSharedPreferences(PREFSKEY, Context.MODE_PRIVATE);
         String eventsPref = sp.getString(PREFSKEY, "");

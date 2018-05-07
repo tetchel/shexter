@@ -142,7 +142,9 @@ public class RingCommandActivity extends AppCompatActivity {
     private void stopAndExit() {
         stopPlaying();
         //NavUtils.navigateUpFromSameTask(this);
-        startActivity(new Intent(this, MainActivity.class));
+        Intent mainActIntent = new Intent(this, MainActivity.class);
+        // mainActIntent.putExtra(MainActivity.FINISH_IMMEDIATELY_INTENTKEY, true);
+        startActivity(mainActIntent);
         finish();
     }
 
